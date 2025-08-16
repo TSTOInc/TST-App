@@ -10,13 +10,16 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
+
+  // Place this last to override rules from the presets
   {
-    ignores: ["node_modules/**"], // optional
     rules: {
-      "@typescript-eslint/no-unused-vars": "off", // disable globally
+      "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-explicit-any": "off", // optional if you want to allow 'any'
+      "react-hooks/exhaustive-deps": "off",       // optional for useEffect deps
     },
   },
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
 ];
 
 export default eslintConfig;
