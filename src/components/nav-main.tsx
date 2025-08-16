@@ -2,15 +2,9 @@
 
 import * as React from "react"
 import { IconCirclePlusFilled, IconMail, type Icon } from "@tabler/icons-react"
-import { GalleryVerticalEnd } from "lucide-react"
 import {
-  Sidebar,
-  SidebarFooter,
-  SidebarInset,
   SidebarGroupContent,
-  SidebarContent,
   SidebarGroup,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,

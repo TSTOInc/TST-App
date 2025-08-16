@@ -54,7 +54,6 @@ const ColorBadge: React.FC<ColorBadgeProps> = ({
   icon,
   onlyIcon,
   asChild = false,
-  children,
   tooltip,
   ...props
 }) => {
