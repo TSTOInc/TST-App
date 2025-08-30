@@ -278,7 +278,7 @@ export default function TablePage({ params }) {
 
     return (
         <div>
-            <ProfileHeader id={data.id} table="brokers" image_url={data.image_url} name={data.name} company={"USDOT-" + data.usdot_number + " | " + data.docket_number} link={"directory/" + data.usdot_number} website={data.website} status={data.status} />
+            <ProfileHeader data={data} id={data.id} table="brokers" image_url={data.image_url} name={data.name} company={"USDOT-" + data.usdot_number + " | " + data.docket_number} link={"directory/" + data.usdot_number} website={data.website} status={data.status} />
             <div className="p-4 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <ContactCard carrier={data} />

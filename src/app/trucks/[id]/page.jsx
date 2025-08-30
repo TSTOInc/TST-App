@@ -1,20 +1,16 @@
 "use client"
 import React, { useEffect, useState } from 'react'
 import ProfileHeader from '../../../components/layout/ProfileHeader'
-import { use, useMemo } from "react"
-import { notFound } from "next/navigation"
-import Link from "next/link"
+import { useSearchParams, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { IconLoader2 } from '@tabler/icons-react'
-import { toast } from "sonner"; // or "@/components/ui/sonner" if aliased
+import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useSearchParams, useRouter } from "next/navigation";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronsUpDown } from "lucide-react"
+import { IconTrash, IconLoader2, IconUpload, IconPlus } from '@tabler/icons-react'
 import PDFPreview from "@/components/custom/PDFPreview";
 import {
     Dialog,
@@ -22,8 +18,21 @@ import {
     DialogTrigger,
     DialogHeader,
     DialogTitle,
-    DialogClose,
 } from "@/components/ui/dialog";
+import DocUpload from "@/components/custom/DocUpload";
+import { se } from 'date-fns/locale/se';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { tr } from 'date-fns/locale/tr';
 
 const ContactCard = ({ truck }) => {
     const plates = truck?.plates ?? [];
@@ -32,7 +41,6 @@ const ContactCard = ({ truck }) => {
             <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Truck Info</CardTitle>
             </CardHeader>
-
             <CardContent className="space-y-2 ml-4">
                 <p>Vin: {truck.vin || "N/A"}</p>
                 <p>Make: {truck.make || "N/A"} Model: {truck.model || "N/A"}</p>
@@ -42,8 +50,6 @@ const ContactCard = ({ truck }) => {
             <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Truck Plates</CardTitle>
             </CardHeader>
-
-            {/* Flex container for plates */}
             <CardContent className="flex flex-row flex-wrap gap-2 ml-4">
                 {plates.map((plate, index) => (
                     <Card className="py-2 py-4" key={index}>
@@ -56,9 +62,9 @@ const ContactCard = ({ truck }) => {
                 ))}
             </CardContent>
         </Card>
-
     )
 }
+
 const addOrdinalSuffix = (day) => {
     if (day > 3 && day < 21) return day + "th";
     switch (day % 10) {
@@ -68,39 +74,35 @@ const addOrdinalSuffix = (day) => {
         default: return day + "th";
     }
 };
+
 const formatDate = (dateString) => {
     const date = new Date(dateString);
     const parts = date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }).split(" ");
     return `${parts[0]} ${addOrdinalSuffix(parseInt(parts[1]))} ${parts[2]}`;
 };
+
 const InspectionsCard = ({ truck, inspectionIntervalDays = 90 }) => {
     const inspections = truck?.inspections ?? [];
-
-    // Calculate next inspection based on last inspection
     const nextInspectionDate = () => {
         if (!inspections.length) return "N/A";
-
-        // Sort inspections by date descending
-        const sorted = [...inspections].sort(
-            (a, b) => new Date(b.inspection_date) - new Date(a.inspection_date)
-        );
+        const sorted = [...inspections].sort((a, b) => new Date(b.inspection_date) - new Date(a.inspection_date));
         const lastInspection = sorted[0];
         const lastDate = new Date(lastInspection.inspection_date);
-
-        // Add interval
         const nextDate = new Date(lastDate);
         nextDate.setDate(nextDate.getDate() + inspectionIntervalDays);
-
-        return formatDate(nextDate) // Format nicely
+        return formatDate(nextDate)
     };
-
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Truck Inspections</CardTitle>
-                <div>Next Inspection: {nextInspectionDate()}</div>
+                <div className="flex flex-row items-center gap-4">
+                    <div>Next Inspection: {nextInspectionDate()}</div>
+                    <Button>
+                        <IconPlus /> Add Inspection
+                    </Button>
+                </div>
             </CardHeader>
-
             <CardContent className="space-y-2">
                 {inspections.length === 0 ? (
                     <p className="text-neutral-500 italic">
@@ -124,14 +126,9 @@ const InspectionsCard = ({ truck, inspectionIntervalDays = 90 }) => {
                                         </Button>
                                     </CardHeader>
                                 </CollapsibleTrigger>
-
                                 <CollapsibleContent>
                                     <CardContent className="pt-2">
-                                        <Textarea
-                                            readOnly
-                                            value={inspection.notes || ""}
-                                            placeholder="No notes found"
-                                        />
+                                        <Textarea readOnly value={inspection.notes || ""} placeholder="No notes found" />
                                     </CardContent>
                                 </CollapsibleContent>
                             </Collapsible>
@@ -145,29 +142,14 @@ const InspectionsCard = ({ truck, inspectionIntervalDays = 90 }) => {
 
 const RepairsCard = ({ truck, repairsIntervalDays = 90 }) => {
     const repairs = truck?.repairs ?? [];
-
-    // Next inspection date from inspections (for context)
-    const nextRepairDate = () => {
-        if (!repairs.length) return "N/A";
-
-        const sorted = [...repairs].sort(
-            (a, b) => new Date(b.repair_date) - new Date(a.repair_date)
-        );
-        const lastRepair = sorted[0];
-        const lastDate = new Date(lastRepair.repair_date);
-        const nextDate = new Date(lastDate);
-        nextDate.setDate(nextDate.getDate() + repairsIntervalDays);
-
-        return formatDate(nextDate);
-    };
-
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Truck Repairs</CardTitle>
-                <div>Next Repair: {nextRepairDate()}</div>
+                <Button>
+                    <IconPlus /> Add Repair
+                </Button>
             </CardHeader>
-
             <CardContent className="space-y-2">
                 {repairs.length === 0 ? (
                     <p className="text-neutral-500 italic">
@@ -190,14 +172,9 @@ const RepairsCard = ({ truck, repairsIntervalDays = 90 }) => {
                                         </Button>
                                     </CardHeader>
                                 </CollapsibleTrigger>
-
                                 <CollapsibleContent>
                                     <CardContent className="pt-2">
-                                        <Textarea
-                                            readOnly
-                                            value={repair.repair_description || ""}
-                                            placeholder="No repair description found"
-                                        />
+                                        <Textarea readOnly value={repair.repair_description || ""} placeholder="No repair description found" />
                                     </CardContent>
                                 </CollapsibleContent>
                             </Collapsible>
@@ -208,65 +185,205 @@ const RepairsCard = ({ truck, repairsIntervalDays = 90 }) => {
         </Card>
     );
 };
-const DocumentsCard = ({ truck }) => {
+
+const DocumentsCard = ({ truck, setTruckData }) => {
     const documents = truck?.docs ?? [];
     const [selectedDoc, setSelectedDoc] = useState(null);
-    return (
-        <>
-            {/* Grid of document previews */}
-            <div className="w-full grid gap-4 grid-cols-1 sm:grid-cols-3 md:grid-cols-5">
-                {documents.map((doc, idx) => (
-                    <Card
-                        key={doc.id || idx}
-                        className="cursor-pointer"
-                        onClick={() => setSelectedDoc(doc)}
-                    >
-                        <CardContent className="space-y-2 flex justify-center">
-                            <PDFPreview
-                                fileUrl={doc}
-                                style={{
-                                    border: "none",
-                                    pointerEvents: "none", // non-interactive
-                                    userSelect: "none",
-                                    display: "block",
-                                }}
-                            />
-                        </CardContent>
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <CardTitle>
-                                {doc ? decodeURIComponent(doc.split("/").pop()) : "Unnamed Document"}
-                            </CardTitle>
-                        </CardHeader>
-                    </Card>
-                ))}
-            </div>
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
+    const [addDialogOpen, setAddDialogOpen] = useState(false);
+    const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
 
-            {/* Modal for fullscreen PDF */}
-            <Dialog
-                open={!!selectedDoc}
-                onOpenChange={(open) => !open && setSelectedDoc(null)}
-            >
+    const handleUpload = async () => {
+        if (!selectedFile) {
+            toast.error("Please select a document first!");
+            return;
+        }
+
+        setUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append("file", selectedFile);
+
+            const uploadRes = await fetch(
+                `https://tst.api.incashy.com/upload/image/trucks/${truck.id}/docs`,
+                { method: "POST", body: formData }
+            );
+            if (!uploadRes.ok) throw new Error("Upload failed");
+            const { url: documentUrl } = await uploadRes.json();
+
+            const addRes = await fetch(
+                `https://tst.api.incashy.com/add/trucks/${truck.id}/docs`,
+                { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ document_url: documentUrl }) }
+            );
+            if (!addRes.ok) throw new Error("Failed to save document to DB");
+
+            // ✅ Refresh documents immediately
+            setTruckData(prev => ({ ...prev, docs: [...(prev.docs ?? []), documentUrl] }));
+
+            toast.success("Document uploaded and added successfully!");
+            setSelectedFile(null);
+            setAddDialogOpen(false);
+        } catch (error) {
+            toast.error(error.message || "Failed to upload document");
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleDelete = async (documentUrl, truckId) => {
+        try {
+            await toast.promise(
+                fetch(`https://tst.api.incashy.com/delete/trucks/${truckId}/docs`, {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ document_url: documentUrl }),
+                }).then(async (res) => {
+                    if (!res.ok) throw new Error("Failed to delete document");
+
+                    // Update local state
+                    setTruckData((prev) => ({
+                        ...prev,
+                        docs: prev.docs.filter((doc) => doc !== documentUrl),
+                    }));
+                }),
+                {
+                    loading: "Deleting document...",
+                    success: "Document deleted successfully!",
+                    error: (err) => err.message || "Failed to delete document",
+                }
+            );
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+
+
+    return (
+        <Card className="gap-4">
+            <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Truck Documents</CardTitle>
+                <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button onClick={() => setAddDialogOpen(true)}>
+                            <IconPlus /> Add Document
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Add Document</DialogTitle>
+                        </DialogHeader>
+                        <div className="mt-4">
+                            <DocUpload onChange={(file) => setSelectedFile(file)} disabled={uploading} />
+                        </div>
+                        <div className="flex justify-end mt-4">
+                            <Button onClick={handleUpload} disabled={uploading || !selectedFile}>
+                                {uploading ? <><IconLoader2 className='animate-spin' />Uploading Document...</> : <><IconUpload /> Upload Document</>}
+                            </Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            </CardHeader>
+
+            <CardContent className="w-full grid gap-4 grid-cols-1 sm:grid-cols-3 md:grid-cols-5 px-4">
+                {documents.length === 0 ? (
+                    <p className="pt-2 pl-2 text-neutral-500 italic">
+                        No documents found for {truck.truck_number}
+                    </p>
+                ) : (
+                    documents.map((doc, idx) => (
+                        <Card
+                            key={doc.id || idx}
+                            className="cursor-pointer"
+                            onClick={() => setSelectedDoc(doc)}
+                        >
+                            <CardContent className="space-y-2 flex justify-center">
+                                <PDFPreview
+                                    fileUrl={doc}
+                                    style={{
+                                        border: "none",
+                                        pointerEvents: "none",
+                                        userSelect: "none",
+                                        display: "block",
+                                    }}
+                                />
+                            </CardContent>
+
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <CardTitle>
+                                    {doc ? decodeURIComponent(doc.split("/").pop()) : "Unnamed Document"}
+                                </CardTitle>
+
+                                <AlertDialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
+                                    <AlertDialogTrigger asChild>
+                                        <Button
+                                            variant="destructive"
+                                            onClick={(e) => {
+                                                e.stopPropagation(); // Prevent opening PDF
+                                                setRemoveDialogOpen(true);
+                                            }}
+                                        >
+                                            <IconTrash />
+                                        </Button>
+                                    </AlertDialogTrigger>
+
+                                    <AlertDialogContent
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Are you sure you want to delete{" "}
+                                                <strong>
+                                                    {doc
+                                                        ? decodeURIComponent(doc.split("/").pop())
+                                                        : "Unnamed Document"}
+                                                </strong>
+                                                ? This action cannot be undone.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
+                                                Cancel
+                                            </AlertDialogCancel>
+                                            <AlertDialogAction
+                                                className="bg-destructive text-white hover:bg-destructive/90"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDelete(doc, truck.id);
+                                                }}
+                                            >
+                                                <IconTrash className="mr-2 h-4 w-4" />
+                                                Delete
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+
+                                </AlertDialog>
+                            </CardHeader>
+                        </Card>
+
+                    ))
+                )}
+            </CardContent>
+
+
+            {/* Fullscreen PDF modal */}
+            <Dialog open={!!selectedDoc} onOpenChange={(open) => !open && setSelectedDoc(null)}>
                 <DialogContent fullscreen>
                     <DialogHeader>
-                        <DialogTitle>
-                            <span>{""}</span>
-                        </DialogTitle>
+                        <DialogTitle><span>{""}</span></DialogTitle>
                     </DialogHeader>
-                    {selectedDoc && (
-                        <embed
-                            src={selectedDoc}
-                            type="application/pdf"
-                            width="100%"
-                            height="100%"
-                        />
-                    )}
+                    {selectedDoc && <embed src={selectedDoc} type="application/pdf" width="100%" height="100%" />}
                 </DialogContent>
             </Dialog>
-        </>
+        </Card>
     )
 };
-export default function TablePage({ params }) {
 
+export default function TablePage({ params }) {
     const { id } = React.use(params);
     const [data, setData] = useState([])
     const [loading, setLoading] = useState(true)
@@ -282,11 +399,8 @@ export default function TablePage({ params }) {
             setLoading(true)
             setError(null)
             try {
-                const res = await fetch(`https://tst.api.incashy.com/get/trucks/${id}`, {
-                    cache: "no-cache"
-                })
+                const res = await fetch(`https://tst.api.incashy.com/get/trucks/${id}`, { cache: "no-cache" })
                 if (!res.ok) throw new Error('Failed to fetch data')
-
                 const data = await res.json()
                 setData(data || null)
             } catch (err) {
@@ -297,99 +411,36 @@ export default function TablePage({ params }) {
         }
         fetchdata()
     }, [])
-    const deleteTruck = async (id) => {
-        try {
-            const res = await fetch(`https://tst.api.incashy.com/delete/trucks/${id}`, {
-                cache: "no-cache",
-                method: "DELETE",
-            });
-
-            if (!res.ok) {
-                const text = await res.text();
-                throw new Error(text || "Failed to delete truck");
-            }
-
-            router.back();
-
-            const data = await res.json();
-            toast.success("Truck deleted successfully!");
-            return data;
-        } catch (err) {
-            console.error("Delete truck error:", err);
-            toast.error(`Error deleting truck: ${err.message}`);
-            throw err;
-        }
-    };
 
     const handleTabChange = (tab) => {
-        if (tab === activeTab) return; // Prevent unnecessary state updates
+        if (tab === activeTab) return;
         setActiveTab(tab);
-
-        if (tab === "info") {
-            // Remove the query for the default tab
-            router.replace(window.location.pathname);
-        } else {
-            // Update query for other tabs
-            router.replace(`?tab=${tab}`);
-        }
+        if (tab === "info") router.replace(window.location.pathname);
+        else router.replace(`?tab=${tab}`);
     };
 
-
-    if (loading) return (
-        <div>
-            <ProfileHeader  name={"Loading..."} role={`Loading...`} />
-            <div className="p-4">
-                <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                    <TabsList>
-                        <TabsTrigger value="info"><span className="p-4">Truck Info</span></TabsTrigger>
-                        <TabsTrigger value="inspections"><span className="p-4">Inspections</span></TabsTrigger>
-                        <TabsTrigger value="repairs"><span className="p-4">Repairs</span></TabsTrigger>
-                        <TabsTrigger value="documents"><span className="p-4">Documents</span></TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="info">
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-                                <ContactCard truck={data} />
-                            </div>
-                        </div>
-                    </TabsContent>
-                </Tabs>
-            </div>
-        </div>
-    )
+    if (loading) return <div><ProfileHeader name="Loading..." role="Loading..." /><div className="p-4">Loading...</div></div>
     if (error) return <div className="text-red-500">Error: {error}</div>
     if (!data || data.length === 0) return <div>No data found for <b>{id}</b>.</div>
 
     return (
         <div>
-            <ProfileHeader id={data.id} table="trucks" image_url={data.image_url} name={data.truck_number} alias={data.truck_alias} role={`Year: ${data.year}`} status={data.status} color={data.color} />
+            <ProfileHeader data={data} id={data.id} table="trucks" image_url={data.image_url} name={data.truck_number} alias={data.truck_alias} role={`Year: ${data.year ?? "N/A"}`} status={data.status} color={data.color} />
             <div className="p-4">
                 <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                    <TabsList>
-                        <TabsTrigger value="info"><span className="p-4">Truck Info</span></TabsTrigger>
-                        <TabsTrigger value="inspections"><span className="p-4">Inspections</span></TabsTrigger>
-                        <TabsTrigger value="repairs"><span className="p-4">Repairs</span></TabsTrigger>
-                        <TabsTrigger value="documents"><span className="p-4">Documents</span></TabsTrigger>
+                    <TabsList className="w-full h-10">
+                        <TabsTrigger value="info"><span className="md:p-4 lg:p-6 xl:p-8">Truck Info</span></TabsTrigger>
+                        <TabsTrigger value="inspections"><span className="md:p-4 lg:p-6 xl:p-8">Inspections</span></TabsTrigger>
+                        <TabsTrigger value="repairs"><span className="md:p-4 lg:p-6 xl:p-8">Repairs</span></TabsTrigger>
+                        <TabsTrigger value="documents"><span className="md:p-4 lg:p-6 xl:p-8">Documents</span></TabsTrigger>
                     </TabsList>
-                    <TabsContent value="info">
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-                                <ContactCard truck={data} />
-                            </div>
-                        </div>
-                    </TabsContent>
-                    <TabsContent value="inspections">
-                        <InspectionsCard truck={data} />
-                    </TabsContent>
-                    <TabsContent value="repairs">
-                        <RepairsCard truck={data} />
-                    </TabsContent>
-                    <TabsContent value="documents">
-                        <DocumentsCard truck={data} />
-                    </TabsContent>
+
+                    <TabsContent value="info"><ContactCard truck={data} /></TabsContent>
+                    <TabsContent value="inspections"><InspectionsCard truck={data} /></TabsContent>
+                    <TabsContent value="repairs"><RepairsCard truck={data} /></TabsContent>
+                    <TabsContent value="documents"><DocumentsCard truck={data} setTruckData={setData} /></TabsContent>
                 </Tabs>
             </div>
-
         </div>
     )
 }

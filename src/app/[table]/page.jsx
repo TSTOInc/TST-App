@@ -2,6 +2,7 @@
 import { notFound } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
 import { DataTable } from "../../components/data-table"
+import Loading from "@/components/custom/Loading"
 const ALLOWED_TABLES = [
     'broker_payment_terms',
     'brokers',
@@ -57,11 +58,7 @@ export default function TablePage({ params }) {
     }, [table])
 
     if (loading) return(
-        <main className="flex flex-col justify-center items-center h-full text-center p-8 flex-grow">
-            <h1 className="text-4xl font-bold mb-4">Loading...</h1>
-            <p className="text-xl mb-8">Fetching data for <b>{table}</b>...</p>
-            
-        </main>
+        <Loading/>
     ) 
     if (error) return <div className="text-red-500">Error: {error}</div>
     if (!data || data.length === 0) return (

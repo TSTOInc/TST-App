@@ -25,7 +25,7 @@ const CompanyCard = ({ company, carrier, broker, agent, driver, truck, equipment
             company.name || company.truck_number || company.equipment_number || "No Name"
         );
 
-        return `https://placehold.co/600x400/C9E4FF/1B6DC1?font=montserrat&text=${fallbackText}`;
+        return `https://placehold.co/600x400/bae6fd/1B6DC1?font=montserrat&text=${fallbackText}`;
     }, [company.image_url, company.website, company.name, company.truck_number, company.equipment_number]);
 
     return (

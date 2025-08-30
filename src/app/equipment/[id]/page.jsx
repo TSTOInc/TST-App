@@ -72,7 +72,7 @@ export default function TablePage({ params }) {
 
     return (
         <div>
-            <ProfileHeader image_url={data.image_url} name={data.equipment_number} role={data.equipment_type} status={data.status} color={data.color} />
+            <ProfileHeader data={data} id={data.id} table={"equipment"} image_url={data.image_url} name={data.equipment_number} role={data.equipment_type} status={data.status} color={data.color} />
             <div className="p-4 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
                     <ContactCard carrier={data} />

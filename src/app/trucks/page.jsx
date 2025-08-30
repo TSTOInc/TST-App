@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react'
 import { DataTable } from "../../components/data-table"
 import CompanyCard from "../../components/custom/company-card"
+import Loading from "@/components/custom/Loading"
 const ALLOWED_TABLES = [
     'broker_payment_terms',
     'brokers',
@@ -39,10 +40,7 @@ const Page = () => {
         fetchBrokers()
     }, [])
 
-    if (loading) return <main className="flex flex-col justify-center items-center h-full text-center p-8 flex-grow">
-        <h1 className="text-8xl font-bold mb-4">Loading...</h1>
-        <p className="text-xl mb-8">Fetching data for <b>Trucks</b>...</p>
-    </main>
+    if (loading) return <Loading/>
     if (error) return <div>Error: {error}</div>
     if (brokers.length === 0) return <div>No trucks available right now.</div>
 

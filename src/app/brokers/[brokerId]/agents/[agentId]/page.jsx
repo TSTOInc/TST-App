@@ -71,7 +71,7 @@ export default function TablePage({ params }) {
 
     return (
         <div>
-            <ProfileHeader id={data.id} table="brokers_agents" name={data.name} company={data.broker[0].name} link={"brokers/" + data.broker_id} website={data.website} status={data.status} />
+            <ProfileHeader data={data} id={data.id} table="brokers_agents" name={data.name} company={data.broker[0].name} link={"brokers/" + data.broker_id} website={data.website} status={data.status} />
             <div className="p-4 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
                     <ContactCard carrier={data} />

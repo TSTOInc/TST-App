@@ -21,9 +21,9 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import DocUpload from "@/components/custom/DocUpload";
 
-
-const stepLabels = ["Info", "Picture"]; // swapped order
+const stepLabels = ["Info", "License", "Picture"]; // swapped order
 const statuses: ComboBoxOption[] = [
   { value: "active", label: "Active" },
   { value: "inactive", label: "Inactive" },
@@ -69,7 +69,7 @@ export default function AddEquipmentForm() {
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
-
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const pictureFile = watch("picture");
 
   useEffect(() => {
@@ -105,6 +105,11 @@ export default function AddEquipmentForm() {
       setCurrentStep(2);
       setCompletedSteps((prev) => (prev.includes(1) ? prev : [...prev, 1]));
     }
+
+    if (currentStep === 2) {
+      setCurrentStep(3);
+      setCompletedSteps((prev) => (prev.includes(2) ? prev : [...prev, 2]));
+    }
   };
 
   const onPrev = () => setCurrentStep((s) => Math.max(s - 1, 1));
@@ -116,8 +121,13 @@ export default function AddEquipmentForm() {
       if (data.picture) {
         imageUrl = await uploadImage(data.picture);
       }
+      let licenseUrl = "";
+      if (selectedFile) {
+        licenseUrl = await uploadImage(selectedFile);
+      }
 
       const payload = {
+        license_url: licenseUrl,
         name: data.name,
         phone: data.phone,
         email: data.email,
@@ -154,7 +164,6 @@ export default function AddEquipmentForm() {
   });
 
   const isDisabled = submitting || uploading;
-
   return (
     <div className="p-6">
       <div className={isDisabled ? "pointer-events-none opacity-60" : "space-y-6"}>
@@ -220,8 +229,15 @@ export default function AddEquipmentForm() {
               />
             </div>
           )}
-
           {currentStep === 2 && (
+            <div className="grid w-full items-center">
+              <div className="flex justify-center">
+                <Label className="text-lg">Upload License</Label>
+              </div>
+              <DocUpload onChange={(file: File) => setSelectedFile(file)} />
+            </div>
+          )}
+          {currentStep === 3 && (
             <div className="grid w-full items-center gap-3">
               <Label htmlFor="picture">Picture</Label>
               <Controller

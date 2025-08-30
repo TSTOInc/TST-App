@@ -40,7 +40,7 @@ const Page = () => {
     }, [])
 
     if (loading) return <main className="flex flex-col justify-center items-center h-full text-center p-8 flex-grow">
-        <h1 className="text-8xl font-bold mb-4">Loading...</h1>
+        <h1 className="text-6xl lg:text-8xl font-bold mb-4">Loading...</h1>
         <p className="text-xl mb-8">Fetching data for <b>Drivers</b>...</p>
     </main>
     if (error) return <div>Error: {error}</div>

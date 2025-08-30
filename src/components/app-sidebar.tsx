@@ -109,6 +109,11 @@ const data = {
   ],
   navSecondary: [
     {
+      title: "Directory",
+      url: "/directory",
+      icon: IconSearch,
+    },
+    {
       title: "Settings",
       url: "#",
       icon: IconSettings,
@@ -118,11 +123,7 @@ const data = {
       url: "#",
       icon: IconHelp,
     },
-    {
-      title: "Directory",
-      url: "/directory",
-      icon: IconSearch,
-    },
+
   ],
 }
 

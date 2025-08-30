@@ -4,7 +4,7 @@
 import React from "react";
 
 const PDFPreview = ({ fileUrl, width = 200 }) => {
-  const pageRatio = 11 / 8.5; // height / width for US Letter
+  const pageRatio = 27.94 / 21.59; // height / width for US Letter
   const height = width * pageRatio;
 
   return (
@@ -14,9 +14,10 @@ const PDFPreview = ({ fileUrl, width = 200 }) => {
       height={height}
       style={{
         border: "none",
-        pointerEvents: "none", // disables all interactions
+        pointerEvents: "none", // disables interaction
         userSelect: "none",
         display: "block",
+        overflow: "hidden", // prevent scrollbar if possible
       }}
     />
   );

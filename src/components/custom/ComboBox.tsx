@@ -25,6 +25,7 @@ type ComboBoxProps = {
   onSelect?: (selected: ComboBoxOption) => void;
   showBadges?: boolean; // whether to display badges
   defaultValue?: ComboBoxOption;
+  className?: string;
 };
 
 export default function ComboBox({
@@ -34,6 +35,7 @@ export default function ComboBox({
   onSelect,
   showBadges = false,
   defaultValue,
+  className,
 }: ComboBoxProps) {
   const [selectedOption, setSelectedOption] = useState<ComboBoxOption | null>(
     defaultValue || null
@@ -51,48 +53,51 @@ export default function ComboBox({
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          className={`inline-flex justify-start w-auto ${maxWidth} px-3`}
-        >
+    <div className={className}>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className={`inline-flex justify-start w-auto ${maxWidth} px-3`}
+          >
 
-          {selectedOption ? (
-            showBadges ? (
-              <Badge status={selectedOption.value} />
+            {selectedOption ? (
+              showBadges ? (
+                <Badge status={selectedOption.value} />
+              ) : (
+                <span className="flex-1 text-left">{selectedOption.label}</span>
+              )
             ) : (
-              <span className="flex-1 text-left">{selectedOption.label}</span>
-            )
-          ) : (
-            <span className="flex-1 text-left">{placeholder}</span>
-          )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="p-0" side="right" align="start">
-        <Command>
-          <CommandInput placeholder={`Search ${placeholder.toLowerCase()}...`} />
-          <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
-            <CommandGroup>
-              {options.map((option) => (
-                <CommandItem
-                  key={option.value}
-                  value={option.value}
-                  onSelect={() => handleSelect(option)}
-                  className="flex items-center gap-2"
-                >
-                  {showBadges && <Badge status={option.value} />}
-                  {!showBadges && option.label}
-                  {showBadges && !option.label.includes(option.value) && (
-                    <span>{option.label}</span>
-                  )}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+              <span className="flex-1 text-left">{placeholder}</span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="p-0" side="right" align="start">
+          <Command>
+            <CommandInput placeholder={`Search ${placeholder.toLowerCase()}...`} />
+            <CommandList>
+              <CommandEmpty>No results found.</CommandEmpty>
+              <CommandGroup>
+                {options.map((option) => (
+                  <CommandItem
+                    key={option.value}
+                    value={option.value}
+                    onSelect={() => handleSelect(option)}
+                    className="flex items-center gap-2"
+                  >
+                    {showBadges && <Badge status={option.value} />}
+                    {!showBadges && option.label}
+                    {showBadges && !option.label.includes(option.value) && (
+                      <span>{option.label}</span>
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </div>
+
   );
 }
