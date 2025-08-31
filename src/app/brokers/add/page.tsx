@@ -2,7 +2,7 @@
 export const dynamic = "force-dynamic";
 
 import * as z from "zod";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import DynamicMultiStepForm, { StepConfig } from "../../../components/forms/DynamicMultiStepForm";
 import { ComboBoxOption } from "@/components/custom/ComboBox";
 import { toast } from "sonner";
@@ -58,12 +58,10 @@ const exampleSchema = z.object({
   website: z.string().optional(),
   picture: z.instanceof(File).optional(),
 });
-
-export default function ExampleUsage() {
+export function ExampleUsage() {
   const searchParams = useSearchParams();
   const [initialValues, setInitialValues] = useState<Record<string, any> | null>(null);
 
-  // Build initialValues on the client
   useEffect(() => {
     setInitialValues({
       name: searchParams.get("name") || "",
@@ -99,8 +97,7 @@ export default function ExampleUsage() {
     );
   };
 
-  // Wait until initialValues are ready on client
-  if (!initialValues) return null;
+  if (!initialValues) return <div>Loading...</div>;
 
   return (
     <DynamicMultiStepForm
@@ -109,5 +106,12 @@ export default function ExampleUsage() {
       initialValues={initialValues}
       onSubmit={handleSubmitApi}
     />
+  );
+}
+export default function Page() {
+  return (
+    <Suspense fallback={<div>Loading form...</div>}>
+      <ExampleUsage />
+    </Suspense>
   );
 }
