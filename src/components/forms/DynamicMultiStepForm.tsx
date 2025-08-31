@@ -1,7 +1,7 @@
 "use client";
 import { toast } from "sonner";
-import React, { useState, useEffect, ReactNode } from "react";
-import { useForm, Controller, FieldValues, UseFormReturn } from "react-hook-form";
+import React, { useState, ReactNode } from "react";
+import { useForm, Controller, FieldValues, UseFormReturn, FieldErrors } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,7 @@ import ProgressStepBar from "@/components/custom/ProgressStepBar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import ComboBox, { ComboBoxOption } from "@/components/custom/ComboBox";
-import { IconLoader2 } from "@tabler/icons-react";
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -35,11 +34,11 @@ export interface DynamicFormField {
   label: string;
   type: FieldType;
   required?: boolean;
-  options?: ComboBoxOption[]; // for combo
+  options?: ComboBoxOption[];
   render?: (props: {
     field: any;
-    form: UseFormReturn<FieldValues>;
-  }) => ReactNode; // for custom
+    form: UseFormReturn<FieldValues, any>;
+  }) => ReactNode;
   defaultValue?: any;
 }
 
@@ -50,7 +49,7 @@ export interface StepConfig {
 
 export interface DynamicMultiStepFormProps {
   steps: StepConfig[];
-  schema: z.ZodSchema<any>;
+  schema: z.ZodType<any, any, any>; // Fix type for zodResolver
   onSubmit: (data: any) => Promise<void> | void;
   initialValues?: Record<string, any>;
   submitButtonText?: string;
@@ -89,12 +88,14 @@ export default function DynamicMultiStepForm({
     control,
     watch,
     trigger,
-    formState: { errors },
+    formState,
     ...formRest
   } = useForm({
     resolver: zodResolver(schema),
     defaultValues: computedDefaults,
   });
+
+  const { errors } = formState as { errors: FieldErrors<FieldValues> }; // Fix formState typing
 
   const [currentStep, setCurrentStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
@@ -103,23 +104,15 @@ export default function DynamicMultiStepForm({
 
   const stepLabels = steps.map((step) => step.label);
 
-  // Handles validation for only fields in the current step
   const onNext = async () => {
     const stepFieldNames = steps[currentStep - 1].fields.map((f) => f.name);
     const valid = await trigger(stepFieldNames);
 
     if (!valid) {
-      // collect missing required field names
-      const missingFields = stepFieldNames.filter(
-        (name) => !!errors[name]
-      ).map((name) => steps[currentStep - 1].fields.find(f => f.name === name)?.label);
-
       toast.error("Please fill out all required fields");
-
-      return; // prevent moving to next step
+      return;
     }
 
-    // advance step if valid
     if (currentStep < steps.length) {
       setCurrentStep((s) => s + 1);
       setCompletedSteps((prev) =>
@@ -128,25 +121,19 @@ export default function DynamicMultiStepForm({
     }
   };
 
-
-
-
   const onPrev = () => setCurrentStep((s) => Math.max(s - 1, 1));
 
   const handleFinalSubmit = handleSubmit(async (data: any) => {
     setSubmitting(true);
     try {
       await onSubmit(data);
-    } catch (err) {
-      // handle error if needed
     } finally {
       setSubmitting(false);
       setOpenDialog(false);
     }
   });
 
-  // Render a field based on type
-  const renderField = (field: DynamicFormField, idx: number) => {
+  const renderField = (field: DynamicFormField) => {
     switch (field.type) {
       case "text":
       case "email":
@@ -192,29 +179,7 @@ export default function DynamicMultiStepForm({
           </div>
         );
       case "file":
-        // You can swap for your own file upload component
-        return (
-          <div key={field.name}>
-            <Label required={field.required}>{field.label}</Label>
-            <Controller
-              name={field.name}
-              control={control}
-              render={({ field: rhfField }) => (
-                <Input
-                  type="file"
-                  onChange={(e) => {
-                    if (e.target.files?.[0]) rhfField.onChange(e.target.files[0]);
-                  }}
-                />
-              )}
-            />
-            {errors[field.name]?.message && (
-              <p className="text-red-500 text-sm">{String(errors[field.name]?.message)}</p>
-            )}
-          </div>
-        );
       case "picture":
-        // Replace with your own ProfilePictureUpload if needed
         return (
           <div key={field.name}>
             <Label required={field.required}>{field.label}</Label>
@@ -224,7 +189,7 @@ export default function DynamicMultiStepForm({
               render={({ field: rhfField }) => (
                 <Input
                   type="file"
-                  accept="image/*"
+                  accept={field.type === "picture" ? "image/*" : undefined}
                   onChange={(e) => {
                     if (e.target.files?.[0]) rhfField.onChange(e.target.files[0]);
                   }}
@@ -252,9 +217,7 @@ export default function DynamicMultiStepForm({
               )}
             />
             {errors[field.name]?.message && (
-              <p className="text-red-500 text-sm">
-                {String(errors[field.name]?.message)}
-              </p>
+              <p className="text-red-500 text-sm">{String(errors[field.name]?.message)}</p>
             )}
           </div>
         );
@@ -263,7 +226,7 @@ export default function DynamicMultiStepForm({
           <div key={field.name}>
             {field.render?.({
               field: control._fields[field.name],
-              form: { handleSubmit, control, watch, trigger, formState: { errors }, ...formRest }
+              form: { handleSubmit, control, watch, trigger, formState, ...formRest },
             })}
           </div>
         );
@@ -285,10 +248,8 @@ export default function DynamicMultiStepForm({
             onStepClick={(step) => step < currentStep && setCurrentStep(step)}
           />
         )}
-        <form className="rounded-lg border p-4" onSubmit={handleSubmit(handleFinalSubmit)}>
-          <div className="grid w-full items-center gap-4">
-            {stepFields.map(renderField)}
-          </div>
+        <form className="rounded-lg border p-4" onSubmit={handleFinalSubmit}>
+          <div className="grid w-full items-center gap-4">{stepFields.map(renderField)}</div>
           <div className="flex justify-between mt-6">
             <Button
               type="button"
@@ -303,20 +264,13 @@ export default function DynamicMultiStepForm({
                 Next
               </Button>
             ) : (
-              <Button
-                type="button"
-                onClick={handleSubmit(handleFinalSubmit)}
-                disabled={submitting || loading}
-              >
-                Submit
+              <Button type="button" onClick={handleFinalSubmit} disabled={submitting || loading}>
+                {submitButtonText}
               </Button>
             )}
-
-
           </div>
         </form>
       </div>
-      {/* Optional: Dialog for missing required (e.g., picture) */}
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogContent>
           <DialogHeader>
