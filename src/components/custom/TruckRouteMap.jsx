@@ -5,7 +5,7 @@ import mapboxgl from "mapbox-gl";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
-export default function TruckRouteMap({ stops }) {
+export default function TruckRouteMap({ stops, progress }) {
   const mapContainer = useRef(null);
 
   useEffect(() => {
@@ -74,7 +74,45 @@ export default function TruckRouteMap({ stops }) {
                 }
               });
             })
+          // Add truck icon layer
+          map.loadImage(
+            "https://img.icons8.com/ios-filled/50/000000/truck.png",
+            (error, image) => {
+              if (error) throw error;
+              map.addImage("truck-icon", image);
 
+              // interpolate along the route
+              const totalPoints = route.coordinates.length;
+              const index = Math.floor(progress * (totalPoints - 1));
+              const truckCoord = route.coordinates[index];
+
+              const truckFeature = {
+                type: "FeatureCollection",
+                features: [
+                  {
+                    type: "Feature",
+                    geometry: { type: "Point", coordinates: truckCoord },
+                  },
+                ],
+              };
+
+              map.addSource("truck", {
+                type: "geojson",
+                data: truckFeature,
+              });
+
+              map.addLayer({
+                id: "truck-layer",
+                type: "symbol",
+                source: "truck",
+                layout: {
+                  "icon-image": "truck-icon",
+                  "icon-size": 0.8,
+                  "icon-allow-overlap": true,
+                },
+              });
+            }
+          );
 
           // Fit map to show all waypoints
           const bounds = new mapboxgl.LngLatBounds();
@@ -85,7 +123,7 @@ export default function TruckRouteMap({ stops }) {
     });
 
     return () => map.remove();
-  }, [stops]);
+  }, [stops, progress]);
 
   return <div ref={mapContainer} style={{ width: "100%", height: "300px" }} />;
 }
