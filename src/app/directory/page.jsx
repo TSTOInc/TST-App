@@ -1,64 +1,73 @@
-"use client"
+"use client";
 export const dynamic = "force-dynamic";
-import React, { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardTitle } from "@/components/ui/card"
-import { IconSearch } from "@tabler/icons-react"
-import Link from "next/link"
-import Loading from "@/components/custom/Loading"
+
+import React, { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
+import { IconSearch } from "@tabler/icons-react";
+import Link from "next/link";
+import Loading from "@/components/custom/Loading";
 
 export default function Page() {
-  const searchParams = useSearchParams()
-  const router = useRouter()
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
-  const initialQuery = searchParams.get("q") || ""
-  const [query, setQuery] = useState(initialQuery) // input value
-  const [results, setResults] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [hasSearched, setHasSearched] = useState(false)
+  const [query, setQuery] = useState(""); // input value
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [ready, setReady] = useState(false); // track if initial query loaded
+
+  // Build initial query safely on client
+  useEffect(() => {
+    const initialQuery = searchParams.get("q") || "";
+    setQuery(initialQuery);
+
+    if (initialQuery) {
+      handleSearch(initialQuery);
+    }
+
+    setReady(true);
+  }, [searchParams]);
+
   // Function to trigger search
   const handleSearch = async (q = query) => {
     if (!q) {
-      setResults([])
-      router.replace("/directory")
-      return
+      setResults([]);
+      router.replace("/directory");
+      return;
     }
 
-    setHasSearched(true)
-    setLoading(true)
-    setError(null)
-    router.replace(`/directory?q=${encodeURIComponent(q)}`)
+    setHasSearched(true);
+    setLoading(true);
+    setError(null);
+    router.replace(`/directory?q=${encodeURIComponent(q)}`);
 
     try {
       const res = await fetch(
         `https://tst.api.incashy.com/fmcsa/get?type=name&q=${encodeURIComponent(q)}`
-      )
-      if (!res.ok) throw new Error("Failed to fetch")
-      const data = await res.json()
-      setResults(data.carriers || [])
+      );
+      if (!res.ok) throw new Error("Failed to fetch");
+      const data = await res.json();
+      setResults(data.carriers || []);
     } catch (err) {
-      setError(err.message)
+      setError(err?.message || "Failed to fetch");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Handle Enter key in input
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
-      handleSearch()
+      handleSearch();
     }
-  }
+  };
 
-  // Trigger search on mount if URL has initial query
-  useEffect(() => {
-    if (initialQuery) {
-      handleSearch(initialQuery)
-    }
-  }, [initialQuery])
+  if (!ready) return <Loading />; // wait until useEffect sets query
 
   return (
     <main className="p-4">
@@ -80,14 +89,20 @@ export default function Page() {
           <IconSearch />
         </Button>
       </div>
+
       {error && <div className="text-red-500">{error}</div>}
+
       <div className="flex-grow flex flex-col justify-center">
         {!hasSearched && results.length === 0 && (
-          <div>Search for any <b>carriers</b> or <b>brokers</b> by name</div>
+          <div>
+            Search for any <b>carriers</b> or <b>brokers</b> by name
+          </div>
         )}
+
         {hasSearched && query && results.length > 0 && (
           <div>Showing {results.length} results for "{query}"</div>
         )}
+
         {hasSearched && query && results.length === 0 && (
           <div className="flex items-center justify-center h-[70vh]">
             {loading && <Loading />}
@@ -100,22 +115,18 @@ export default function Page() {
           </div>
         )}
 
-        {!loading && results.length > 0 && (
+        {!loading && results.length > 0 &&
           results.map((carrier) => (
             <Card key={carrier.dotNumber} className="border-none p-4 bg-transparent">
               <CardContent>
                 <CardTitle>
-                  <Link
-                    href={`/directory/${carrier.dotNumber}`}
-                    className="underline text-xl"
-                  >
+                  <Link href={`/directory/${carrier.dotNumber}`} className="underline text-xl">
                     {carrier.legalName}
                   </Link>
                 </CardTitle>
 
                 <p className="mt-1">
-                  {carrier.phyStreet}, {carrier.phyCity}, {carrier.phyState}{" "}
-                  {carrier.phyZipcode}
+                  {carrier.phyStreet}, {carrier.phyCity}, {carrier.phyState} {carrier.phyZipcode}
                 </p>
 
                 <span className="border rounded-lg p-2 mt-1 inline-block text-sm">
@@ -123,10 +134,8 @@ export default function Page() {
                 </span>
               </CardContent>
             </Card>
-          ))
-        )}
-
+          ))}
       </div>
     </main>
-  )
+  );
 }

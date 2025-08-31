@@ -1,6 +1,8 @@
 "use client";
 export const dynamic = "force-dynamic";
+
 import * as z from "zod";
+import { useState, useEffect } from "react";
 import DynamicMultiStepForm, { StepConfig } from "../../../components/forms/DynamicMultiStepForm";
 import { ComboBoxOption } from "@/components/custom/ComboBox";
 import { toast } from "sonner";
@@ -51,29 +53,30 @@ const exampleSchema = z.object({
   docket_number: z.string().min(1, "Docket required"),
   address: z.string().min(1, "Address required"),
   status: z.string().min(1, "Status required"),
-
   phone: z.string().optional(),
   email: z.string().email("Invalid email").optional(),
   website: z.string().optional(),
-
   picture: z.instanceof(File).optional(),
 });
 
 export default function ExampleUsage() {
   const searchParams = useSearchParams();
+  const [initialValues, setInitialValues] = useState<Record<string, any> | null>(null);
 
-  // Build initialValues from query params
-  const initialValues = {
-    name: searchParams.get("name") || "",
-    usdot_number: searchParams.get("usdot_number") || "",
-    docket_number: searchParams.get("docket_number") || "",
-    address: searchParams.get("address") || "",
-    status: searchParams.get("status") || "active",
-    phone: searchParams.get("phone") || "",
-    email: searchParams.get("email") || "",
-    website: searchParams.get("website") || "",
-    notes: searchParams.get("notes") || "",
-  };
+  // Build initialValues on the client
+  useEffect(() => {
+    setInitialValues({
+      name: searchParams.get("name") || "",
+      usdot_number: searchParams.get("usdot_number") || "",
+      docket_number: searchParams.get("docket_number") || "",
+      address: searchParams.get("address") || "",
+      status: searchParams.get("status") || "active",
+      phone: searchParams.get("phone") || "",
+      email: searchParams.get("email") || "",
+      website: searchParams.get("website") || "",
+      notes: searchParams.get("notes") || "",
+    });
+  }, [searchParams]);
 
   const handleSubmitApi = async (data: any) => {
     const payload = { ...data };
@@ -95,6 +98,9 @@ export default function ExampleUsage() {
       }
     );
   };
+
+  // Wait until initialValues are ready on client
+  if (!initialValues) return null;
 
   return (
     <DynamicMultiStepForm
