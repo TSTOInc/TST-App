@@ -1,5 +1,5 @@
 "use client";
-
+export const dynamic = "force-dynamic"; // <- add this
 import * as z from "zod";
 import DynamicMultiStepForm, { StepConfig } from "../../../components/forms/DynamicMultiStepForm";
 import { ComboBoxOption } from "@/components/custom/ComboBox";
