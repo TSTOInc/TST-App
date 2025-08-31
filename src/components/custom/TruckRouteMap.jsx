@@ -13,7 +13,7 @@ export default function TruckRouteMap({ stops, progress }) {
 
     const map = new mapboxgl.Map({
       container: mapContainer.current,
-      style: "mapbox://styles/angel-dom/cmexufb0a004r01s6cgjrda2s",
+      style: "mapbox://styles/angel-dom/cmez8t10k011701ssgj5uco9c",
       center: [stops[0].lng, stops[0].lat],
       zoom: 4,
       attributionControl: false
@@ -35,14 +35,22 @@ export default function TruckRouteMap({ stops, progress }) {
           });
 
           map.addLayer({
-            id: "route",
-            type: "line",
-            source: "route",
-            layout: { "line-join": "round", "line-cap": "round" },
-            paint: { "line-color": "#0074D9", "line-width": 5 },
-          });
+  id: "route",
+  type: "line",
+  source: "route",
+  layout: {
+    "line-join": "round",
+    "line-cap": "round"
+  },
+  paint: {
+    "line-color": "#0074D9",
+    "line-width": 5,
+    "line-glow-color": "#0074D9", // glow around the line
+    "line-opacity": 1
+  }
+});
           map.loadImage(
-            "https://bxporjcib7gy7ljf.public.blob.vercel-storage.com/resources/marker.png",
+            "https://bxporjcib7gy7ljf.public.blob.vercel-storage.com/resources/pushpin_blue_low.png",
             function (error, image) {
               if (error) throw error;
               map.addImage("custom-marker", image);
@@ -76,7 +84,7 @@ export default function TruckRouteMap({ stops, progress }) {
             })
           // Add truck icon layer
           map.loadImage(
-            "https://img.icons8.com/ios-filled/50/000000/truck.png",
+            "https://bxporjcib7gy7ljf.public.blob.vercel-storage.com/resources/lorry_low.png",
             (error, image) => {
               if (error) throw error;
               map.addImage("truck-icon", image);
