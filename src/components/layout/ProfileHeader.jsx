@@ -146,11 +146,11 @@ export default function ProfileHeader({
                         {/* Left: Text */}
                         <div>
                             <h1 className="text-2xl sm:text-3xl font-bold">
-                                <span>{name} <span className="text-neutral-400 font-semibold italic">{alias} </span></span>
+                                <span>{name} <span className="text-muted-foreground font-semibold italic">{alias} </span></span>
 
                                 {status && <Badge onlyIcon status={status} />}
                             </h1>
-                            <p className="text-neutral-400 text-sm sm:text-base">
+                            <p className="text-muted-foreground text-sm sm:text-base">
                                 {color && <ColorBadge color={color} />}
                                 {role}
                                 {company && (

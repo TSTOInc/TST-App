@@ -9,8 +9,21 @@ import { Separator } from "@/components/ui/separator"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { IconLoader2 } from '@tabler/icons-react'
+import { IconLoader2, IconPlus, IconTrash } from '@tabler/icons-react'
 import { toast } from "sonner"; // or "@/components/ui/sonner" if aliased
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+    Sheet,
+    SheetClose,
+    SheetContent,
+    SheetDescription,
+    SheetFooter,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from "@/components/ui/sheet"
 
 const ContactCard = ({ carrier }) => (
     <Card>
@@ -105,34 +118,218 @@ const LoadsCard = ({ broker }) => {
         </Card>
     );
 };
+
 const PaymentCard = ({ broker }) => {
-    const [showAll, setShowAll] = useState(false);
+    const [showAll, setShowAll] = useState(false)
+    const [selected, setSelected] = useState("standard")
+    const [days, setDays] = useState("3")
+    const [fee, setFee] = useState("3")
+    const [email, setEmail] = useState("")
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
-    const loads = broker?.payment_terms ?? [];
+    const loads = broker?.payment_terms ?? []
+    const loadsToShow = showAll ? loads : loads.slice(0, 3)
 
-    // Limit to 3 unless showAll is true
-    const loadsToShow = showAll ? loads : loads.slice(0, 3);
+    async function fetchTerms() {
+        try {
+            const res = await fetch(`https://tst.api.incashy.com/brokers/${broker.id}`)
+            if (res.ok) {
+                const data = await res.json()
+                setLoads(data.payment_terms ?? [])
+            }
+        } catch (err) {
+            console.error("Failed to refresh terms", err)
+        }
+    }
+
+
+    async function handleAddTerm(closeSheet) {
+        setIsSubmitting(true)
+
+        const payload = {
+            name: selected === "quickpay" ? `QuickPay ${days} Days - ${fee}%` : `Net ${days} days`,
+            days_to_pay: Number(days),
+            fee_percent: selected === "quickpay" ? Number(fee) : 0,
+            is_quickpay: selected === "quickpay",
+            email,
+            broker_id: broker.id,
+        }
+        console.log(payload)
+
+        const promise = fetch("https://tst.api.incashy.com/add/payment_terms", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+        }).then(async (res) => {
+            if (!res.ok) throw new Error("Failed to add term")
+            return res.json()
+        })
+
+        toast.promise(promise, {
+            loading: "Adding payment term...",
+            success: "Payment term added successfully!",
+            error: "Failed to add payment term",
+        })
+
+        try {
+            await promise
+
+        } finally {
+            await fetchTerms()
+            closeSheet() // ✅ close on success
+            setIsSubmitting(false)
+        }
+    }
+
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Broker Pay Terms</CardTitle>
+                <CardTitle className="flex flex-row items-center justify-between">
+                    Broker Pay Terms
+                    <Sheet>
+                        <SheetTrigger asChild>
+                            <Button>
+                                <IconPlus />
+                                Add Term
+                            </Button>
+                        </SheetTrigger>
+                        <SheetContent>
+                            <SheetHeader>
+                                <SheetTitle>Add Term</SheetTitle>
+                                <SheetDescription>
+                                    Add new Payment Term for {broker.name}
+                                </SheetDescription>
+                            </SheetHeader>
+
+                            <div className="grid flex-1 auto-rows-min gap-6 px-4">
+                                <Label htmlFor="days-to-pay">Type of Payment</Label>
+                                <RadioGroup
+                                    value={selected}
+                                    onValueChange={setSelected}
+                                    className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                                >
+                                    {[
+                                        { value: "standard", title: "Standard" },
+                                        { value: "quickpay", title: "Quick Pay" },
+                                    ].map((plan) => (
+                                        <Label
+                                            key={plan.value}
+                                            htmlFor={plan.value}
+                                            className={`${plan.value === selected ? "border-primary" : ""
+                                                } flex items-center gap-3 border p-4 rounded-xl cursor-pointer transition`}
+                                        >
+                                            <RadioGroupItem
+                                                value={plan.value}
+                                                id={plan.value}
+                                                className="peer w-5 h-5 border border-neutral-300 rounded-full checked:bg-primary checked:border-primary flex-shrink-0"
+                                            />
+                                            <div className="flex flex-col">
+                                                <span className="font-medium">{plan.title}</span>
+                                                <span className="text-sm text-muted-foreground font-normal">
+                                                    {plan.description}
+                                                </span>
+                                            </div>
+                                        </Label>
+                                    ))}
+                                </RadioGroup>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="grid gap-3 relative">
+                                        <Label htmlFor="days-to-pay">Day(s) to Pay</Label>
+                                        <Input
+                                            id="days-to-pay"
+                                            value={days}
+                                            onChange={(e) => setDays(e.target.value)}
+                                            className="pr-12"
+                                        />
+                                        <span className="absolute right-3 top-[34px] text-sm text-muted-foreground">
+                                            Day(s)
+                                        </span>
+                                    </div>
+                                    <div className="grid gap-3 relative">
+                                        <Label
+                                            htmlFor="fee-percentage"
+                                            className={selected !== "quickpay" ? "text-muted-foreground" : ""}
+                                        >
+                                            Fee Percentage
+                                        </Label>
+                                        <Input
+                                            id="fee-percentage"
+                                            value={fee}
+                                            onChange={(e) => setFee(e.target.value)}
+                                            className="pr-12"
+                                            disabled={selected !== "quickpay"}
+                                        />
+                                        <span className="absolute right-3 top-[34px] text-sm text-muted-foreground">
+                                            %
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <Label htmlFor="email">Email</Label>
+                                <Input
+                                    id="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="example@email.com"
+                                />
+                            </div>
+
+                            <SheetFooter>
+                                <SheetClose asChild>
+                                    <Button
+                                        type="button"
+                                        disabled={isSubmitting}
+                                        onClick={(e) => {
+                                            e.preventDefault()
+                                            handleAddTerm(() => document.querySelector("[data-state=open] button")?.click())
+                                        }}
+                                    >
+                                        Add Term
+                                    </Button>
+                                </SheetClose>
+                                <SheetClose asChild>
+                                    <Button variant="outline">Cancel</Button>
+                                </SheetClose>
+                            </SheetFooter>
+                        </SheetContent>
+                    </Sheet>
+                </CardTitle>
             </CardHeader>
+
             <CardContent className="space-y-2">
                 {loads.length === 0 ? (
-                    // No agents: show empty card content or a message if you want
-                    <p className="text-neutral-500 italic">no pay terms found for {broker.name}</p>
+                    <p className="text-neutral-500 italic">
+                        no pay terms found for {broker.name}
+                    </p>
                 ) : (
                     <>
-                        {loadsToShow.map((agent, brokerIdx) => (
-                            <Card className="py-4" key={agent.brokerId || brokerIdx}>
+                        {loadsToShow.map((agent, idx) => (
+                            <Card className="py-2" key={agent.brokerId || idx}>
                                 <CardHeader className="flex flex-row items-center justify-between">
-                                    <CardTitle>{agent.name}<span className='text-neutral-400'> | {agent.email}</span></CardTitle>
+                                    <div className="flex flex-col">
+                                        <CardTitle>{agent.name}</CardTitle>
+                                        {agent.email && (
+                                            <p className="text-sm text-muted-foreground">{agent.email}</p>
+                                        )}
+                                    </div>
+
+                                    <Button variant="destructive" size="icon">
+                                        <IconTrash />
+                                    </Button>
                                 </CardHeader>
                             </Card>
+
                         ))}
 
                         {!showAll && loads.length > 3 && (
-                            <Button onClick={() => setShowAll(true)} className="mt-2" variant="outline">
+                            <Button
+                                onClick={() => setShowAll(true)}
+                                className="mt-2"
+                                variant="outline"
+                            >
                                 Show All
                             </Button>
                         )}
@@ -140,8 +337,9 @@ const PaymentCard = ({ broker }) => {
                 )}
             </CardContent>
         </Card>
-    );
-};
+    )
+}
+
 const NotesCard = ({ broker }) => {
     const [notes, setNotes] = useState("");
     const [originalNotes, setOriginalNotes] = useState("");
@@ -257,7 +455,7 @@ export default function TablePage({ params }) {
 
     if (loading) return (
         <div>
-            <ProfileHeader  name={"Loading..."} company={"Loading..."} />
+            <ProfileHeader name={"Loading..."} company={"Loading..."} />
             <div className="p-4 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <ContactCard carrier={data} />

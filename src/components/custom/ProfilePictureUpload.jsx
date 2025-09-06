@@ -21,7 +21,7 @@ export default function ProfilePictureUpload({ onChange }) {
   return (
     <div className="flex flex-col items-center gap-4 p-4">
       {!preview ? (
-        <span className="text-neutral-400 w-1/4 min-w-[200px] aspect-square rounded-full border flex items-center justify-center bg-neutral-900">
+        <span className="text-muted-foreground w-1/4 min-w-[200px] aspect-square rounded-full border flex items-center justify-center bg-neutral-900">
           No picture attached
         </span>
       ) : (

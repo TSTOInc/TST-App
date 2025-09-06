@@ -58,7 +58,7 @@ export default function DocumentDropzone({ onChange, disabled = false }) {
         {!fileInfo ? (
           <>
             <IconUpload size={48} />
-            <span className="mt-2 text-center text-neutral-400">
+            <span className="mt-2 text-center text-muted-foreground">
               {disabled ? "Uploading in progress..." : "Drag & drop a document or click to upload"}
             </span>
           </>

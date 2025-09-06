@@ -267,7 +267,7 @@ const DocumentsCard = ({ truck, setTruckData }) => {
                 <CardTitle>Truck Documents</CardTitle>
                 <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button onClick={() => setAddDialogOpen(true)}>
+                        <Button variant="default">
                             <IconPlus /> Add Document
                         </Button>
                     </DialogTrigger>
@@ -320,10 +320,7 @@ const DocumentsCard = ({ truck, setTruckData }) => {
                                     <AlertDialogTrigger asChild>
                                         <Button
                                             variant="destructive"
-                                            onClick={(e) => {
-                                                e.stopPropagation(); // Prevent opening PDF
-                                                setRemoveDialogOpen(true);
-                                            }}
+                                            onClick={(e) => e.stopPropagation()} // only if you need to prevent parent clicks
                                         >
                                             <IconTrash />
                                         </Button>

@@ -41,8 +41,8 @@ const CompanyCard = ({ company, carrier, broker, agent, driver, truck, equipment
             <CardHeader >
                 <CardTitle className="flex items-center justify-between">
                     {company.name}
-                    {company.equipment_number && <><span>{company.equipment_number}<span className="text-neutral-400 font-normal"> {company.equipment_type}</span> </span></>}
-                    <span>{company.truck_number}<span className="text-neutral-400 font-normal"> {company.truck_alias}</span> </span>
+                    {company.equipment_number && <><span>{company.equipment_number}<span className="text-muted-foreground font-normal"> {company.equipment_type}</span> </span></>}
+                    <span>{company.truck_number}<span className="text-muted-foreground font-normal"> {company.truck_alias}</span> </span>
                     {!agent && <Badge onlyIcon status={company.status} />}
 
                 </CardTitle>

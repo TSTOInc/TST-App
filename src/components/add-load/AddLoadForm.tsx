@@ -11,6 +11,8 @@ import StopsStep from "./StopsStep"
 import LoadDetailsStep from "./LoadDetailsStep"
 import PartiesStep from "./PartiesStep"
 import TagsStep from "./TagsStep"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
 
 const stepLabels = ["Stops", "Load Details", "Parties", "Tags"]
 
@@ -81,6 +83,10 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>
 
 export default function AddLoadForm() {
+
+  const router = useRouter()
+  const [submitting, setSubmitting] = useState(false)
+
   const {
     control,
     handleSubmit,
@@ -177,10 +183,72 @@ export default function AddLoadForm() {
     }
   }
 
-  const onSubmit = (data: FormData) => {
-    console.log("Final Load JSON:", data)
-    toast.success("Form data logged to console")
+  const onSubmit = async (data: FormData) => {
+    const stops = data.stops.map((s) => ({
+      type: s.type,
+      location: s.location,
+      time_type: s.timeType,
+      appointment_time: s.appointmentTime ? s.appointmentTime.toISOString() : null,
+      window_start: s.windowStart ? s.windowStart.toISOString() : null,
+      window_end: s.windowEnd ? s.windowEnd.toISOString() : null,
+    }))
+
+    const payload = {
+      load_number: data.loadDetails.loadNumber,
+      invoice_number: null,
+      load_status: "new",
+      commodity: data.loadDetails.commodity,
+      load_type: data.loadDetails.loadType,
+      length_ft: Number(data.loadDetails.lengthFt),
+      rate: Number(data.loadDetails.rate),
+      payment_terms_id: "bdfa827d-a72b-4bf1-b0e6-473c3f0acb4b",
+      truck_id: data.parties.truck,  // UUID from select
+      equipment_id: data.parties.trailer, // UUID from select
+      broker_id: data.parties.broker, // UUID from select
+      instructions: data.loadDetails.instructions || null,
+      stops: data.stops.map((stop) => ({
+        type: stop.type,
+        location: stop.location,
+        time_type: stop.timeType,
+        appointment_time: stop.appointmentTime ? new Date(stop.appointmentTime).toISOString() : null,
+        window_start: stop.windowStart ? new Date(stop.windowStart).toISOString() : null,
+        window_end: stop.windowEnd ? new Date(stop.windowEnd).toISOString() : null,
+      })),
+      tags: data.tags || [],
+    };
+
+    setSubmitting(true)
+    console.log("Submitting payload:", JSON.stringify(payload))
+    await toast.promise(
+      (async () => {
+        const res = await fetch("https://tst.api.incashy.com/add/loads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        })
+
+        const result = await res.json()
+
+        if (!res.ok) {
+          throw new Error(result.error || "Failed to create load")
+        }
+
+        return result
+      })(),
+      {
+        loading: "Creating load...",
+        success: (res) => {
+          // redirect back to /loads after success
+          router.push("/loads")
+          return `✅ Load created with ID: ${res.load_id}`
+        },
+        error: (err) => `❌ ${err.message}`,
+      }
+    )
+
+    setSubmitting(false)
   }
+
 
   const canAddStop = fields.length < 10
   const canRemoveStop = fields.length > 2
@@ -220,17 +288,17 @@ export default function AddLoadForm() {
         <Button
           type="button"
           variant="outline"
-          disabled={currentStep === 1}
+          disabled={currentStep === 1 || submitting}
           onClick={onPrev}
         >
           Back
         </Button>
         {currentStep < stepLabels.length ? (
-          <Button type="button" onClick={onNext}>
+          <Button type="button" onClick={onNext} disabled={submitting}>
             Next
           </Button>
         ) : (
-          <Button type="submit">Submit</Button>
+          <Button type="submit" disabled={submitting}>Submit</Button>
         )}
       </div>
     </form>

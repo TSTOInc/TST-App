@@ -1,9 +1,23 @@
-import React from "react"
+"use client"
+
+import React, { useEffect, useState, useRef } from "react"
 import { Controller, useFieldArray } from "react-hook-form"
 import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
 
+interface Option {
+  id: string
+  label: string
+}
 
 interface PartiesStepProps {
   control: any
@@ -11,79 +25,154 @@ interface PartiesStepProps {
 }
 
 export default function PartiesStep({ control, errors }: PartiesStepProps) {
+  const [brokers, setBrokers] = useState<Option[]>([])
+  const [drivers, setDrivers] = useState<Option[]>([])
+  const [trucks, setTrucks] = useState<Option[]>([])
+  const [trailers, setTrailers] = useState<Option[]>([])
+  useEffect(() => {
+    const fetchData = async () => {
+      const [broRes, drvRes, trkRes, trlRes] = await Promise.all([
+        fetch("http://tst.api.incashy.com/get/brokers").then((r) => r.json()),
+        fetch("http://tst.api.incashy.com/get/drivers").then((r) => r.json()),
+        fetch("http://tst.api.incashy.com/get/trucks").then((r) => r.json()),
+        fetch("http://tst.api.incashy.com/get/equipment").then((r) => r.json()),
+      ])
+      setBrokers(broRes.map((b: any) => ({ id: b.id, label: `${b.name} - ${b.address} ${b.address_2}` })))
+      setDrivers(drvRes.map((d: any) => ({ id: d.id, label: `${d.name} - ${d.license_number}` })))
+      setTrucks(trkRes.map((t: any) => ({ id: t.id, label: `${t.truck_number} - ${t.make} ${t.model}` })))
+      setTrailers(trlRes.map((t: any) => ({ id: t.id, label: `${t.equipment_number} - ${t.equipment_type.slice(0, 1).toUpperCase() + t.equipment_type.slice(1)}` })))
+    }
+    fetchData()
+  }, [])
+
+  const renderComboBox = (
+    field: any,
+    options: Option[],
+    placeholder: string
+  ) => {
+    const [open, setOpen] = useState(false)
+    const [query, setQuery] = useState("")
+    const ref = useRef<HTMLDivElement>(null)
+
+    const filteredOptions = query
+      ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
+      : options
+
+    // Close if clicked outside
+    useEffect(() => {
+      const handleClickOutside = (e: MouseEvent) => {
+        if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      }
+      document.addEventListener("mousedown", handleClickOutside)
+      return () => document.removeEventListener("mousedown", handleClickOutside)
+    }, [])
+
+    useEffect(() => {
+      if (field.value) {
+        const selected = options.find((o) => o.id === field.value)
+        if (selected) setQuery(selected.label)
+      }
+    }, [field.value, options])
+
+    return (
+      <div className="relative w-full" ref={ref}>
+        <Input
+          placeholder={placeholder}
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            setOpen(true)
+          }}
+          onFocus={() => setOpen(true)}
+        />
+
+        {open && filteredOptions.length > 0 && (
+          <div className="absolute z-50 mt-1 w-full bg-white border rounded shadow max-h-60 overflow-auto">
+            <Command>
+              <CommandList>
+                {filteredOptions.length === 0 ? (
+                  <CommandEmpty>No results found</CommandEmpty>
+                ) : (
+                  <CommandGroup>
+                    {filteredOptions.map((opt) => (
+                      <CommandItem
+                        key={opt.id}
+                        onSelect={() => {
+                          field.onChange(opt.id)
+                          setQuery(opt.label)
+                          setOpen(false)
+                        }}
+                      >
+                        {opt.label}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                )}
+              </CommandList>
+            </Command>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Multi-driver support
   const { fields, append, remove } = useFieldArray({
     control,
-    name: "parties.driver", // now an array
+    name: "parties.driver",
   })
 
-  // Make sure at least 1 driver exists, max 2 drivers
-  React.useEffect(() => {
-    if (fields.length === 0) append("") // start with 1 driver input if empty
+  useEffect(() => {
+    if (fields.length === 0) append("")
   }, [fields.length, append])
 
   return (
     <div className="space-y-4">
-      {/* Broker input stays the same */}
+      {/* Broker */}
       <Controller
         name="parties.broker"
         control={control}
-        render={({ field }) => (
-          <>
-            <Input {...field} placeholder="Broker" autoComplete="off" />
-            {errors.parties?.broker && (
-              <p className="text-xs text-red-600 mt-1">
-                {errors.parties.broker.message}
-              </p>
-            )}
-          </>
-        )}
+        render={({ field }) => renderComboBox(field, brokers, "Broker")}
       />
+      {errors.parties?.broker && (
+        <p className="text-xs text-red-600 mt-1">{errors.parties.broker.message}</p>
+      )}
 
-      {/* Drivers inputs as an array, max 2 */}
-      <div>
-        <Label>Drivers (max 2)</Label>
-        {fields.map((field, idx) => (
-          <div key={field.id} className="flex items-center gap-2 mt-1">
-            <Controller
-              name={`parties.driver.${idx}`}
-              control={control}
-              render={({ field }) => (
-                <Input {...field} placeholder={`Driver #${idx + 1}`} autoComplete="off" />
-              )}
-            />
-            {fields.length > 1 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                type="button"
-                onClick={() => remove(idx)}
-                aria-label={`Remove driver ${idx + 1}`}
-              >
-                ✕
-              </Button>
+      {/* Drivers */}
+      <div className="space-y-2">
+        {fields.map((fieldItem, idx) => (
+          <Controller
+            key={fieldItem.id}
+            name={`parties.driver.${idx}`}
+            control={control}
+            render={({ field }) => (
+              <div className="flex items-center gap-2">
+                {renderComboBox(field, drivers, `Driver #${idx + 1}`)}
+                {fields.length > 1 && (
+                  <Button
+                    variant="ghost"
+                    className="text-neutral-600 hover:text-red-600 font-bold"
+                    onClick={() => remove(idx)}
+                  >
+                    ✕
+                  </Button>
+                )}
+              </div>
             )}
-          </div>
+          />
         ))}
-        {fields.length < 2 && (
+        {errors.parties?.drivers && (
+          <p className="text-xs text-red-600 mt-1">{errors.parties.drivers.message}</p>
+        )}
+        {fields.length < 2 ? (
           <Button
             type="button"
-            size="sm"
             onClick={() => append("")}
-            className="mt-2"
           >
             Add Driver
           </Button>
-        )}
-        {errors.parties?.driver && typeof errors.parties.driver === "object" && (
-          <div className="space-y-1 mt-1">
-            {errors.parties.driver.map((err: any, i: number) =>
-              err ? (
-                <p key={i} className="text-xs text-red-600">
-                  Driver #{i + 1}: {err.message}
-                </p>
-              ) : null
-            )}
-          </div>
+        ) : (
+          null
         )}
       </div>
 
@@ -91,33 +180,21 @@ export default function PartiesStep({ control, errors }: PartiesStepProps) {
       <Controller
         name="parties.truck"
         control={control}
-        render={({ field }) => (
-          <>
-            <Input {...field} placeholder="Truck" autoComplete="off" />
-            {errors.parties?.truck && (
-              <p className="text-xs text-red-600 mt-1">
-                {errors.parties.truck.message}
-              </p>
-            )}
-          </>
-        )}
+        render={({ field }) => renderComboBox(field, trucks, "Truck")}
       />
+      {errors.parties?.truck && (
+        <p className="text-xs text-red-600 mt-1">{errors.parties.truck.message}</p>
+      )}
 
       {/* Trailer */}
       <Controller
         name="parties.trailer"
         control={control}
-        render={({ field }) => (
-          <>
-            <Input {...field} placeholder="Trailer" autoComplete="off" />
-            {errors.parties?.trailer && (
-              <p className="text-xs text-red-600 mt-1">
-                {errors.parties.trailer.message}
-              </p>
-            )}
-          </>
-        )}
+        render={({ field }) => renderComboBox(field, trailers, "Trailer")}
       />
+      {errors.parties?.trailer && (
+        <p className="text-xs text-red-600 mt-1">{errors.parties.trailer.message}</p>
+      )}
     </div>
   )
 }

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Truck, FileText, CircleCheckBig, MapPin } from "lucide-react";
+import { Truck, FileText, CircleCheckBig, MapPin, Undo2, CircleArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner"
 
 export default function TruckProgressSlider({ stops, currentStep: initialStep = 0, onStepChange }) {
   // Read from localStorage OR fallback to initialStep
@@ -22,8 +23,8 @@ export default function TruckProgressSlider({ stops, currentStep: initialStep = 
   }, [currentStep, onStepChange]);
 
   const stepActions = [
-    { id: "inTransit-start", label: "Arrived at Pickup" },
-    { id: "pickup", label: "Picked up the load" },
+    { id: "inTransit-start", label: "On route to Pickup" },
+    { id: "pickup", label: "Arrived at Pickup" },
     { id: "pickedUp", label: "On route to Delivery" },
     { id: "deliveryArrived", label: "Arrived at Delivery" },
     { id: "delivered", label: "Delivered the load" },
@@ -54,10 +55,10 @@ export default function TruckProgressSlider({ stops, currentStep: initialStep = 
     stop.appointment_time
       ? new Date(stop.appointment_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
       : stop.window_start && stop.window_end
-      ? `${new Date(stop.window_start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${new Date(
+        ? `${new Date(stop.window_start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${new Date(
           stop.window_end
         ).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-      : "";
+        : "";
 
   const handleNextStep = () => {
     const next = Math.min(currentStep + 1, stopCount - 1);
@@ -86,26 +87,26 @@ export default function TruckProgressSlider({ stops, currentStep: initialStep = 
       return isCompleted
         ? "Picked up"
         : isActive
-        ? "On site at Pickup"
-        : stop.appointment_time || stop.window_start
-        ? (
-          <>
-            Pickup at <br /> {formatTime(stop)}
-          </>
-        )
-        : "";
+          ? "On site at Pickup"
+          : stop.appointment_time || stop.window_start
+            ? (
+              <>
+                Pickup at <br /> {formatTime(stop)}
+              </>
+            )
+            : "";
     if (stop.type === "delivery")
       return isCompleted
         ? "Delivered"
         : isActive
-        ? "On site at Delivery"
-        : stop.appointment_time || stop.window_start
-        ? (
-          <>
-            Delivery at <br /> {formatTime(stop)}
-          </>
-        )
-        : "";
+          ? "On site at Delivery"
+          : stop.appointment_time || stop.window_start
+            ? (
+              <>
+                Delivery at <br /> {formatTime(stop)}
+              </>
+            )
+            : "";
     if (stop.type === "inTransit") return isActive ? "In Transit" : "";
     if (stop.type === "invoicing") return isActive ? "Invoicing" : "";
     if (stop.type === "Invoice") return isActive ? "Invoiced" : "Invoice";
@@ -173,15 +174,69 @@ export default function TruckProgressSlider({ stops, currentStep: initialStep = 
         </div>
       </div>
 
-      <div className="flex justify-center mt-8">
-        <motion.div whileTap={{ scale: 0.95 }}>
+      <div className="flex justify-center mt-8 gap-4">
+        <motion.div whileTap={currentStep === 0 ? undefined : { scale: 0.95 }}>
+          <Button
+            onClick={() => {
+              setCurrentStep((prev) => Math.max(prev - 1, 0));
+
+              toast.error(`Went back to ${stepActions[currentStep - 1]?.label || "On Route to Pickup"}`, {
+                duration: 10000,
+                action: {
+                  label: "Undo",
+                  onClick: () => {
+                    setCurrentStep((prev) => Math.max(prev + 1, 0));
+                  },
+                },
+              });
+            }}
+            disabled={currentStep === 0}
+            className="bg-transparent font-normal text-white hover:text-red-600 border border-transparent hover:border-red-600 hover:bg-transparent transition-all"
+          >
+            <Undo2 />
+            Go Back
+          </Button>
+        </motion.div>
+        <motion.div whileTap={currentStep === stopCount - 1 ? undefined : { scale: 0.95 }}>
+
           <Button
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 shadow-lg transition-all"
-            onClick={handleNextStep}
+            onClick={() => {
+              handleNextStep();
+
+              const now = new Date();
+              const formattedDate = now.toLocaleDateString("en-US", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "2-digit",
+              });
+              const formattedTime = now.toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              });
+
+              toast.success(`${stepActions[currentStep + 1]?.label || "Completed"}`, {
+                description: `On ${formattedDate} at ${formattedTime}`,
+                duration: 10000,
+                action: {
+                  label: "Undo",
+                  onClick: () => {
+                    setCurrentStep((prev) => Math.max(prev - 1, 0));
+                  },
+                },
+              });
+            }}
             disabled={currentStep === stopCount - 1}
           >
             {stepActions[currentStep + 1]?.label || "Completed"}
+            {currentStep === stopCount - 1 ? "" : <CircleArrowRight />}
+
           </Button>
+
+
+
         </motion.div>
       </div>
     </div>
