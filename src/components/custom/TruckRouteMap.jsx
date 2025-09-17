@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
@@ -19,10 +20,16 @@ export default function TruckRouteMap({ stops, progress }) {
       attributionControl: false,
     });
 
-    const coordinates = stops.map((s) => `${s.lng},${s.lat}`).join(";");
-    const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coordinates}?geometries=geojson&overview=full&steps=true&access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`;
+    // ✅ Add built-in controls
+    map.addControl(new mapboxgl.NavigationControl(), "top-right"); // zoom + rotation
+    map.addControl(new mapboxgl.FullscreenControl(), "top-right"); // fullscreen
+    map.addControl(new mapboxgl.ScaleControl({ maxWidth: 100, unit: "imperial" }), "bottom-right"); // scale bar
+    
 
     map.on("load", () => {
+      const coordinates = stops.map((s) => `${s.lng},${s.lat}`).join(";");
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coordinates}?geometries=geojson&overview=full&steps=true&access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`;
+
       fetch(url)
         .then((res) => res.json())
         .then((data) => {
@@ -38,7 +45,7 @@ export default function TruckRouteMap({ stops, progress }) {
             paint: { "line-color": "#0074D9", "line-width": 5 },
           });
 
-          // Add a truck icon
+          // Truck icon
           map.loadImage(
             "https://bxporjcib7gy7ljf.public.blob.vercel-storage.com/resources/lorry_low.png",
             (err, image) => {
@@ -47,11 +54,13 @@ export default function TruckRouteMap({ stops, progress }) {
               const totalPoints = route.coordinates.length;
               const index = Math.floor(progress * (totalPoints - 1));
               const truckCoord = route.coordinates[index];
-              const truckFeature = {
-                type: "FeatureCollection",
-                features: [{ type: "Feature", geometry: { type: "Point", coordinates: truckCoord } }],
-              };
-              map.addSource("truck", { type: "geojson", data: truckFeature });
+              map.addSource("truck", {
+                type: "geojson",
+                data: {
+                  type: "FeatureCollection",
+                  features: [{ type: "Feature", geometry: { type: "Point", coordinates: truckCoord } }],
+                },
+              });
               map.addLayer({
                 id: "truck-layer",
                 type: "symbol",
@@ -61,16 +70,14 @@ export default function TruckRouteMap({ stops, progress }) {
             }
           );
 
-          // Waypoints with stop type label
-          const features = stops.map((stop, i) => ({
+          // Waypoints
+          const features = stops.map((stop) => ({
             type: "Feature",
             geometry: { type: "Point", coordinates: [stop.lng, stop.lat] },
             properties: { label: stop.type || "Stop" },
           }));
-
           map.addSource("waypoints", { type: "geojson", data: { type: "FeatureCollection", features } });
 
-          // Load custom marker
           map.loadImage(
             "https://bxporjcib7gy7ljf.public.blob.vercel-storage.com/resources/pushpin_blue_low.png",
             (err, image) => {
@@ -89,17 +96,85 @@ export default function TruckRouteMap({ stops, progress }) {
                 },
                 paint: {
                   "text-color": "#ffffff",
-                  "text-halo-color": "#444444", 
-                  "text-halo-width": 1,        
+                  "text-halo-color": "#444444",
+                  "text-halo-width": 1,
                 },
               });
             }
           );
 
-          // Fit map to bounds
+          // Fit bounds
           const bounds = new mapboxgl.LngLatBounds();
           stops.forEach((stop) => bounds.extend([stop.lng, stop.lat]));
           map.fitBounds(bounds, { padding: 50 });
+
+          // ✅ Add Satellite toggle
+          map.addSource("mapbox-satellite", {
+            type: "raster",
+            tiles: [
+              `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token=${mapboxgl.accessToken}`,
+            ],
+            tileSize: 256,
+          });
+          map.addLayer(
+            { id: "satellite", type: "raster", source: "mapbox-satellite", layout: { visibility: "none" } },
+            "route" // place below route layer
+          );
+
+          // ✅ Simple button to toggle satellite layer
+          const toggleButton = document.createElement("button");
+          toggleButton.style.color = "black";
+          toggleButton.style.cursor = "pointer";
+          toggleButton.style.borderRadius = "4px";
+          toggleButton.textContent = "🛰️";
+          toggleButton.style.position = "absolute";
+          toggleButton.style.top = "10px";
+          toggleButton.style.left = "10px";
+          toggleButton.style.zIndex = 1;
+          toggleButton.style.background = "#fff";
+          toggleButton.style.padding = "5px 10px";
+          toggleButton.style.border = "1px solid #ccc";
+          toggleButton.onclick = () => {
+            const visibility = map.getLayoutProperty("satellite", "visibility");
+            map.setLayoutProperty("satellite", "visibility", visibility === "visible" ? "none" : "visible");
+          };
+          map.getContainer().appendChild(toggleButton);
+
+          // ✅ 3D Buildings button
+          const threeDButton = document.createElement("button");
+          threeDButton.style.color = "black";
+          threeDButton.style.cursor = "pointer";
+          threeDButton.style.fontWeight = "bold";
+          threeDButton.style.borderRadius = "4px";
+          threeDButton.textContent = "🏙️ 3D";
+          threeDButton.style.position = "absolute";
+          threeDButton.style.top = "50px";
+          threeDButton.style.left = "10px";
+          threeDButton.style.zIndex = 1;
+          threeDButton.style.background = "#fff";
+          threeDButton.style.padding = "5px 10px";
+          threeDButton.style.border = "1px solid #ccc";
+          threeDButton.onclick = () => {
+            if (!map.getLayer("3d-buildings")) {
+              map.addLayer({
+                id: "3d-buildings",
+                source: "composite",
+                "source-layer": "building",
+                filter: ["==", "extrude", "true"],
+                type: "fill-extrusion",
+                minzoom: 15,
+                paint: {
+                  "fill-extrusion-color": "#aaa",
+                  "fill-extrusion-height": ["get", "height"],
+                  "fill-extrusion-base": ["get", "min_height"],
+                  "fill-extrusion-opacity": 0.6,
+                },
+              });
+            } else {
+              map.removeLayer("3d-buildings");
+            }
+          };
+          map.getContainer().appendChild(threeDButton);
         })
         .catch((err) => console.error("Mapbox Directions API error:", err));
     });
@@ -107,5 +182,5 @@ export default function TruckRouteMap({ stops, progress }) {
     return () => map.remove();
   }, [stops, progress]);
 
-  return <div ref={mapContainer} style={{ width: "100%", height: "300px" }} />;
+  return <div ref={mapContainer} style={{ width: "100%", height: "300px", position: "relative" }} />;
 }

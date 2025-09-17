@@ -23,9 +23,10 @@ type ComboBoxProps = {
   placeholder?: string;
   maxWidth?: string;
   onSelect?: (selected: ComboBoxOption) => void;
-  showBadges?: boolean; // whether to display badges
+  showBadges?: boolean;
   defaultValue?: ComboBoxOption;
   className?: string;
+  disabled?: boolean; // ✅ NEW
 };
 
 export default function ComboBox({
@@ -36,6 +37,7 @@ export default function ComboBox({
   showBadges = false,
   defaultValue,
   className,
+  disabled = false, // ✅ default false
 }: ComboBoxProps) {
   const [selectedOption, setSelectedOption] = useState<ComboBoxOption | null>(
     defaultValue || null
@@ -54,13 +56,13 @@ export default function ComboBox({
 
   return (
     <div className={className}>
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open && !disabled} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
+            disabled={disabled} // ✅ disable trigger
             className={`inline-flex justify-start w-auto ${maxWidth} px-3`}
           >
-
             {selectedOption ? (
               showBadges ? (
                 <Badge status={selectedOption.value} />
@@ -72,32 +74,33 @@ export default function ComboBox({
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="p-0" side="right" align="start">
-          <Command>
-            <CommandInput placeholder={`Search ${placeholder.toLowerCase()}...`} />
-            <CommandList>
-              <CommandEmpty>No results found.</CommandEmpty>
-              <CommandGroup>
-                {options.map((option) => (
-                  <CommandItem
-                    key={option.value}
-                    value={option.value}
-                    onSelect={() => handleSelect(option)}
-                    className="flex items-center gap-2"
-                  >
-                    {showBadges && <Badge status={option.value} />}
-                    {!showBadges && option.label}
-                    {showBadges && !option.label.includes(option.value) && (
-                      <span>{option.label}</span>
-                    )}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
+        {!disabled && (
+          <PopoverContent className="p-0" side="right" align="start">
+            <Command>
+              <CommandInput placeholder={`Search ${placeholder.toLowerCase()}...`} />
+              <CommandList>
+                <CommandEmpty>No results found.</CommandEmpty>
+                <CommandGroup>
+                  {options.map((option) => (
+                    <CommandItem
+                      key={option.value}
+                      value={option.value}
+                      onSelect={() => handleSelect(option)}
+                      className="flex items-center gap-2"
+                    >
+                      {showBadges && <Badge status={option.value} />}
+                      {!showBadges && option.label}
+                      {showBadges && !option.label.includes(option.value) && (
+                        <span>{option.label}</span>
+                      )}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        )}
       </Popover>
     </div>
-
   );
 }

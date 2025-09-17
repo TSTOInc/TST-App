@@ -76,6 +76,7 @@ const formSchema = z.object({
       .max(2, "Maximum two drivers allowed"),
     truck: z.string().min(1, "Truck required"),
     trailer: z.string().min(1, "Trailer required"),
+    paymentTerms: z.string().min(1, "Payment terms required"), // NEW
   }),
   tags: z.array(z.string()).optional(),
 })
@@ -129,8 +130,11 @@ export default function AddLoadForm() {
         driver: [""],
         truck: "",
         trailer: "",
+        paymentTerms: "", // <-- REQUIRED!
       },
+
       tags: [],
+
     },
   })
 
@@ -201,7 +205,7 @@ export default function AddLoadForm() {
       load_type: data.loadDetails.loadType,
       length_ft: Number(data.loadDetails.lengthFt),
       rate: Number(data.loadDetails.rate),
-      payment_terms_id: "bdfa827d-a72b-4bf1-b0e6-473c3f0acb4b",
+      payment_terms_id: data.parties.paymentTerms,
       truck_id: data.parties.truck,  // UUID from select
       equipment_id: data.parties.trailer, // UUID from select
       broker_id: data.parties.broker, // UUID from select

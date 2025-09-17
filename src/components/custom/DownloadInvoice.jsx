@@ -6,7 +6,7 @@ import { IconLoader2 } from "@tabler/icons-react";
 
 // Default invoice payload
 const defaultInvoice = {
-    id: "782",
+    id: "001",
     date: "2025-08-29T00:00:00.000Z",
     carrier: {
         name: "Three Stars Transport Inc",
@@ -57,7 +57,7 @@ const constructInvoicePayload = (data) => {
     return {
         id: data.invoice_number || defaultInvoice.id,
         load_number: data.load_number || "",
-        date: data.created_at || new Date().toISOString(),
+        date: data.invoiced_at || new Date().toISOString(),
         carrier: {
             name: "Three Stars Transport Inc",
             address: "1427 Evanwood Ave",
