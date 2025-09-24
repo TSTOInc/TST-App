@@ -34,6 +34,14 @@ const badgeVariants = cva(
           "text-foreground hover:bg-accent hover:text-accent-foreground",
       },
       status: {
+        at_pickup:
+          "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100",
+        in_transit:
+          "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100",
+        delivered:
+          "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100",
+        invoiced:
+          "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100",
         received:
           "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100",
         reviewing:
@@ -74,6 +82,10 @@ const badgeVariants = cva(
 
 // Step 1: Define status keys as a const tuple
 const statusKeys = [
+  "at_pickup",
+  "in_transit",
+  "delivered",
+  "invoiced",
   "received",
   "reviewing",
   "approved",
@@ -96,6 +108,16 @@ type StatusKey = (typeof statusKeys)[number]
 
 // Step 3: Maps with StatusKey typings
 const statusIconMap: Record<StatusKey, React.ReactNode> = {
+  at_pickup: (<IconCircleDashed className="h-4 w-4 text-blue-500 dark:text-blue-300" />),
+  in_transit: (
+    <IconLoader2 className="h-4 w-4 animate-spin text-orange-500 dark:text-orange-300" />
+  ),
+  delivered: (
+    <IconCircleCheckFilled className="h-4 w-4 text-green-500 dark:text-green-300" />
+  ),
+  invoiced: (
+    <IconCash className="h-4 w-4 text-yellow-500 dark:text-yellow-300" />
+  ),
   received: (
     <IconCircleDashed className="h-4 w-4 text-blue-500 dark:text-blue-300" />
   ),
@@ -144,6 +166,10 @@ const statusIconMap: Record<StatusKey, React.ReactNode> = {
 }
 
 const statusTooltipMap: Record<StatusKey, string> = {
+  at_pickup: "At pickup location.",
+  in_transit: "In transit.",
+  delivered: "Delivered to destination.",
+  invoiced: "Invoice has been sent.",
   received: "Received your documents.",
   reviewing: "Reviewing documents.",
   approved: "Approved. Funding is on the way.",
@@ -182,10 +208,9 @@ const Badge: React.FC<BadgeProps> = ({
   const Component = asChild ? Slot : "span"
 
   const icon = status && statusIconMap[status as StatusKey] || null
-  const label =
-    status && statusTooltipMap[status as StatusKey]
-      ? status.charAt(0).toUpperCase() + status.slice(1)
-      : children
+  const label = status && statusTooltipMap[status as StatusKey]
+    ? status.split("_").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ")
+    : children;
 
   const tooltipText = status
     ? statusTooltipMap[status as StatusKey] || (typeof children === "string" ? children : "")

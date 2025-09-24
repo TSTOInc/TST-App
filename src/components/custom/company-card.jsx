@@ -34,7 +34,7 @@ const CompanyCard = ({ company, carrier, broker, agent, driver, truck, equipment
                 <img
                     src={imageUrl}
                     alt="company Image"
-                    className="h-46 w-full object-cover mb-4 rounded-md"
+                    className="h-46 w-full object-cover mb-4 rounded-md bg-neutral-950"
                 />
             </CardContent>
 

@@ -76,27 +76,54 @@ export default function ExampleUsage() {
       notes: searchParams.get("notes") || "",
     });
   }, [searchParams]);
+  async function uploadFile(file: File): Promise<string> {
+    // Example: Uploading to a storage service and returning the public URL
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch("https://tst.api.incashy.com/upload/image/brokers", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!res.ok) throw new Error("File upload failed");
+
+    const data = await res.json();
+    return data.url; // URL of uploaded file
+  }
 
   const handleSubmitApi = async (data: any) => {
-    const payload = { ...data };
-    delete payload.picture;
+    try {
+      let pictureUrl = null;
 
-    await toast.promise(
-      fetch("https://tst.api.incashy.com/add/brokers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      }).then(async (res) => {
-        if (!res.ok) throw new Error("Failed to submit");
-        return res.json();
-      }),
-      {
-        loading: "Submitting...",
-        success: "Submitted successfully!",
-        error: (err: any) => err?.message || "Submission failed",
+      if (data.picture) {
+        // Upload the picture first
+        pictureUrl = await uploadFile(data.picture);
       }
-    );
+
+      // Prepare payload without the file
+      const payload = { ...data, image_url: pictureUrl };
+
+      await toast.promise(
+        fetch("https://tst.api.incashy.com/add/brokers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }).then(async (res) => {
+          if (!res.ok) throw new Error("Failed to submit");
+          return res.json();
+        }),
+        {
+          loading: "Submitting...",
+          success: "Submitted successfully!",
+          error: (err: any) => err?.message || "Submission failed",
+        }
+      );
+    } catch (err: any) {
+      toast.error(err.message || "Something went wrong");
+    }
   };
+
 
   if (!initialValues) return <div>Loading...</div>;
 

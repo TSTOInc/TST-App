@@ -1,5 +1,6 @@
 "use client";
 
+import { useTheme } from "@/components/theme-provider";
 import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -7,14 +8,18 @@ import "mapbox-gl/dist/mapbox-gl.css";
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
 export default function TruckRouteMap({ stops, progress }) {
+  const { theme } = useTheme();
   const mapContainer = useRef(null);
-
+  const styleUrl =
+    theme === "dark"
+      ? "mapbox://styles/angel-dom/cmez8t10k011701ssgj5uco9c" // your dark style
+      : "mapbox://styles/angel-dom/cmfsxqoz900a301s0gzp917we"; // your light style
   useEffect(() => {
     if (stops.length < 2) return;
 
     const map = new mapboxgl.Map({
       container: mapContainer.current,
-      style: "mapbox://styles/angel-dom/cmez8t10k011701ssgj5uco9c",
+      style: styleUrl,
       center: [stops[0].lng, stops[0].lat],
       zoom: 4,
       attributionControl: false,
@@ -24,7 +29,7 @@ export default function TruckRouteMap({ stops, progress }) {
     map.addControl(new mapboxgl.NavigationControl(), "top-right"); // zoom + rotation
     map.addControl(new mapboxgl.FullscreenControl(), "top-right"); // fullscreen
     map.addControl(new mapboxgl.ScaleControl({ maxWidth: 100, unit: "imperial" }), "bottom-right"); // scale bar
-    
+
 
     map.on("load", () => {
       const coordinates = stops.map((s) => `${s.lng},${s.lat}`).join(";");
@@ -78,6 +83,8 @@ export default function TruckRouteMap({ stops, progress }) {
           }));
           map.addSource("waypoints", { type: "geojson", data: { type: "FeatureCollection", features } });
 
+          map.getStyle().glyphs ||= "mapbox://fonts/mapbox/{fontstack}/{range}.pbf";
+
           map.loadImage(
             "https://bxporjcib7gy7ljf.public.blob.vercel-storage.com/resources/pushpin_blue_low.png",
             (err, image) => {
@@ -89,10 +96,11 @@ export default function TruckRouteMap({ stops, progress }) {
                 source: "waypoints",
                 layout: {
                   "icon-image": "custom-marker",
-                  "text-field": ["get", "label"],
+                  "text-field": ["get", "label"],  // keep your labels
                   "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
                   "text-offset": [0, 1.5],
                   "text-anchor": "bottom",
+                  "icon-allow-overlap": true,
                 },
                 paint: {
                   "text-color": "#ffffff",
@@ -180,7 +188,7 @@ export default function TruckRouteMap({ stops, progress }) {
     });
 
     return () => map.remove();
-  }, [stops, progress]);
+  }, [stops, progress, theme]);
 
   return <div ref={mapContainer} style={{ width: "100%", height: "300px", position: "relative" }} />;
 }

@@ -26,60 +26,87 @@ interface PartiesStepProps {
 
 export default function PartiesStep({ control, errors }: PartiesStepProps) {
   const [brokers, setBrokers] = useState<Option[]>([])
-  const [payment_terms, setPaymentTerms] = useState<Option[]>([])
+  const [paymentTerms, setPaymentTerms] = useState<Option[]>([])
   const [drivers, setDrivers] = useState<Option[]>([])
   const [trucks, setTrucks] = useState<Option[]>([])
   const [trailers, setTrailers] = useState<Option[]>([])
 
-  // Fetch lookups
-  useEffect(() => {
-    const fetchData = async () => {
-      const [broRes, ptRes, drvRes, trkRes, trlRes] = await Promise.all([
-        fetch("http://tst.api.incashy.com/get/brokers").then((r) => r.json()),
-        fetch("http://tst.api.incashy.com/get/payment_terms").then((r) => r.json()),
-        fetch("http://tst.api.incashy.com/get/drivers").then((r) => r.json()),
-        fetch("http://tst.api.incashy.com/get/trucks").then((r) => r.json()),
-        fetch("http://tst.api.incashy.com/get/equipment").then((r) => r.json()),
-      ])
+  // Normalize API response
+  const normalize = (res: any) => (Array.isArray(res) ? res : res?.data || [])
 
+  // Fetch lookups
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const endpoints = {
+        brokers: "https://tst.api.incashy.com/get/brokers",
+        paymentTerms: "https://tst.api.incashy.com/get/payment_terms",
+        drivers: "https://tst.api.incashy.com/get/drivers",
+        trucks: "https://tst.api.incashy.com/get/trucks",
+        trailers: "https://tst.api.incashy.com/get/equipment",
+      }
+
+      const results = await Promise.all(
+        Object.entries(endpoints).map(async ([key, url]) => {
+          const res = await fetch(url)
+          const json = await res.json()
+          console.log(`=== ${key.toUpperCase()} RAW JSON ===`, json)
+          return [key, json] as const
+        })
+      )
+
+      // turn into an object like { brokers: [...], drivers: [...] }
+      const data = Object.fromEntries(results)
+
+      // normalize + set state
       setBrokers(
-        broRes.map((b: any) => ({
-          id: b.id,
-          label: `${b.name} - ${b.address} ${b.address_2 || ""}`,
+        (Array.isArray(data.brokers) ? data.brokers : data.brokers?.data || []).map((b: any) => ({
+          id: String(b.id),
+          label: `${b.name} - ${b.address}${b.address_2 ? ", " + b.address_2 : ""}`,
         }))
       )
 
       setPaymentTerms(
-        ptRes.map((pt: any) => ({
-          id: pt.id,
-          label: pt.name,
-          broker_id: pt.broker_id,
-        }))
+        (Array.isArray(data.paymentTerms) ? data.paymentTerms : data.paymentTerms?.data || []).map(
+          (pt: any) => ({
+            id: String(pt.id),
+            label: pt.name,
+            broker_id: pt.broker_id ? String(pt.broker_id) : undefined,
+          })
+        )
       )
 
       setDrivers(
-        drvRes.map((d: any) => ({
-          id: d.id,
-          label: `${d.name} - ${d.license_number}`,
+        (Array.isArray(data.drivers) ? data.drivers : data.drivers?.data || []).map((d: any) => ({
+          id: String(d.id),
+          label: `${d.name}${d.license_number ? " - " + d.license_number : ""}`,
         }))
       )
 
       setTrucks(
-        trkRes.map((t: any) => ({
-          id: t.id,
+        (Array.isArray(data.trucks) ? data.trucks : data.trucks?.data || []).map((t: any) => ({
+          id: String(t.id),
           label: `${t.truck_number} - ${t.make} ${t.model}`,
         }))
       )
 
       setTrailers(
-        trlRes.map((t: any) => ({
-          id: t.id,
-          label: `${t.equipment_number} - ${t.equipment_type.charAt(0).toUpperCase()}${t.equipment_type.slice(1)}`,
+        (Array.isArray(data.trailers) ? data.trailers : data.trailers?.data || []).map((t: any) => ({
+          id: String(t.id),
+          label: `${t.equipment_number} - ${
+            t.equipment_type
+              ? t.equipment_type.charAt(0).toUpperCase() + t.equipment_type.slice(1)
+              : ""
+          }`,
         }))
       )
+    } catch (err) {
+      console.error("Fetch failed:", err)
     }
-    fetchData()
-  }, [])
+  }
+  fetchData()
+}, [])
+
 
   // Watch selected broker
   const selectedBroker = useWatch({
@@ -91,7 +118,7 @@ export default function PartiesStep({ control, errors }: PartiesStepProps) {
 
   // Filter payment terms
   const filteredPaymentTerms = brokerId
-    ? payment_terms.filter((pt) => pt.broker_id === brokerId)
+    ? paymentTerms.filter((pt) => pt.broker_id === brokerId)
     : []
 
   // ComboBoxInput for text input fields
@@ -254,7 +281,9 @@ export default function PartiesStep({ control, errors }: PartiesStepProps) {
       <Controller
         name="parties.trailer"
         control={control}
-        render={({ field }) => <ComboBoxInput field={field} options={trailers} placeholder="Trailer" />}
+        render={({ field }) => (
+          <ComboBoxInput field={field} options={trailers} placeholder="Trailer" />
+        )}
       />
       {errors.parties?.trailer && (
         <p className="text-xs text-red-600 mt-1">{errors.parties.trailer.message}</p>

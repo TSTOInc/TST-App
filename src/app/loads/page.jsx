@@ -22,7 +22,7 @@ export default function TablePage() {
     return address
   }
   const formatDueDate = (invoiceDateStr, daysToPay) => {
-    if (!invoiceDateStr || !daysToPay) return "N/A"
+    if (!invoiceDateStr || !daysToPay) return "In Progress"
 
     const invoiceDate = new Date(invoiceDateStr)
     const dueDate = new Date(invoiceDate)
@@ -99,7 +99,7 @@ export default function TablePage() {
                 <div className="font-semibold text-lg justify-between flex pr-4">
                   <span>
                     {load.broker_name || "N/A"}
-                    <Badge variant="outline" className="ml-2 capitalize">
+                    <Badge status={load.load_status} className="ml-2 capitalize">
                       {load.load_status || "new"}
                     </Badge>
                   </span>
@@ -111,7 +111,7 @@ export default function TablePage() {
                   {load.invoice_number || "N/A"} • {load.load_number || "N/A"}
                 </span>
                 <div className="flex items-center space-x-2 mt-1">
-                  <IconMapPin size={16} className="text-gray-300" />
+                  <IconMapPin size={16}/>
                   <span>{formatCityState(load.stops[0]?.location) || "N/A"}</span>
                   <span className="text-gray-400">→</span>
                   <span>{formatCityState(load.stops[load.stops.length - 1]?.location) || "N/A"}</span>

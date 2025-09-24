@@ -125,7 +125,7 @@ export default function ProfileHeader({
                 <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-20 sm:-mt-16">
                     {/* Avatar */}
                     <div className="flex justify-center sm:justify-start">
-                        <div className="w-36 h-36 sm:w-40 sm:h-40 rounded-full shadow-md">
+                        <div className="w-36 h-36 sm:w-40 sm:h-40 rounded-full shadow-md bg-neutral-950">
                             <Avatar className="w-full h-full">
                                 <AvatarImage
                                     src={
