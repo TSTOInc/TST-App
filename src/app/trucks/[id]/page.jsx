@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -34,6 +36,17 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { tr } from 'date-fns/locale/tr';
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from "@/components/ui/sheet"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+
+
 
 const ContactCard = ({ truck }) => {
     const plates = truck?.plates ?? [];
@@ -82,7 +95,7 @@ const formatDate = (dateString) => {
     return `${parts[0]} ${addOrdinalSuffix(parseInt(parts[1]))} ${parts[2]}`;
 };
 
-const InspectionsCard = ({ truck, inspectionIntervalDays = 90 }) => {
+const InspectionsCard = ({ truck, setTruckData, inspectionIntervalDays = 90 }) => {
     const inspections = truck?.inspections ?? [];
     const nextInspectionDate = () => {
         if (!inspections.length) return "N/A";
@@ -93,15 +106,133 @@ const InspectionsCard = ({ truck, inspectionIntervalDays = 90 }) => {
         nextDate.setDate(nextDate.getDate() + inspectionIntervalDays);
         return formatDate(nextDate)
     };
+    const [inspectionType, setInspectionType] = useState("90_day");
+    const [result, setResult] = useState("pass");
+    const [inspectionDate, setInspectionDate] = useState(""); // renamed to match API
+    const [notes, setNotes] = useState("");
+    const [isSheetOpen, setIsSheetOpen] = useState(false); // <-- control sheet open state
+
+    const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const payload = {
+        truck_id: truck.id,
+        inspection_type: inspectionType,
+        inspection_date: inspectionDate,
+        result,
+        notes,
+    };
+
+    try {
+        await toast.promise(
+            (async () => {
+                // Submit inspection
+                const response = await fetch(
+                    "https://tst.api.incashy.com/add/truck_inspections",
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload),
+                    }
+                );
+
+                if (!response.ok) throw new Error("Failed to create inspection");
+                await response.json();
+
+                // Refresh truck data
+                const res = await fetch(`https://tst.api.incashy.com/get/trucks/${truck.id}`, { cache: "no-cache" });
+                const updatedTruck = await res.json();
+                setTruckData(updatedTruck);
+
+                // Reset form & close sheet
+                setInspectionType("90_day");
+                setResult("pass");
+                setInspectionDate("");
+                setNotes("");
+                setIsSheetOpen(false);
+            })(),
+            {
+                loading: "Adding inspection...",
+                success: "Inspection added successfully!",
+                error: (err) => err.message || "Failed to add inspection",
+            }
+        );
+    } catch (error) {
+        console.error(error);
+    }
+};
+
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Truck Inspections</CardTitle>
                 <div className="flex flex-row items-center gap-4">
                     <div>Next Inspection: {nextInspectionDate()}</div>
-                    <Button>
-                        <IconPlus /> Add Inspection
-                    </Button>
+                    <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                        <SheetTrigger asChild>
+                            <Button>
+                                <IconPlus /> Add Inspection
+                            </Button>
+                        </SheetTrigger>
+
+                        <SheetContent>
+                            <SheetHeader>
+                                <SheetTitle>Add a New Inspection</SheetTitle>
+                                <SheetDescription>
+                                    Fill in the details below to create a new inspection record.
+                                </SheetDescription>
+                            </SheetHeader>
+
+                            <form onSubmit={handleSubmit} className="space-y-4 p-4">
+                                {/* Your inputs */}
+                                <Label htmlFor="inspectionType">Inspection Type</Label>
+                                <Select
+                                    value={inspectionType}
+                                    onValueChange={(val) => setInspectionType(val)}
+                                >
+                                    <SelectTrigger id="inspectionType" className="w-40">
+                                        <SelectValue placeholder="Select type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="90_day">90 Days Inspection</SelectItem>
+                                        <SelectItem value="daily">Daily Inspection</SelectItem>
+                                    </SelectContent>
+                                </Select>
+
+                                <Label htmlFor="inspectionDate">Inspection Date</Label>
+                                <Input
+                                    id="inspectionDate"
+                                    type="date"
+                                    value={inspectionDate}
+                                    onChange={(e) => setInspectionDate(e.target.value)}
+                                />
+
+                                <Label htmlFor="result">Result</Label>
+                                <Select value={result} onValueChange={(val) => setResult(val)}>
+                                    <SelectTrigger id="result" className="w-40">
+                                        <SelectValue placeholder="Select result" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="pass">Pass</SelectItem>
+                                        <SelectItem value="fail">Fail</SelectItem>
+                                    </SelectContent>
+                                </Select>
+
+                                <Label htmlFor="notes">Notes</Label>
+                                <Input
+                                    id="notes"
+                                    placeholder="Notes"
+                                    value={notes}
+                                    onChange={(e) => setNotes(e.target.value)}
+                                />
+
+                                <Button type="submit">Add Inspection</Button>
+                            </form>
+                        </SheetContent>
+                    </Sheet>
+
+
+
                 </div>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -434,7 +565,7 @@ export default function TablePage({ params }) {
                     </TabsList>
 
                     <TabsContent value="info"><ContactCard truck={data} /></TabsContent>
-                    <TabsContent value="inspections"><InspectionsCard truck={data} /></TabsContent>
+                    <TabsContent value="inspections"><InspectionsCard truck={data} setTruckData={setData} /></TabsContent>
                     <TabsContent value="repairs"><RepairsCard truck={data} /></TabsContent>
                     <TabsContent value="documents"><DocumentsCard truck={data} setTruckData={setData} /></TabsContent>
                 </Tabs>

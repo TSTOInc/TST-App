@@ -49,16 +49,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-    Drawer,
-    DrawerClose,
-    DrawerContent,
-    DrawerDescription,
-    DrawerFooter,
-    DrawerHeader,
-    DrawerTitle,
-    DrawerTrigger,
-} from "@/components/ui/drawer"
+import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 
 const handleSendEmail = async () => {
     setSending(true)
@@ -577,45 +568,45 @@ export default function LoadProgressCard({ data }) {
         if (progress === totalSteps - 1) return "paid";
         return "in_transit"; // default
     }
-async function handleNext() {
-    if (progress < detailedSteps.length - 1) {
-        const newProgress = progress + 1;
-        const newStatus = getLoadStatus(newProgress, detailedSteps.length);
-        setProgress(newProgress);
+    async function handleNext() {
+        if (progress < detailedSteps.length - 1) {
+            const newProgress = progress + 1;
+            const newStatus = getLoadStatus(newProgress, detailedSteps.length);
+            setProgress(newProgress);
 
-        try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/update/loads/${data.id}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ progress: newProgress, load_status: newStatus }),
-            });
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/update/loads/${data.id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ progress: newProgress, load_status: newStatus }),
+                });
 
-            if (!res.ok) throw new Error("Failed to update progress");
-        } catch (error) {
-            console.error(error);
+                if (!res.ok) throw new Error("Failed to update progress");
+            } catch (error) {
+                console.error(error);
+            }
         }
     }
-}
 
-async function handlePrev() {
-    if (progress > 0) {
-        const newProgress = progress - 1;
-        const newStatus = getLoadStatus(newProgress, detailedSteps.length);
-        setProgress(newProgress);
+    async function handlePrev() {
+        if (progress > 0) {
+            const newProgress = progress - 1;
+            const newStatus = getLoadStatus(newProgress, detailedSteps.length);
+            setProgress(newProgress);
 
-        try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/update/loads/${data.id}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ progress: newProgress, load_status: newStatus }),
-            });
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/update/loads/${data.id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ progress: newProgress, load_status: newStatus }),
+                });
 
-            if (!res.ok) throw new Error("Failed to update progress");
-        } catch (error) {
-            console.error(error);
+                if (!res.ok) throw new Error("Failed to update progress");
+            } catch (error) {
+                console.error(error);
+            }
         }
     }
-}
 
     const visibleLabels = getVisibleStepLabels(progress, data.stops)
     return (
@@ -637,68 +628,63 @@ async function handlePrev() {
 
 
 
-                        {progress === detailedSteps.length - 3 && <Drawer direction="right">
-                            <DrawerTrigger asChild>
-                                <Button variant="outline">Send Invoice</Button>
-                            </DrawerTrigger>
+                        {progress === detailedSteps.length - 3 && (
+                            <Sheet>
+                                <SheetTrigger asChild>
+                                    <Button variant="outline">Send Invoice</Button>
+                                </SheetTrigger>
 
-                            <DrawerContent className="flex flex-col h-full">
-                                <div className="mx-auto w-full max-w-sm flex-1 overflow-auto">
-                                    <DrawerHeader>
-                                        <DrawerTitle>Send Invoice</DrawerTitle>
-                                        <DrawerDescription>
-                                            Sending email to broker about invoice.
-                                        </DrawerDescription>
-                                    </DrawerHeader>
-                                    <div className="p-4 space-y-4">
-                                        {/* Broker & Invoice Info */}
-                                        <div>
-                                            <p><strong>Broker:</strong> {data.broker.name}</p>
-                                            <p><strong>Load #:</strong> {data.load_number}</p>
-                                            <p><strong>Amount:</strong> {data.rate}</p>
-                                        </div>
+                                <SheetContent side="right" className="flex flex-col h-full">
+                                    <div className="mx-auto w-full max-w-sm flex-1 overflow-auto">
+                                        <SheetHeader>
+                                            <SheetTitle>Send Invoice</SheetTitle>
+                                            <p className="text-sm text-muted-foreground">
+                                                Sending email to broker about invoice.
+                                            </p>
+                                        </SheetHeader>
 
-                                        {/* Invoice preview / file info */}
-                                        <div>
-                                            <p><strong>Invoice:</strong> {data.invoice_number}.pdf</p>
+                                        <div className="p-4 space-y-4">
+                                            {/* Broker & Invoice Info */}
+                                            <div>
+                                                <p><strong>Broker:</strong> {data.broker.name}</p>
+                                                <p><strong>Load #:</strong> {data.load_number}</p>
+                                                <p><strong>Amount:</strong> {data.rate}</p>
+                                            </div>
+
+                                            {/* Invoice preview / file info */}
+                                            <div>
+                                                <p><strong>Invoice:</strong> {data.invoice_number}.pdf</p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <DrawerFooter className="p-4 border-t flex flex-col gap-2">
-                                    <DrawerClose asChild>
+                                    <SheetFooter className="p-4 border-t flex flex-col gap-2">
                                         <Button
                                             className="w-full"
                                             onClick={() => {
                                                 handleNext()
-
                                             }}
                                         >
                                             Send Invoice to Broker
                                         </Button>
-                                    </DrawerClose>
 
-                                    <DrawerClose asChild>
                                         <Button
                                             className="w-full"
                                             onClick={() => {
                                                 handleNext()
                                                 handleGenerateInvoice(data)
-
                                             }}
                                         >
                                             Mark as Invoiced & Download
                                         </Button>
-                                    </DrawerClose>
 
-                                    <DrawerClose asChild>
                                         <Button variant="outline" className="w-full">
                                             Cancel
                                         </Button>
-                                    </DrawerClose>
-                                </DrawerFooter>
-                            </DrawerContent>
-                        </Drawer>}
+                                    </SheetFooter>
+                                </SheetContent>
+                            </Sheet>
+                        )}
                         {progress === detailedSteps.length - 2 && <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button variant="outline">Record Payment</Button>
