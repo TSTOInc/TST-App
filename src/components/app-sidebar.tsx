@@ -147,7 +147,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
               <a href="/">
-                <IconInnerShadowTop className="!size-5" />
+                <img src="/logo.png" alt="logo" className="h-8 w-8" />
                 <span className="text-base font-semibold">Three Stars Transport Inc.</span>
               </a>
             </SidebarMenuButton>
