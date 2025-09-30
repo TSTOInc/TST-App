@@ -95,7 +95,7 @@ export default function DynamicMultiStepForm({
     defaultValues: computedDefaults,
   });
 
-  const { errors } = formState as { errors: FieldErrors<FieldValues> }; // Fix formState typing
+  const { errors } = formState as { errors: FieldErrors<FieldValues> };
 
   const [currentStep, setCurrentStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
@@ -249,7 +249,28 @@ export default function DynamicMultiStepForm({
           />
         )}
         <form className="rounded-lg border p-4" onSubmit={handleFinalSubmit}>
-          <div className="grid w-full items-center gap-4">{stepFields.map(renderField)}</div>
+          <div className="grid w-full items-center gap-4">
+            {stepFields.map((field) => {
+              if (field.name === "city") {
+                // Group city, state, zip together in one row
+                return (
+                  <div key="city-state-zip" className="grid grid-cols-3 gap-4">
+                    {["city", "state", "zip"].map((f) => {
+                      const groupedField = stepFields.find((sf) => sf.name === f);
+                      return groupedField ? renderField(groupedField) : null;
+                    })}
+                  </div>
+                );
+              }
+
+              // Skip state & zip individually (since already grouped)
+              if (["state", "zip"].includes(field.name)) return null;
+
+              // Default render
+              return renderField(field);
+            })}
+          </div>
+
           <div className="flex justify-between mt-6">
             <Button
               type="button"

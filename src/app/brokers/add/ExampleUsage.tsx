@@ -22,6 +22,9 @@ const stepConfigs: StepConfig[] = [
       { name: "usdot_number", label: "USDOT Number", type: "text", required: true },
       { name: "docket_number", label: "Docket Number", type: "text", required: true },
       { name: "address", label: "Address", type: "text", required: true },
+      { name: "city", label: "City", type: "text", required: true },
+      { name: "state", label: "State", type: "text", required: true },
+      { name: "zip", label: "Zip", type: "text", required: true },
       {
         name: "status",
         label: "Status",
@@ -52,23 +55,50 @@ const exampleSchema = z.object({
   usdot_number: z.string().min(1, "USDOT required"),
   docket_number: z.string().min(1, "Docket required"),
   address: z.string().min(1, "Address required"),
+  city: z.string().min(1, "City required"),
+  state: z.string().min(1, "State required"),
+  zip: z.string().min(1, "Zip required"),
   status: z.string().min(1, "Status required"),
   phone: z.string().optional(),
-  email: z.string().email("Invalid email").optional(),
+  email: z.string().optional(),
   website: z.string().optional(),
   picture: z.instanceof(File).optional(),
 });
 
+
 export default function ExampleUsage() {
+
+  function parseAddress(input: string) {
+    const regex =
+      /^(.+?),\s*(.+?),\s*([A-Z]{2})\s*(\d{5}(?:-\d{4})?)$/;
+
+    const match = input.match(regex);
+    if (!match) return null;
+
+    return {
+      address: match[1].trim(),
+      city: match[2].trim(),
+      state: match[3].trim(),
+      zip: match[4].trim(),
+    };
+  }
+
+
+
   const searchParams = useSearchParams();
   const [initialValues, setInitialValues] = useState<Record<string, any> | null>(null);
 
   useEffect(() => {
+    const fullAddress = searchParams.get("address") || "";
+    const parsed = parseAddress(fullAddress);
     setInitialValues({
       name: searchParams.get("name") || "",
       usdot_number: searchParams.get("usdot_number") || "",
       docket_number: searchParams.get("docket_number") || "",
-      address: searchParams.get("address") || "",
+      address: parsed?.address || fullAddress,
+      city: parsed?.city || searchParams.get("city") || "",
+      state: parsed?.state || searchParams.get("state") || "",
+      zip: parsed?.zip || searchParams.get("zip") || "",
       status: searchParams.get("status") || "active",
       phone: searchParams.get("phone") || "",
       email: searchParams.get("email") || "",
@@ -100,9 +130,14 @@ export default function ExampleUsage() {
         // Upload the picture first
         pictureUrl = await uploadFile(data.picture);
       }
+      const address_2 = `${data.city || ""}, ${data.state || ""} ${data.zip || ""}`.trim();
 
       // Prepare payload without the file
-      const payload = { ...data, image_url: pictureUrl };
+      const payload = {
+        ...data,
+        image_url: pictureUrl,
+        address_2,
+      };
 
       await toast.promise(
         fetch("https://tst.api.incashy.com/add/brokers", {

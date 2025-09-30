@@ -2,64 +2,73 @@
 
 import * as React from "react"
 import * as AvatarPrimitive from "@radix-ui/react-avatar"
-
 import { cn } from "@/lib/utils"
 
-function Avatar({
-  className,
-  ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Root>) {
+interface AvatarProps extends React.ComponentProps<typeof AvatarPrimitive.Root> {
+  fullsize?: boolean
+}
+
+function Avatar({ className, fullsize = false, ...props }: AvatarProps) {
   return (
     <AvatarPrimitive.Root
       data-slot="avatar"
       className={cn(
-        "relative flex size-8 shrink-0 overflow-hidden rounded-full",
+        "relative flex shrink-0 overflow-hidden rounded-full",
+        fullsize ? "size-full" : "size-8",
         className
       )}
       {...props}
     />
   )
 }
-function GetInitials(name ?: string) {
-    if (!name) return "";
-    const parts = name.split(" ");
-    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
-    return parts[0].charAt(0).toUpperCase() + parts[1].charAt(0).toUpperCase();
+
+function GetInitials(name?: string) {
+  if (!name) return "";
+  const parts = name.split(" ");
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return parts[0].charAt(0).toUpperCase() + parts[1].charAt(0).toUpperCase();
 }
-function AvatarImage({
-  className,
-  ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Image>) {
+
+interface AvatarImageProps extends React.ComponentProps<typeof AvatarPrimitive.Image> {
+  fullsize?: boolean
+}
+
+function AvatarImage({ className, fullsize = false, ...props }: AvatarImageProps) {
   return (
     <AvatarPrimitive.Image
       data-slot="avatar-image"
-      className={cn("aspect-square size-full rounded-full border-6 border-background object-cover shadow-none", className)}
+      className={cn(
+        "aspect-square rounded-full object-cover",
+        fullsize
+          ? "size-full border-6 border-background shadow-none"
+          : "size-full",
+        className
+      )}
       {...props}
     />
   )
 }
-function AvatarFallback({
-  className,
-  children,
-  ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Fallback> & { children?: React.ReactNode }) {
+
+interface AvatarFallbackProps extends React.ComponentProps<typeof AvatarPrimitive.Fallback> {
+  fullsize?: boolean
+  children?: React.ReactNode
+}
+
+function AvatarFallback({ className, fullsize = false, children, ...props }: AvatarFallbackProps) {
   return (
     <AvatarPrimitive.Fallback
       data-slot="avatar-fallback"
       className={cn(
-        "flex items-center justify-center rounded-full size-full border-6 border-background",
-        "font-bold text-6xl uppercase select-none leading-none",
+        "flex items-center justify-center rounded-full",
+        fullsize ? "size-full border-6 border-background font-bold text-6xl uppercase select-none leading-none" : "size-full",
         className
       )}
-      style={{ backgroundColor: "#C9E4FF", color: "#1B6DC1" }}
+      style={fullsize ? { backgroundColor: "#C9E4FF", color: "#1B6DC1" } : undefined}
       {...props}
     >
       {typeof children === "string" ? GetInitials(children) : null}
     </AvatarPrimitive.Fallback>
-  );
+  )
 }
-
-
-
 
 export { Avatar, AvatarImage, AvatarFallback }
