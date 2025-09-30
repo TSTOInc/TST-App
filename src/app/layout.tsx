@@ -57,7 +57,7 @@ export default async function RootLayout({
               } as React.CSSProperties
             }
           >
-            <AppSidebar user={session.user as any} />
+            <AppSidebar variant="inset" user={session.user as any} />
             <SidebarInset>
               <SiteHeader />
               {children}
