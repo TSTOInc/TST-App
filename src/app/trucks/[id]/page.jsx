@@ -128,7 +128,7 @@ const InspectionsCard = ({ truck, setTruckData, inspectionIntervalDays = 90 }) =
             (async () => {
                 // Submit inspection
                 const response = await fetch(
-                    "${process.env.NEXT_PUBLIC_API_BASE}/add/truck_inspections",
+                    `${process.env.NEXT_PUBLIC_API_BASE}/add/truck_inspections`,
                     {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },

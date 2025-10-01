@@ -39,11 +39,11 @@ useEffect(() => {
   const fetchData = async () => {
     try {
       const endpoints = {
-        brokers: "${process.env.NEXT_PUBLIC_API_BASE}/get/brokers",
-        paymentTerms: "${process.env.NEXT_PUBLIC_API_BASE}/get/payment_terms",
-        drivers: "${process.env.NEXT_PUBLIC_API_BASE}/get/drivers",
-        trucks: "${process.env.NEXT_PUBLIC_API_BASE}/get/trucks",
-        trailers: "${process.env.NEXT_PUBLIC_API_BASE}/get/equipment",
+        brokers: `${process.env.NEXT_PUBLIC_API_BASE}/get/brokers`,
+        paymentTerms: `${process.env.NEXT_PUBLIC_API_BASE}/get/payment_terms`,
+        drivers: `${process.env.NEXT_PUBLIC_API_BASE}/get/drivers`,
+        trucks: `${process.env.NEXT_PUBLIC_API_BASE}/get/trucks`,
+        trailers: `${process.env.NEXT_PUBLIC_API_BASE}/get/equipment`,
       }
 
       const results = await Promise.all(

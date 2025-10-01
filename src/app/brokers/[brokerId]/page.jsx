@@ -156,7 +156,7 @@ const PaymentCard = ({ broker }) => {
         }
         console.log(payload)
 
-        const promise = fetch("${process.env.NEXT_PUBLIC_API_BASE}/add/payment_terms", {
+        const promise = fetch(`${process.env.NEXT_PUBLIC_API_BASE}/add/payment_terms`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

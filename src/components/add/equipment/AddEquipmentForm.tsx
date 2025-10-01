@@ -105,7 +105,7 @@ export default function AddEquipmentForm() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("${process.env.NEXT_PUBLIC_API_BASE}/upload/image/equipment", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/upload/image/equipment`, {
         method: "POST",
         body: formData,
       });
@@ -149,7 +149,7 @@ export default function AddEquipmentForm() {
         image_url: imageUrl,
       };
 
-      const response = await fetch("${process.env.NEXT_PUBLIC_API_BASE}/add/equipment", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/add/equipment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

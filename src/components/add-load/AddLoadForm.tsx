@@ -225,7 +225,7 @@ export default function AddLoadForm() {
     console.log("Submitting payload:", JSON.stringify(payload))
     await toast.promise(
       (async () => {
-        const res = await fetch("${process.env.NEXT_PUBLIC_API_BASE}/add/loads", {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/add/loads`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
