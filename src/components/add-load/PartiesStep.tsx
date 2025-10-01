@@ -39,11 +39,11 @@ useEffect(() => {
   const fetchData = async () => {
     try {
       const endpoints = {
-        brokers: "https://tst.api.incashy.com/get/brokers",
-        paymentTerms: "https://tst.api.incashy.com/get/payment_terms",
-        drivers: "https://tst.api.incashy.com/get/drivers",
-        trucks: "https://tst.api.incashy.com/get/trucks",
-        trailers: "https://tst.api.incashy.com/get/equipment",
+        brokers: "${process.env.NEXT_PUBLIC_API_BASE}/get/brokers",
+        paymentTerms: "${process.env.NEXT_PUBLIC_API_BASE}/get/payment_terms",
+        drivers: "${process.env.NEXT_PUBLIC_API_BASE}/get/drivers",
+        trucks: "${process.env.NEXT_PUBLIC_API_BASE}/get/trucks",
+        trailers: "${process.env.NEXT_PUBLIC_API_BASE}/get/equipment",
       }
 
       const results = await Promise.all(

@@ -100,7 +100,7 @@ const updateFilters = (newFilters, newSearchQuery = searchQuery) => {
       setLoading(true)
       setError(null)
       try {
-        const res = await fetch(`https://tst.api.incashy.com/get/loads`, { cache: "no-cache" })
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/get/loads`, { cache: "no-cache" })
         if (!res.ok) throw new Error("Failed to fetch data")
         const json = await res.json()
         setData(Array.isArray(json) ? json : [])

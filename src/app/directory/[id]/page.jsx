@@ -24,7 +24,7 @@ export default function TablePage({ params }) {
             setLoading(true)
             setError(null)
             try {
-                const res = await fetch(`https://tst.api.incashy.com/fmcsa/get?type=usdot&q=${id}`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/fmcsa/get?type=usdot&q=${id}`, {
                     cache: "no-cache"
                 })
                 if (!res.ok) throw new Error('Failed to fetch data')

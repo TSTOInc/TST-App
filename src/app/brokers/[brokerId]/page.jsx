@@ -132,7 +132,7 @@ const PaymentCard = ({ broker }) => {
 
     async function fetchTerms() {
         try {
-            const res = await fetch(`https://tst.api.incashy.com/brokers/${broker.id}`)
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/brokers/${broker.id}`)
             if (res.ok) {
                 const data = await res.json()
                 setLoads(data.payment_terms ?? [])
@@ -156,7 +156,7 @@ const PaymentCard = ({ broker }) => {
         }
         console.log(payload)
 
-        const promise = fetch("https://tst.api.incashy.com/add/payment_terms", {
+        const promise = fetch("${process.env.NEXT_PUBLIC_API_BASE}/add/payment_terms", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -373,7 +373,7 @@ const NotesCard = ({ broker }) => {
         setSuccess(false);
 
         try {
-            const res = await fetch(`https://tst.api.incashy.com/update/brokers/${broker.id}`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/update/brokers/${broker.id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ notes }),
@@ -437,7 +437,7 @@ export default function TablePage({ params }) {
             setLoading(true)
             setError(null)
             try {
-                const res = await fetch(`https://tst.api.incashy.com/get/brokers/${brokerId}`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/get/brokers/${brokerId}`, {
                     cache: "no-cache"
                 })
                 if (!res.ok) throw new Error('Failed to fetch data')

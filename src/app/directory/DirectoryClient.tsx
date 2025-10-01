@@ -44,7 +44,7 @@ export default function DirectoryClient() {
 
     try {
       const res = await fetch(
-        `https://tst.api.incashy.com/fmcsa/get?type=name&q=${encodeURIComponent(q)}`
+        `${process.env.NEXT_PUBLIC_API_BASE}/fmcsa/get?type=name&q=${encodeURIComponent(q)}`
       );
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();

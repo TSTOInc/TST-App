@@ -111,7 +111,7 @@ export default function ExampleUsage() {
     const formData = new FormData();
     formData.append("file", file);
 
-    const res = await fetch("https://tst.api.incashy.com/upload/image/brokers", {
+    const res = await fetch("${process.env.NEXT_PUBLIC_API_BASE}/upload/image/brokers", {
       method: "POST",
       body: formData,
     });
@@ -140,7 +140,7 @@ export default function ExampleUsage() {
       };
 
       await toast.promise(
-        fetch("https://tst.api.incashy.com/add/brokers", {
+        fetch("${process.env.NEXT_PUBLIC_API_BASE}/add/brokers", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),

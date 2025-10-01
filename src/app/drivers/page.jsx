@@ -26,7 +26,7 @@ const Page = () => {
     useEffect(() => {
         const fetchBrokers = async () => {
             try {
-                const res = await fetch('https://tst.api.incashy.com/get/drivers')
+                const res = await fetch('${process.env.NEXT_PUBLIC_API_BASE}/get/drivers')
                 if (!res.ok) throw new Error('Failed to fetch loads')
                 const data = await res.json()
                 setBrokers(data)

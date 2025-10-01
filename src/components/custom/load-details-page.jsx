@@ -156,14 +156,14 @@ const DocumentsCard = ({ load, setTruckData }) => {
             formData.append("file", selectedFile);
 
             const uploadRes = await fetch(
-                `https://tst.api.incashy.com/upload/image/loads/${load.id}/docs`,
+                `${process.env.NEXT_PUBLIC_API_BASE}/upload/image/loads/${load.id}/docs`,
                 { method: "POST", body: formData }
             );
             if (!uploadRes.ok) throw new Error("Document Upload failed");
             const { url: documentUrl } = await uploadRes.json();
 
             const addRes = await fetch(
-                `https://tst.api.incashy.com/add/loads/${load.id}/docs`,
+                `${process.env.NEXT_PUBLIC_API_BASE}/add/loads/${load.id}/docs`,
                 { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ document_url: documentUrl }) }
             );
             if (!addRes.ok) throw new Error("Failed to save document to DB");
@@ -184,7 +184,7 @@ const DocumentsCard = ({ load, setTruckData }) => {
     const handleDelete = async (documentUrl, loadId) => {
         try {
             await toast.promise(
-                fetch(`https://tst.api.incashy.com/delete/loads/${loadId}/docs`, {
+                fetch(`${process.env.NEXT_PUBLIC_API_BASE}/delete/loads/${loadId}/docs`, {
                     method: "DELETE",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ document_url: documentUrl }),
