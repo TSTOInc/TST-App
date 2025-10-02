@@ -41,7 +41,7 @@ function AvatarImage({ className, fullsize = false, ...props }: AvatarImageProps
         "aspect-square rounded-full object-cover",
         fullsize
           ? "size-full border-6 border-background shadow-none"
-          : "size-full",
+          : "size-full border-6 border-background shadow-none",
         className
       )}
       {...props}

@@ -126,7 +126,7 @@ export default function ProfileHeader({
                     {/* Avatar */}
                     <div className="flex justify-center sm:justify-start">
                         <div className="w-36 h-36 sm:w-40 sm:h-40 rounded-full shadow-md bg-neutral-950">
-                            <Avatar fullsize={true} className="w-full h-full">
+                            <Avatar className="w-full h-full">
                                 <AvatarImage
                                     src={
                                         image_url
@@ -136,7 +136,7 @@ export default function ProfileHeader({
                                     alt={name}
                                     className="w-full h-full"
                                 />
-                                <AvatarFallback>{name}</AvatarFallback>
+                                <AvatarFallback fullsize>{name}</AvatarFallback>
                             </Avatar>
                         </div>
                     </div>

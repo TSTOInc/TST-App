@@ -207,34 +207,42 @@ const Badge: React.FC<BadgeProps> = ({
 }) => {
   const Component = asChild ? Slot : "span"
 
-  const icon = status && statusIconMap[status as StatusKey] || null
-  const label = status && statusTooltipMap[status as StatusKey]
+  const hasValidStatus = status && statusKeys.includes(status as StatusKey)
+  const icon = hasValidStatus ? statusIconMap[status as StatusKey] : null
+  const label = hasValidStatus
     ? status.split("_").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ")
-    : children;
+    : children
 
-  const tooltipText = status
+  const tooltipText = hasValidStatus
     ? statusTooltipMap[status as StatusKey] || (typeof children === "string" ? children : "")
-    : typeof children === "string"
-      ? children
-      : ""
+    : ""
+
+  const badgeElement = (
+    <Component
+      data-slot="badge"
+      className={cn(
+        badgeVariants({ variant, status: hasValidStatus ? (status as StatusKey) : undefined }),
+        className
+      )}
+      {...props}
+    >
+      {icon}
+      {!onlyIcon && label}
+    </Component>
+  )
+
+  // Only wrap in Tooltip if there is tooltipText
+  if (!tooltipText) return badgeElement
 
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <Component
-          data-slot="badge"
-          className={cn(badgeVariants({ variant, status: statusKeys.includes(status as StatusKey) ? (status as StatusKey) : undefined  }), className)}
-          {...props}
-        >
-          {icon}
-          {onlyIcon ? ("") : (label)}
-        </Component>
-      </TooltipTrigger>
+      <TooltipTrigger asChild>{badgeElement}</TooltipTrigger>
       <TooltipContent side="top" align="center">
         <p>{tooltipText}</p>
       </TooltipContent>
     </Tooltip>
   )
 }
+
 
 export { Badge, badgeVariants }

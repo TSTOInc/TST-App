@@ -50,28 +50,20 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { send } from "@/lib/email"
 
-const handleSendEmail = async () => {
-    setSending(true)
-    try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/send/email`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ loadId: load.id }),
-        })
-
-        if (!response.ok) {
-            throw new Error("Failed to send email")
+const handleSendEmail = async (load) => {
+    await toast.promise(
+        (async () => {
+            await send(load);
+        })(),
+        {
+            loading: "Sending email...",
+            success: "Email sent!",
+            error: (err) => err.message || "Failed to send email",
         }
-
-        const data = await response.json()
-        toast.success(data.message)
-    } catch (error) {
-        toast.error(error.message || "Failed to send email")
-    }
-}
+    );
+};
 
 
 
@@ -647,8 +639,20 @@ export default function LoadProgressCard({ data }) {
                                             {/* Broker & Invoice Info */}
                                             <div>
                                                 <p><strong>Broker:</strong> {data.broker.name}</p>
+                                                <p><strong>Email:</strong> {data.payment_terms.email}</p>
                                                 <p><strong>Load #:</strong> {data.load_number}</p>
-                                                <p><strong>Amount:</strong> {data.rate}</p>
+                                                <p>
+                                                    <strong>Amount:</strong>{" "}
+                                                    {data.payment_terms.is_quickpay ? (() => {
+                                                        // Calculate amount, discount, and final amount
+                                                        const amountDue = data.rate ? `$${parseFloat(data.rate).toFixed(2)}` : "$0.00";
+                                                        const amount = parseFloat(data.rate) || 0;
+                                                        const discount = amount * ((data.payment_terms?.fee_percent || 0) / 100);
+                                                        const finalAmount = amount - discount;
+                                                        return `${amountDue} - $${discount.toFixed(2)} = $${finalAmount.toFixed(2)}`;
+                                                    })()
+                                                        : data.rate}
+                                                </p>
                                             </div>
 
                                             {/* Invoice preview / file info */}
@@ -662,6 +666,7 @@ export default function LoadProgressCard({ data }) {
                                         <Button
                                             className="w-full"
                                             onClick={() => {
+                                                handleSendEmail(data)
                                                 handleNext()
                                             }}
                                         >
