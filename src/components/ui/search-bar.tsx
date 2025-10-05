@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button"
 import { IconSearch } from "@tabler/icons-react"
 import { useState, useEffect, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { ButtonGroup } from "@/components/ui/button-group"
+
+
 
 interface SearchBarProps {
   live?: boolean
@@ -57,23 +60,17 @@ export default function SearchBar({ live = true, placeholder }: SearchBarProps) 
   }
 
   return (
-    <div className="mx-auto flex w-full items-center mb-6 max-w-xl">
+    <ButtonGroup className="[--radius:9999rem] mx-auto flex w-full items-center mb-6 max-w-xl">
       <Input
         type="text"
         placeholder={placeholder || "Search carriers..."}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}
-        className="rounded-l-full rounded-r-none"
       />
-      <Button
-        type="button"
-        variant="outline"
-        className="rounded-r-full rounded-l-none"
-        onClick={handleSearch}
-      >
+      <Button type="button" variant="outline" aria-label="Search" onClick={handleSearch}>
         <IconSearch />
       </Button>
-    </div>
+    </ButtonGroup>
   )
 }

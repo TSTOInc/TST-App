@@ -1,16 +1,45 @@
 import React from 'react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+import { SearchIcon } from "lucide-react"
+import {
+    Empty,
+    EmptyContent,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyTitle,
+} from "@/components/ui/empty"
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupInput,
+} from "@/components/ui/input-group"
+import { Kbd } from "@/components/ui/kbd"
 
 const NotFound = () => {
     return (
-        <main className="flex flex-col justify-center items-center h-full text-center p-8 flex-grow">
-            <h1 className="text-9xl font-bold mb-4">404</h1>
-            <p className="text-xl mb-8">Oops, the page you’re looking for doesn’t exist.</p>
-            <Link href="/dashboard">
-                <Button>Go back to Dashboard</Button>
-            </Link>
-        </main>
+        <Empty>
+            <EmptyHeader>
+                <EmptyTitle className="text-2xl">404 - Not Found</EmptyTitle>
+                <EmptyDescription>
+                    The page you&apos;re looking for doesn&apos;t exist. Try searching for
+                    what you need below.
+                </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+                <InputGroup className="sm:w-3/4">
+                    <InputGroupInput placeholder="Try searching for pages..." />
+                    <InputGroupAddon>
+                        <SearchIcon />
+                    </InputGroupAddon>
+                    <InputGroupAddon align="inline-end">
+                        <Kbd>/</Kbd>
+                    </InputGroupAddon>
+                </InputGroup>
+                <EmptyDescription>
+                    Need help? <a href="#">Contact support</a>
+                </EmptyDescription>
+            </EmptyContent>
+        </Empty>
     )
 }
 
