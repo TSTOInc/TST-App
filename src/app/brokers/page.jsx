@@ -15,30 +15,6 @@ import { IconZoomQuestion } from "@tabler/icons-react"
 import Link from 'next/link'
 
 
-
-
-
-
-
-
-
-
-const ALLOWED_TABLES = [
-    'broker_payment_terms',
-    'brokers',
-    'brokers_agents',
-    'drivers',
-    'equipment',
-    'load_drivers',
-    'load_tags',
-    'data',
-    'payment_terms',
-    'stops',
-    'truck_inspections',
-    'truck_plates',
-    'truck_repairs',
-    'trucks',
-]
 const Page = () => {
     const [brokers, setBrokers] = useState([])
     const [loading, setLoading] = useState(true)
@@ -66,7 +42,7 @@ const Page = () => {
     return (
         <div className="p-4">
             {loading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-6 ">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {Array.from({ length: 8 }).map((_, i) => (
                         <CompanyCard key={i} skeleton/>
                     ))}
@@ -104,7 +80,7 @@ const Page = () => {
                     </EmptyContent>
                 </Empty>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-6 ">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {filteredBrokers.map(carrier => (
                         <CompanyCard broker key={carrier.usdot_number || carrier.id} company={carrier} />
                     ))}

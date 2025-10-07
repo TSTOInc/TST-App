@@ -38,7 +38,7 @@ const Page = () => {
     return (
         <div className="p-4">
             {loading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     {Array.from({ length: 8 }).map((_, i) => (
                         <CompanyCard key={i} skeleton />
                     ))}
@@ -76,7 +76,7 @@ const Page = () => {
                     </EmptyContent>
                 </Empty>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-6 ">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     {trucks.map(driver => (
                         <CompanyCard key={driver.id} company={driver} truck />
                     ))}
