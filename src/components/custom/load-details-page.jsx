@@ -543,13 +543,24 @@ const handleGenerateInvoice = async (data) => {
 
 // 🔹 Component
 export default function LoadProgressCard({ data }) {
-    const detailedSteps = buildDetailedSteps(data.stops)
-    const uiSteps = buildVisibleSteps(data.stops)
 
-    const [progress, setProgress] = useState(data.progress) // detailed step index
+    const sortedStops = [...(data.stops || [])].sort((a, b) => {
+        const timeA = a.appointment_time
+            ? new Date(a.appointment_time)
+            : new Date(a.window_end);
+        const timeB = b.appointment_time
+            ? new Date(b.appointment_time)
+            : new Date(b.window_end);
+        return timeA - timeB;
+    });
 
-    const uiIndex = mapProgressToUI(progress, data.stops)
-    const progressValue = (uiIndex / (uiSteps.length - 1)) * 100
+    const detailedSteps = buildDetailedSteps(sortedStops);
+    const uiSteps = buildVisibleSteps(sortedStops);
+
+    const [progress, setProgress] = useState(data.progress); // detailed step index
+
+    const uiIndex = mapProgressToUI(progress, sortedStops);
+    const progressValue = (uiIndex / (uiSteps.length - 1)) * 100;
 
     function getLoadStatus(progress, totalSteps) {
         if (progress === 0) return "new";
@@ -600,7 +611,7 @@ export default function LoadProgressCard({ data }) {
         }
     }
 
-    const visibleLabels = getVisibleStepLabels(progress, data.stops)
+    const visibleLabels = getVisibleStepLabels(progress, sortedStops)
     return (
         <Card>
             <CardHeader>
