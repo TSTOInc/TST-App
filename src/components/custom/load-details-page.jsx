@@ -906,6 +906,14 @@ export function LoadDetailsPage({ id }) {
     const deliveryStop = data.stops?.find((stop) => stop.type === "delivery")
     const statusProgress = getStatusProgress(data.load_status)
 
+    const sortedStops = [...data.stops].sort((a, b) => {
+        // pick the relevant time for each stop
+        const timeA = a.appointment_time ? new Date(a.appointment_time) : new Date(a.window_end);
+        const timeB = b.appointment_time ? new Date(b.appointment_time) : new Date(b.window_end);
+
+        return timeA - timeB;
+    });
+
     return (
         <div className="flex-1 space-y-4 p-4 pt-6">
             {/* Key Info Cards */}
@@ -1047,15 +1055,16 @@ export function LoadDetailsPage({ id }) {
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 <div className="relative">
-                                    {data.stops.map((stop, index) => (
+                                    {sortedStops.map((stop, index) => (
                                         <div key={stop.id} className="relative">
                                             <div className="flex items-start gap-3">
                                                 {/* Marker icon */}
                                                 <div className="flex flex-col items-center">
                                                     <MapPin
-                                                        className={`h-5 w-5 ${stop.type === "pickup" ? "text-green-600" : "text-red-600"}`}
+                                                        className={`h-5 w-5 ${stop.type === "pickup" ? "text-green-600" : "text-red-600"
+                                                            }`}
                                                     />
-                                                    {index < data.stops.length - 1 && (
+                                                    {index < sortedStops.length - 1 && (
                                                         <div className="w-px h-16 border-l-2 border-dashed border-muted-foreground/30 mt-2" />
                                                     )}
                                                 </div>
@@ -1067,13 +1076,16 @@ export function LoadDetailsPage({ id }) {
                                                     <div className="flex items-center gap-2">
                                                         <Clock className="h-3 w-3 text-muted-foreground" />
                                                         <p className="text-xs text-muted-foreground">
-                                                            {formatTimeRange(stop.window_start, stop.window_end)}
+                                                            {stop.appointment_time
+                                                                ? formatDate(stop.appointment_time)
+                                                                : formatTimeRange(stop.window_start, stop.window_end)} 
                                                         </p>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     ))}
+
                                 </div>
                             </CardContent>
                         </Card>
