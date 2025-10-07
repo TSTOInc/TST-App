@@ -28,6 +28,7 @@ export function NavMain({
     items?: {
       title: string
       url: string
+      icon?: Icon
     }[]
   }[]
 }) {
@@ -82,15 +83,6 @@ export function NavMain({
                 </div>
               )}
             </SidebarMenuButton>
-
-            <Button
-              size="icon"
-              className="size-8 group-data-[collapsible=icon]:opacity-0"
-              variant="outline"
-            >
-              <IconMail />
-              <span className="sr-only">Inbox</span>
-            </Button>
           </SidebarMenuItem>
         </SidebarMenu>
         <SidebarMenu >
@@ -110,7 +102,10 @@ export function NavMain({
                   {item.items.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton data-active={isSubActive(subItem)} asChild className="data-[slot=sidebar-menu-button]:!p-1.5 cursor-pointer">
-                        <Link href={subItem.url}>{subItem.title}</Link>
+                        <Link href={subItem.url}>
+                          {subItem.icon && <subItem.icon />}
+                          <span>{subItem.title}</span>
+                        </Link>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   ))}

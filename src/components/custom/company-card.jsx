@@ -5,9 +5,20 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { formatPhoneNumber } from "@/utils/formatPhone"
+import { Skeleton } from "@/components/ui/skeleton"
 
-const CompanyCard = ({ company, carrier, broker, agent, driver, truck, equipment }) => {
-
+const CompanyCard = ({ company, carrier, broker, agent, driver, truck, equipment, skeleton }) => {
+    if (skeleton)
+        return (
+            <div className="rounded-xl border px-6 py-6 space-y-4">
+                <Skeleton className="h-46 w-full rounded-lg" />
+                <div className="space-y-3 mt-10 mb-8">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                </div>
+                <Skeleton className="h-8 w-full rounded-md" />
+            </div>
+        )
     const imageUrl = useMemo(() => {
         // 1️⃣ Use image_url if available
         if (company.image_url) {
@@ -27,8 +38,7 @@ const CompanyCard = ({ company, carrier, broker, agent, driver, truck, equipment
 
         return `https://placehold.co/600x400/bae6fd/1B6DC1?font=montserrat&text=${fallbackText}`;
     }, [company.image_url, company.website, company.name, company.truck_number, company.equipment_number]);
-
-    return (
+    if (!skeleton) return (
         <Card>
             <CardContent>
                 <img

@@ -2,6 +2,20 @@
 import React, { useEffect, useState } from 'react'
 import { DataTable } from "../../../components/data-table"
 import CompanyCard from "../../../components/custom/company-card"
+import {
+    Empty,
+    EmptyContent,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from "@/components/ui/empty"
+import { IconZoomQuestion } from "@tabler/icons-react"
+
+
+
+
+
 const ALLOWED_TABLES = [
     'broker_payment_terms',
     'brokers',
@@ -39,24 +53,57 @@ const Page = () => {
         fetchBrokers()
     }, [])
 
-    if (loading) return <main className="flex flex-col justify-center items-center h-full text-center p-8 flex-grow">
-        <h1 className="text-6xl lg:text-8xl font-bold mb-4">Loading...</h1>
-        <p className="text-xl mb-8">Fetching data for <b>Broker Agents</b>...</p>
-        </main>
-    if (error) return <div>Error: {error}</div>
-    if (brokers.length === 0) return <div>No brokers available right now.</div>
-
     // remove the last 2 columns from the data
     const filteredBrokers = brokers.map(brokers => { const { created_at, updated_at, ...rest } = brokers; return rest })
 
     return (
         <div className="p-4">
-            <h2 className="text-2xl mb-4">All Broker Agents:</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-6 ">
-                {filteredBrokers.map(agent => (
-                    <CompanyCard agent key={agent.id} company={agent} />
-                ))}
-            </div>
+            {loading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-6 ">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                        <CompanyCard key={i} skeleton />
+                    ))}
+                </div>
+            ) : error ? (
+                <Empty className="border border-dashed">
+                    <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                            <IconZoomQuestion />
+                        </EmptyMedia>
+                        <EmptyTitle>Error Loading Brokers Agents</EmptyTitle>
+                        <EmptyDescription>{error}</EmptyDescription>
+                        <EmptyDescription>
+                            Need help? <a href="#">Contact support</a>
+                        </EmptyDescription>
+                    </EmptyHeader>
+                </Empty>
+            ) : filteredBrokers.length === 0 ? (
+                <Empty className="border border-dashed">
+                    <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                            <IconZoomQuestion />
+                        </EmptyMedia>
+                        <EmptyTitle>No Brokers Agents Found</EmptyTitle>
+                        <EmptyDescription>
+                            Create a new broker agent to get started.
+                        </EmptyDescription>
+                    </EmptyHeader>
+                    <EmptyContent>
+                        <Link href="/brokers/agents/add">
+                            <Button variant="outline" size="sm">
+                                Add Broker Agent
+                            </Button>
+                        </Link>
+                    </EmptyContent>
+                </Empty>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-6 ">
+                    {filteredBrokers.map(agent => (
+                        <CompanyCard agent key={agent.id} company={agent} />
+                    ))}
+                </div>
+            )}
+
         </div>
 
     )

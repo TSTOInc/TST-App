@@ -2,6 +2,27 @@
 import React, { useEffect, useState } from 'react'
 import { DataTable } from "../../components/data-table"
 import CompanyCard from "../../components/custom/company-card"
+import { Button } from "@/components/ui/button"
+import {
+    Empty,
+    EmptyContent,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from "@/components/ui/empty"
+import { IconZoomQuestion } from "@tabler/icons-react"
+import Link from 'next/link'
+
+
+
+
+
+
+
+
+
+
 const ALLOWED_TABLES = [
     'broker_payment_terms',
     'brokers',
@@ -39,28 +60,57 @@ const Page = () => {
         fetchBrokers()
     }, [])
 
-    if (loading) return <main className="flex flex-col justify-center items-center h-full text-center p-8 flex-grow">
-        <h1 className="text-6xl lg:text-8xl font-bold mb-4">Loading...</h1>
-        <p className="text-xl mb-8">Fetching data for <b>Brokers</b>...</p>
-        </main>
-    if (error) return <div>Error: {error}</div>
-    if (brokers.length === 0) return <main className="flex flex-col justify-center items-center h-full text-center p-8 flex-grow">
-            <h1 className="text-6xl lg:text-8xl font-bold mb-4">No Data</h1>
-            <p className="text-xl mb-8">We couldn't find any data for <b>Brokers</b>.</p>
-        </main>
-
     // remove the last 2 columns from the data
-    const filteredBrokers = brokers.map(brokers => { const { created_at, updated_at, ...rest } = brokers; return rest })
+    const filteredBrokers = brokers.map(broker => { const { created_at, updated_at, ...rest } = broker; return rest })
 
     return (
         <div className="p-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-6 ">
-                {filteredBrokers.map(carrier => (
-                    <CompanyCard broker key={carrier.usdot_number} company={carrier} />
-                ))}
-            </div>
+            {loading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-6 ">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                        <CompanyCard key={i} skeleton/>
+                    ))}
+                </div>
+            ) : error ? (
+                <Empty className="border border-dashed">
+                    <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                            <IconZoomQuestion />
+                        </EmptyMedia>
+                        <EmptyTitle>Error Loading Brokers</EmptyTitle>
+                        <EmptyDescription>{error}</EmptyDescription>
+                        <EmptyDescription>
+                            Need help? <a href="#">Contact support</a>
+                        </EmptyDescription>
+                    </EmptyHeader>
+                </Empty>
+            ) : filteredBrokers.length === 0 ? (
+                <Empty className="border border-dashed">
+                    <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                            <IconZoomQuestion />
+                        </EmptyMedia>
+                        <EmptyTitle>No Broker Found</EmptyTitle>
+                        <EmptyDescription>
+                            Create a new broker to get started.
+                        </EmptyDescription>
+                    </EmptyHeader>
+                    <EmptyContent>
+                        <Link href="/brokers/add">
+                            <Button variant="outline" size="sm">
+                                Add Broker
+                            </Button>
+                        </Link>
+                    </EmptyContent>
+                </Empty>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-6 ">
+                    {filteredBrokers.map(carrier => (
+                        <CompanyCard broker key={carrier.usdot_number || carrier.id} company={carrier} />
+                    ))}
+                </div>
+            )}
         </div>
-
     )
 }
 

@@ -35,43 +35,43 @@ const badgeVariants = cva(
       },
       status: {
         at_pickup:
-          "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100",
+          "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100 hover:bg-blue-200/50",
         in_transit:
-          "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100",
+          "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100 hover:bg-orange-200/50",
         delivered:
-          "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100",
+          "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 hover:bg-green-200/50",
         invoiced:
-          "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100",
+          "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100 hover:bg-yellow-200/50",
         received:
-          "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100",
+          "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100 hover:bg-blue-200/50",
         reviewing:
-          "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100",
+          "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100 hover:bg-orange-200/50",
         approved:
-          "bg-green-100 text-emerald-800 dark:bg-green-900 dark:text-emerald-100",
+          "bg-green-100 text-emerald-800 dark:bg-green-900 dark:text-emerald-100 hover:bg-green-200/50",
         funded:
-          "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100",
+          "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100 hover:bg-yellow-200/50",
         paid:
-          "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100",
+          "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100 hover:bg-emerald-200/50",
         rejected:
-          "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100",
+          "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100 hover:bg-red-200/50",
         yes:
-          "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100",
+          "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 hover:bg-green-200/50",
         no:
-          "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100",
+          "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100 hover:bg-red-200/50",
         active:
-          "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100",
+          "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 hover:bg-green-200/50",
         inactive:
-          "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100",
+          "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100 hover:bg-yellow-200/50",
         suspended:
-          "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100",
+          "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100 hover:bg-red-200/50",
         pending:
-          "bg-black text-white dark:bg-white dark:text-black ",
+          "bg-black text-white dark:bg-white dark:text-black hover:bg-black-200/50",
         pass:
-          "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+          "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 hover:bg-green-200/50",
         fail:
-          "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+          "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 hover:bg-red-200/50",
         fixing:
-          "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100",
+          "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100 hover:bg-yellow-200/50",
       },
     },
     defaultVariants: {

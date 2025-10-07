@@ -22,6 +22,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/loads/add/page.jsx", "src/app/directory/page.jsx", "src/components/custom/load-details-page.jsx", "src/components/providers/theme-wrapper.jsx", "src/app/loads/loadsPageClient.jsx", "src/lib/email.js", "src/lib/mapLoadToInvoicePayload.js", "src/components/dashboard/section-cards.jsx", "src/app/page.jsx", "src/components/forms/DynamicMultiStepForm.Jsx", "src/app/brokers/add/ExampleUsage.JSX"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/loads/add/page.jsx", "src/app/directory/page.jsx", "src/components/custom/load-details-page.jsx", "src/components/providers/theme-wrapper.jsx", "src/app/loads/loadsPageClient.jsx", "src/lib/email.js", "src/lib/mapLoadToInvoicePayload.js", "src/components/dashboard/section-cards.jsx", "src/app/page.jsx", "src/components/forms/DynamicMultiStepForm.Jsx", "src/app/brokers/add/ExampleUsage.JSX", "src/app/account/accountClient.jsx"],
   "exclude": ["node_modules"]
 }

@@ -1,7 +1,9 @@
 "use client"
 
 import {
+  IconBell,
   IconCreditCard,
+  IconCube,
   IconDotsVertical,
   IconLogout,
   IconNotification,
@@ -73,7 +75,7 @@ export function NavUser({
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">{user.name}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.name}</span>
@@ -85,18 +87,30 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <IconUserCircle />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconCreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconNotification />
-                Notifications
-              </DropdownMenuItem>
+              <Link href={"/account?tab=tab-1"}>
+                <DropdownMenuItem>
+                  <IconUserCircle />
+                  <span>Profile</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href={"/account?tab=tab-2"}>
+                <DropdownMenuItem>
+                  <IconCube />
+                  <span>Organization</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href={"/account?tab=tab-3"}>
+                <DropdownMenuItem>
+                  <IconBell />
+                  <span>Notifications</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href={"/account?tab=tab-4"}>
+                <DropdownMenuItem>
+                  <IconCreditCard />
+                  <span>Billing</span>
+                </DropdownMenuItem>
+              </Link>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>

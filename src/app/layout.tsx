@@ -9,6 +9,8 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 import { auth0 } from "@/lib/auth0";
 import { redirect } from "next/navigation";
+import { getToken } from "@/lib/getToken";
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,11 +34,29 @@ export default async function RootLayout({
 }) {
   // Fetch the user session
   const session = await auth0.getSession();
-
   // Redirect to login if no session
   if (!session) {
     redirect("/auth/login");
   }
+  const user = session.user
+  const orgId = user.org_id
+
+  console.log("Org ID: ", orgId)
+
+  // Optional: redirect if user not in an org
+  //if (!orgId) redirect("/no-organization")
+
+  const token = await getToken();
+
+  const res = await fetch(`https://dev-xmw2ajtl2wpc1npq.us.auth0.com/api/v2/organizations/${orgId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    cache: "no-store",
+  })
+
+  const organization = await res.json()
+  console.log("Organization: ", organization)
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -49,6 +69,7 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <SidebarProvider
+            
             style={
               {
                 "--sidebar-width": "calc(var(--spacing) * 72)",
@@ -56,7 +77,14 @@ export default async function RootLayout({
               } as React.CSSProperties
             }
           >
-            <AppSidebar variant="inset" user={session.user as any} />
+            <AppSidebar
+            variant="inset"
+              user={user}
+              organization={{
+                id: organization.id,
+                name: organization.display_name || organization.name,
+              }}
+            />
             <SidebarInset>
               <SiteHeader />
               {children}

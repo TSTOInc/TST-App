@@ -3,20 +3,21 @@
 import * as React from "react"
 import {
   IconCamera,
-  IconChartBar,
+  IconUserSquare,
   IconDashboard,
   IconDatabase,
   IconFileAi,
   IconFileDescription,
-  IconFileWord,
+  IconTruckDelivery,
   IconFolder,
   IconHelp,
-  IconInnerShadowTop,
   IconListDetails,
   IconReport,
   IconSearch,
   IconSettings,
   IconUsers,
+  IconUsersGroup,
+  IconBuildings,
 } from "@tabler/icons-react"
 
 import { NavDocuments } from "@/components/nav-documents"
@@ -55,7 +56,7 @@ const data = {
     {
       title: "Brokers",
       url: "/brokers",
-      icon: IconUsers,
+      icon: IconBuildings,
       items: [
         {
           title: "Broker Agents",
@@ -67,17 +68,17 @@ const data = {
     {
       title: "Drivers",
       url: "/drivers",
-      icon: IconUsers,
+      icon: IconUserSquare,
     },
     {
       title: "Trucks",
       url: "/trucks",
-      icon: IconUsers,
+      icon: IconTruckDelivery,
     },
     {
       title: "Equipment",
       url: "/equipment",
-      icon: IconUsers,
+      icon: IconFolder,
     }
   ],
   navClouds: [
@@ -114,18 +115,7 @@ const data = {
       title: "Directory",
       url: "/directory",
       icon: IconSearch,
-    },
-    {
-      title: "Settings",
-      url: "#",
-      icon: IconSettings,
-    },
-    {
-      title: "Get Help",
-      url: "#",
-      icon: IconHelp,
-    },
-
+    }
   ],
 }
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
@@ -133,10 +123,14 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
     name?: string
     email?: string
     avatar?: string
+  },
+  organization: {
+    id: string
+    name: string
   }
 }
 
-export function AppSidebar({ user, ...props }: AppSidebarProps) {
+export function AppSidebar({ user, organization, ...props }: AppSidebarProps) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -148,7 +142,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
             >
               <a href="/">
                 <img src="/logo.png" alt="logo" className="h-8 w-8" />
-                <span className="text-base font-semibold">Three Stars Transport Inc.</span>
+                <span className="text-base font-semibold">{organization.name}</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
