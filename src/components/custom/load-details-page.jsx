@@ -857,41 +857,59 @@ export function LoadDetailsPage({ id }) {
     }
     useEffect(() => {
         const fetchData = async () => {
-            setLoading(true)
-            setError(null)
+            setLoading(true);
+            setError(null);
+
             try {
-                const API_BASE = process.env.NEXT_PUBLIC_API_BASE
+                const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
                 const res = await fetch(`${API_BASE}/get/loads/${id}`, {
                     cache: "no-cache",
-                })
-                if (!res.ok) throw new Error("Failed to fetch data")
-                const data = await res.json()
-                setData(data)
+                });
+
+                if (!res.ok) throw new Error("Failed to fetch data");
+                const data = await res.json();
+                setData(data);
 
                 if (data.stops && data.stops.length > 0) {
+                    // 🧠 Sort stops by appointment_time or fallback to window_end
+                    const sortedStops = [...data.stops].sort((a, b) => {
+                        const timeA = a.appointment_time
+                            ? new Date(a.appointment_time)
+                            : new Date(a.window_end);
+                        const timeB = b.appointment_time
+                            ? new Date(b.appointment_time)
+                            : new Date(b.window_end);
+                        return timeA - timeB;
+                    });
+
+                    // 📍 Add coordinates after sorting
                     const stopsWithCoordinates = await Promise.all(
-                        data.stops.map(async (stop) => {
-                            const coords = await geocodeAddress(stop.location)
+                        sortedStops.map(async (stop) => {
+                            const coords = await geocodeAddress(stop.location);
                             return {
                                 ...stop,
                                 coordinates: coords,
                                 lat: coords[1],
                                 lng: coords[0],
                                 type: stop.type.charAt(0).toUpperCase() + stop.type.slice(1),
-                            }
+                            };
                         })
-                    )
-                    setStopsWithCoords(stopsWithCoordinates)
+                    );
+
+                    setStopsWithCoords(stopsWithCoordinates);
                 }
-                setProgress(data.progress || 0)
+
+                setProgress(data.progress || 0);
             } catch (err) {
-                setError(err.message)
+                setError(err.message);
             } finally {
-                setLoading(false)
+                setLoading(false);
             }
-        }
-        fetchData()
-    }, [id])
+        };
+
+        fetchData();
+    }, [id]);
+
 
     if (loading) return <Loading />
     if (error) return <div className="text-red-500">Error: {error}</div>
@@ -1078,7 +1096,7 @@ export function LoadDetailsPage({ id }) {
                                                         <p className="text-xs text-muted-foreground">
                                                             {stop.appointment_time
                                                                 ? formatDate(stop.appointment_time)
-                                                                : formatTimeRange(stop.window_start, stop.window_end)} 
+                                                                : formatTimeRange(stop.window_start, stop.window_end)}
                                                         </p>
                                                     </div>
                                                 </div>
