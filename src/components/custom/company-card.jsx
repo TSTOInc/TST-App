@@ -36,7 +36,7 @@ const CompanyCard = ({ company, carrier, broker, agent, driver, truck, equipment
             company.name || company.truck_number || company.equipment_number || "No Name"
         );
 
-        return `https://placehold.co/600x400/bae6fd/1B6DC1?font=montserrat&text=${fallbackText}`;
+        return `https://placehold.co/600x400/2c2c2c/ffffff?font=montserrat&text=${fallbackText}`;
     }, [company.image_url, company.website, company.name, company.truck_number, company.equipment_number]);
     if (!skeleton) return (
         <Card>
@@ -44,7 +44,7 @@ const CompanyCard = ({ company, carrier, broker, agent, driver, truck, equipment
                 <img
                     src={imageUrl}
                     alt="company Image"
-                    className="h-46 w-full object-cover mb-4 rounded-md bg-neutral-950"
+                    className="h-46 w-full object-cover mb-4 rounded-md bg-neutral-200 dark:bg-neutral-800"
                 />
             </CardContent>
 

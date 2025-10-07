@@ -63,7 +63,7 @@ function AvatarFallback({ className, fullsize = false, children, ...props }: Ava
         fullsize ? "size-full border-6 border-background font-bold text-6xl uppercase select-none leading-none" : "size-full",
         className
       )}
-      style={fullsize ? { backgroundColor: "#C9E4FF", color: "#1B6DC1" } : undefined}
+      style={fullsize ? { backgroundColor: "#2c2c2c", color: "#ffffff" } : undefined}
       {...props}
     >
       {typeof children === "string" ? GetInitials(children) : null}
