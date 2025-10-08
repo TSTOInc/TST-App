@@ -10,7 +10,19 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { auth0 } from "@/lib/auth0";
 import { redirect } from "next/navigation";
 import { getToken } from "@/lib/getToken";
-
+import { ArrowUpRightIcon, SearchIcon } from "lucide-react"
+import { IconBuildingPlus, IconUserPlus, IconZoomQuestion } from "@tabler/icons-react";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
+import { Button } from "@/components/ui/button";
+import { IconFolderCode } from "@tabler/icons-react";
+import Link from "next/link";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,16 +48,115 @@ export default async function RootLayout({
   const session = await auth0.getSession();
   // Redirect to login if no session
   if (!session) {
-    redirect("/auth/login");
+    return (
+      <html lang="en" suppressHydrationWarning>
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        >
+          <ThemeProvider
+            attribute="class"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <div className="min-h-screen flex flex-col">
+              <Empty>
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <IconZoomQuestion />
+                  </EmptyMedia>
+                  <EmptyTitle>401 - Not Authenticated</EmptyTitle>
+                  <EmptyDescription>
+                    You are not authenticated. Please log in.
+                  </EmptyDescription>
+                </EmptyHeader>
+                <EmptyContent>
+                  <div className="flex gap-2">
+                    <Button variant="outline" asChild>
+                      <Link href="/auth/login?screen_hint=signup">Sign up</Link>
+                    </Button>
+                    <Button asChild>
+                      <Link href="/auth/login">Log in</Link>
+                    </Button>
+
+                  </div>
+                </EmptyContent>
+                <EmptyDescription>
+                  Need help? <a href="#">Contact support</a>
+                </EmptyDescription>
+              </Empty>
+            </div>
+          </ThemeProvider>
+        </body>
+      </html>
+    )
+  }
+  if (!session.user.org_id) {
+    return (
+      <html lang="en" suppressHydrationWarning>
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        >
+          <ThemeProvider
+            attribute="class"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <div className="min-h-screen flex flex-col">
+              <Empty>
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <IconBuildingPlus className="w-12 h-12 text-muted-foreground" />
+                  </EmptyMedia>
+                  <EmptyTitle>401 - No Organization Found</EmptyTitle>
+                  <EmptyDescription>
+                    You’re not currently part of any organization.
+                    You can create a new one or join an existing team by invitation.
+                  </EmptyDescription>
+                </EmptyHeader>
+
+                <EmptyContent>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <Button asChild>
+                      <Link href="/organization/new">
+                        <IconBuildingPlus className="mr-2 h-4 w-4" />
+                        Create Organization
+                      </Link>
+                    </Button>
+                    <Button variant="outline" asChild>
+                      <Link href="/auth/login?screen_hint=signup">
+                        <IconUserPlus className="mr-2 h-4 w-4" />
+                        Join with Invite
+                      </Link>
+                    </Button>
+                  </div>
+                </EmptyContent>
+                <EmptyDescription>
+                   {" "}
+                  <Link
+                    href="/auth/logout"
+                    className="underline underline-offset-4 text-primary hover:text-primary/80"
+                  >
+                    Log out
+                  </Link>
+                </EmptyDescription>
+                <EmptyDescription>
+                  Need help?{" "}
+                  <Link
+                    href="/support"
+                    className="underline underline-offset-4 text-primary hover:text-primary/80"
+                  >
+                    Contact support
+                  </Link>
+                </EmptyDescription>
+              </Empty>
+            </div>
+          </ThemeProvider>
+        </body>
+      </html>
+    )
   }
   const user = session.user
   const orgId = user.org_id
-
-  console.log("Org ID: ", orgId)
-
-  // Optional: redirect if user not in an org
-  //if (!orgId) redirect("/no-organization")
-
   const token = await getToken();
 
   const res = await fetch(`https://dev-xmw2ajtl2wpc1npq.us.auth0.com/api/v2/organizations/${orgId}`, {
@@ -56,7 +167,6 @@ export default async function RootLayout({
   })
 
   const organization = await res.json()
-  console.log("Organization: ", organization)
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -69,7 +179,7 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <SidebarProvider
-            
+
             style={
               {
                 "--sidebar-width": "calc(var(--spacing) * 72)",
@@ -78,7 +188,7 @@ export default async function RootLayout({
             }
           >
             <AppSidebar
-            variant="inset"
+              variant="inset"
               user={user}
               organization={{
                 id: organization.id,
