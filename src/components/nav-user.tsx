@@ -87,33 +87,37 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <Link href={"/account?tab=tab-1"}>
-                <DropdownMenuItem>
+              <DropdownMenuItem asChild className="cursor-pointer">
+                <Link href="/account" className="flex items-center gap-2">
                   <IconUserCircle />
                   <span>Profile</span>
-                </DropdownMenuItem>
-              </Link>
-              <Link href={"/account?tab=tab-2"}>
-                <DropdownMenuItem>
+                </Link>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem asChild className="cursor-pointer">
+                <Link href="/account?tab=tab-2" className="flex items-center gap-2">
                   <IconCube />
                   <span>Organization</span>
-                </DropdownMenuItem>
-              </Link>
-              <Link href={"/account?tab=tab-3"}>
-                <DropdownMenuItem>
+                </Link>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem asChild className="cursor-pointer">
+                <Link href="/account?tab=tab-3" className="flex items-center gap-2">
                   <IconBell />
                   <span>Notifications</span>
-                </DropdownMenuItem>
-              </Link>
-              <Link href={"/account?tab=tab-4"}>
-                <DropdownMenuItem>
+                </Link>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem asChild className="cursor-pointer">
+                <Link href="/account?tab=tab-4" className="flex items-center gap-2">
                   <IconCreditCard />
                   <span>Billing</span>
-                </DropdownMenuItem>
-              </Link>
+                </Link>
+              </DropdownMenuItem>
             </DropdownMenuGroup>
+
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
+            <DropdownMenuItem asChild className="cursor-pointer">
               <Link href="/auth/logout" className="flex items-center gap-2">
                 <IconLogout />
                 Log out
