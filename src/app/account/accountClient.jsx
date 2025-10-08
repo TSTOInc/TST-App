@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
-import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import {
   Tabs,
   TabsContent,
@@ -16,6 +15,7 @@ import {
   FieldDescription,
   FieldSeparator,
   Field,
+  FieldLegend,
 } from "@/components/ui/field"
 import { User, BoxIcon, Bell, CreditCard } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -27,35 +27,16 @@ export default function AccountClient({ session }) {
     email: "Test Email",
     picture: "https://placehold.co/600x400"
   };
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const pathname = usePathname()
-
-  // Local state controls the current tab
-  const [currentTab, setCurrentTab] = useState("tab-1")
-
-  // Read from URL only once at mount
-  useEffect(() => {
-    const tabFromUrl = searchParams.get("tab")
-    if (tabFromUrl) setCurrentTab(tabFromUrl)
-  }, [searchParams]) // runs once when mounted, not on each re-render
-
-  // When user changes tab, update local state + URL
-  const handleTabChange = (value) => {
-    setCurrentTab(value)
-    const newUrl = `${pathname}?tab=${value}`
-    router.replace(newUrl) // you can use push() if you want back button history
-  }
 
   return (
     <div className="lg:px-24 lg:py-20 px-4 py-8">
       <div className="flex items-center justify-between lg:mb-16 mb-8">
         {/* Left column: text */}
         <div>
-          <h1 className="scroll-m-20 text-6xl font-medium tracking-tight text-balance">
+          <h1 className="scroll-m-20 text-5xl lg:text-6xl font-medium tracking-tight text-balance">
             Account
           </h1>
-          <span className="text-muted-foreground">
+          <span className="text-muted-foreground text-sm lg:text-lg">
             Here you can view and manage your account details.
           </span>
         </div>
@@ -72,12 +53,33 @@ export default function AccountClient({ session }) {
       </div>
 
       <Tabs
-        value={currentTab}
-        onValueChange={handleTabChange}
+        defaultValue="tab-1"
         orientation="vertical"
-        className="w-full flex-row"
+        className="w-full flex lg:flex-row"
       >
-        <TabsList className="text-foreground flex-col gap-1 rounded-none bg-transparent px-1 py-0 h-full">
+        <TabsList className="flex-row flex lg:hidden text-foreground gap-1 bg-transparent px-1 py-0 w-full">
+          {[
+            { label: "Profile", value: "tab-1", icon: User },
+            { label: "Organization", value: "tab-2", icon: BoxIcon },
+            { label: "Notifications", value: "tab-3", icon: Bell },
+            { label: "Billing", value: "tab-4", icon: CreditCard },
+          ].map((tab) => (
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              className="
+             py-2 px-2 w-full flex flex-col items-center justify-center
+    border-none bg-transparent shadow-none
+    relative
+    after:absolute after:inset-x-0 after:bottom-0 after:h-0.5
+    data-[state=active]:after:bg-primary
+    hover:bg-accent hover:text-foreground
+            ">
+              {tab.icon && <tab.icon />}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        <TabsList className="hidden lg:flex text-foreground flex-col gap-1 rounded-none bg-transparent px-1 py-0 h-full">
           {[
             { label: "Profile", value: "tab-1", icon: User },
             { label: "Organization", value: "tab-2", icon: BoxIcon },
@@ -107,6 +109,7 @@ export default function AccountClient({ session }) {
           <TabsContent value="tab-1">
             <div className="w-full p-8">
               <FieldGroup>
+                <FieldLegend className="block lg:hidden">Profile Details</FieldLegend>
                 <FieldSet>
                   <FieldLabel>Name</FieldLabel>
                   <FieldDescription>
@@ -147,15 +150,30 @@ export default function AccountClient({ session }) {
           </TabsContent>
 
           <TabsContent value="tab-2">
-            <p className="text-muted-foreground px-4 py-3 text-xs">Content for Tab 2</p>
+            <div className="w-full p-8">
+              <FieldGroup>
+                <FieldLegend className="block lg:hidden">Organization Details</FieldLegend>
+                <p className="text-muted-foreground px-4 py-3 text-xs">Content for Tab 2</p>
+              </FieldGroup>
+            </div>
           </TabsContent>
 
           <TabsContent value="tab-3">
-            <p className="text-muted-foreground px-4 py-3 text-xs">Content for Tab 3</p>
+            <div className="w-full p-8">
+              <FieldGroup>
+                <FieldLegend className="block lg:hidden">Notifications</FieldLegend>
+                <p className="text-muted-foreground px-4 py-3 text-xs">Content for Tab 3</p>
+              </FieldGroup>
+            </div>
           </TabsContent>
 
           <TabsContent value="tab-4">
-            <p className="text-muted-foreground px-4 py-3 text-xs">Content for Tab 4</p>
+            <div className="w-full p-8">
+              <FieldGroup>
+                <FieldLegend className="block lg:hidden">Billing Details</FieldLegend>
+                <p className="text-muted-foreground px-4 py-3 text-xs">Content for Tab 4</p>
+              </FieldGroup>
+            </div>
           </TabsContent>
         </div>
       </Tabs>
