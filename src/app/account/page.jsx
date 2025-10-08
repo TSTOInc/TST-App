@@ -1,12 +1,16 @@
 import React from 'react'
 import AccountClient from './accountClient'
-import { auth0 } from "@/lib/auth0";
 
 export default async function page() {
-
-  const session = await auth0.getSession();
-  
+  const t_session = {
+    user: {
+      name: "Real Name",
+      nickname: "Real Nickname",
+      email: "Real Email",
+      picture: "https://placehold.co/600x400"
+    }
+  };
   return (
-    <AccountClient session={session} />
+    <AccountClient session={t_session} />
   )
 }
