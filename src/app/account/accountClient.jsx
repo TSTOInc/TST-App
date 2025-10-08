@@ -21,6 +21,12 @@ import { User, BoxIcon, Bell, CreditCard } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export default function AccountClient({ session }) {
+  const t_session = session || {
+    name: "Test Name",
+    nickname: "Test Nickname",
+    email: "Test Email",
+    picture: "https://placehold.co/600x400"
+  };
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
@@ -47,19 +53,19 @@ export default function AccountClient({ session }) {
         {/* Left column: text */}
         <div>
           <h1 className="scroll-m-20 text-6xl font-medium tracking-tight text-balance">
-          Account
-        </h1>
-        <span className="text-muted-foreground">
-          Here you can view and manage your account details.
-        </span>
+            Account
+          </h1>
+          <span className="text-muted-foreground">
+            Here you can view and manage your account details.
+          </span>
         </div>
 
         {/* Right column: avatar */}
         <div className="flex-shrink-0">
           <Avatar className="h-32 w-32">
-            <AvatarImage src={session.user.picture} />
+            <AvatarImage src={t_session.user.picture} />
             <AvatarFallback>
-              {session.user.name?.charAt(0).toUpperCase() ?? "?"}
+              {t_session.user.name?.charAt(0).toUpperCase() ?? "?"}
             </AvatarFallback>
           </Avatar>
         </div>
@@ -108,7 +114,7 @@ export default function AccountClient({ session }) {
                   </FieldDescription>
                   <FieldGroup data-slot="checkbox-group">
                     <Field orientation="horizontal">
-                      <Input id="name" placeholder="Full name" defaultValue={session.user.name} />
+                      <Input id="name" placeholder="Full name" defaultValue={t_session.user.name} />
                     </Field>
                   </FieldGroup>
                 </FieldSet>
@@ -120,7 +126,7 @@ export default function AccountClient({ session }) {
                   </FieldDescription>
                   <FieldGroup data-slot="checkbox-group">
                     <Field orientation="horizontal">
-                      <Input id="username" placeholder="Username (e.g. john_doe)" defaultValue={session.user.nickname} />
+                      <Input id="username" placeholder="Username (e.g. john_doe)" defaultValue={t_session.user.nickname} />
                     </Field>
                   </FieldGroup>
                 </FieldSet>
@@ -132,7 +138,7 @@ export default function AccountClient({ session }) {
                   </FieldDescription>
                   <FieldGroup data-slot="checkbox-group">
                     <Field orientation="horizontal">
-                      <Input id="email" placeholder="johndoe@example.com" defaultValue={session.user.email} />
+                      <Input id="email" placeholder="johndoe@example.com" defaultValue={t_session.user.email} />
                     </Field>
                   </FieldGroup>
                 </FieldSet>
