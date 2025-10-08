@@ -17,10 +17,14 @@ import {
   Field,
   FieldLegend,
 } from "@/components/ui/field"
-import { User, BoxIcon, Bell, CreditCard } from "lucide-react"
+import { User, Bell, CreditCard } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { IconBuildings } from "@tabler/icons-react"
+import { useSession } from "@/components/session-provider"
+
 
 export default function AccountClient({ session }) {
+  const real_session = useSession()
   const t_session = session || {
     name: "Test Name",
     nickname: "Test Nickname",
@@ -37,7 +41,8 @@ export default function AccountClient({ session }) {
             Account
           </h1>
           <span className="text-muted-foreground text-sm lg:text-lg">
-            Here you can view and manage your account details.
+            Here you can view and manage your account details. 
+            {real_session.user.name && ` Welcome, ${real_session.user.name}!`}
           </span>
         </div>
 
@@ -60,7 +65,7 @@ export default function AccountClient({ session }) {
         <TabsList className="flex-row flex lg:hidden text-foreground gap-1 bg-transparent px-1 py-0 w-full">
           {[
             { label: "Profile", value: "tab-1", icon: User },
-            { label: "Organization", value: "tab-2", icon: BoxIcon },
+            { label: "Organization", value: "tab-2", icon: IconBuildings },
             { label: "Notifications", value: "tab-3", icon: Bell },
             { label: "Billing", value: "tab-4", icon: CreditCard },
           ].map((tab) => (
@@ -82,7 +87,7 @@ export default function AccountClient({ session }) {
         <TabsList className="hidden lg:flex text-foreground flex-col gap-1 rounded-none bg-transparent px-1 py-0 h-full">
           {[
             { label: "Profile", value: "tab-1", icon: User },
-            { label: "Organization", value: "tab-2", icon: BoxIcon },
+            { label: "Organization", value: "tab-2", icon: IconBuildings },
             { label: "Notifications", value: "tab-3", icon: Bell },
             { label: "Billing", value: "tab-4", icon: CreditCard },
           ].map((tab) => (
