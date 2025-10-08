@@ -12,10 +12,31 @@ type Session = {
   }
 } | null
 
-const SessionContext = createContext<Session>(null)
+type Organization = {
+  id: string
+  name: string
+} | null
 
-export function SessionProvider({ value, children }: { value: Session, children: React.ReactNode }) {
-  return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
+// Create two contexts
+const SessionContext = createContext<Session>(null)
+const OrganizationContext = createContext<Organization>(null)
+
+export function SessionProvider({
+  value,
+  organization,
+  children,
+}: {
+  value: Session
+  organization: Organization
+  children: React.ReactNode
+}) {
+  return (
+    <SessionContext.Provider value={value}>
+      <OrganizationContext.Provider value={organization}>
+        {children}
+      </OrganizationContext.Provider>
+    </SessionContext.Provider>
+  )
 }
 
 export function useSession() {
@@ -24,4 +45,12 @@ export function useSession() {
     console.warn("useSession called outside of SessionProvider")
   }
   return session
+}
+
+export function useOrganization() {
+  const organization = useContext(OrganizationContext)
+  if (!organization) {
+    console.warn("useOrganization called outside of SessionProvider")
+  }
+  return organization
 }

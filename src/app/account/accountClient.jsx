@@ -20,16 +20,21 @@ import {
 import { User, Bell, CreditCard } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { IconBuildings } from "@tabler/icons-react"
-import { useSession } from "@/components/session-provider"
+import { useSession, useOrganization } from "@/components/session-provider"
 
 
-export default function AccountClient({ session }) {
+export default function AccountClient() {
   const real_session = useSession()
-  const t_session = session || {
+  const real_organization = useOrganization()
+  const t_session = real_session || {
     name: "Test Name",
     nickname: "Test Nickname",
     email: "Test Email",
     picture: "https://placehold.co/600x400"
+  };
+  const t_organization = real_organization || {
+    id: "0",
+    name: "Test Organization",
   };
 
   return (
@@ -42,7 +47,6 @@ export default function AccountClient({ session }) {
           </h1>
           <span className="text-muted-foreground text-sm lg:text-lg">
             Here you can view and manage your account details. 
-            {real_session.user.name && ` Welcome, ${real_session.user.name}!`}
           </span>
         </div>
 
@@ -122,7 +126,7 @@ export default function AccountClient({ session }) {
                   </FieldDescription>
                   <FieldGroup data-slot="checkbox-group">
                     <Field orientation="horizontal">
-                      <Input id="name" placeholder="Full name" defaultValue={t_session.user.name} />
+                      <Input id="name" placeholder="Full name" defaultValue={t_session.user.name} readOnly />
                     </Field>
                   </FieldGroup>
                 </FieldSet>
@@ -134,7 +138,7 @@ export default function AccountClient({ session }) {
                   </FieldDescription>
                   <FieldGroup data-slot="checkbox-group">
                     <Field orientation="horizontal">
-                      <Input id="username" placeholder="Username (e.g. john_doe)" defaultValue={t_session.user.nickname} />
+                      <Input id="username" placeholder="Username (e.g. john_doe)" defaultValue={t_session.user.nickname} readOnly />
                     </Field>
                   </FieldGroup>
                 </FieldSet>
@@ -146,7 +150,7 @@ export default function AccountClient({ session }) {
                   </FieldDescription>
                   <FieldGroup data-slot="checkbox-group">
                     <Field orientation="horizontal">
-                      <Input id="email" placeholder="johndoe@example.com" defaultValue={t_session.user.email} />
+                      <Input id="email" placeholder="johndoe@example.com" defaultValue={t_session.user.email} readOnly />
                     </Field>
                   </FieldGroup>
                 </FieldSet>
@@ -158,7 +162,17 @@ export default function AccountClient({ session }) {
             <div className="w-full p-8">
               <FieldGroup>
                 <FieldLegend className="block lg:hidden">Organization Details</FieldLegend>
-                <p className="text-muted-foreground px-4 py-3 text-xs">Content for Tab 2</p>
+                <FieldSet>
+                  <FieldLabel>Name</FieldLabel>
+                  <FieldDescription>
+                    This is the name of your organization.
+                  </FieldDescription>
+                  <FieldGroup data-slot="checkbox-group">
+                    <Field orientation="horizontal">
+                      <Input id="name" placeholder="Organization name" defaultValue={t_organization.name} readOnly />
+                    </Field>
+                  </FieldGroup>
+                </FieldSet>
               </FieldGroup>
             </div>
           </TabsContent>
