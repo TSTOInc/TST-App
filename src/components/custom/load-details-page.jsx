@@ -543,13 +543,24 @@ const handleGenerateInvoice = async (data) => {
 
 // 🔹 Component
 export default function LoadProgressCard({ data }) {
-    const detailedSteps = buildDetailedSteps(data.stops)
-    const uiSteps = buildVisibleSteps(data.stops)
 
-    const [progress, setProgress] = useState(data.progress) // detailed step index
+    const sortedStops = [...(data.stops || [])].sort((a, b) => {
+        const timeA = a.appointment_time
+            ? new Date(a.appointment_time)
+            : new Date(a.window_end);
+        const timeB = b.appointment_time
+            ? new Date(b.appointment_time)
+            : new Date(b.window_end);
+        return timeA - timeB;
+    });
 
-    const uiIndex = mapProgressToUI(progress, data.stops)
-    const progressValue = (uiIndex / (uiSteps.length - 1)) * 100
+    const detailedSteps = buildDetailedSteps(sortedStops);
+    const uiSteps = buildVisibleSteps(sortedStops);
+
+    const [progress, setProgress] = useState(data.progress); // detailed step index
+
+    const uiIndex = mapProgressToUI(progress, sortedStops);
+    const progressValue = (uiIndex / (uiSteps.length - 1)) * 100;
 
     function getLoadStatus(progress, totalSteps) {
         if (progress === 0) return "new";
@@ -600,7 +611,7 @@ export default function LoadProgressCard({ data }) {
         }
     }
 
-    const visibleLabels = getVisibleStepLabels(progress, data.stops)
+    const visibleLabels = getVisibleStepLabels(progress, sortedStops)
     return (
         <Card>
             <CardHeader>
@@ -857,41 +868,59 @@ export function LoadDetailsPage({ id }) {
     }
     useEffect(() => {
         const fetchData = async () => {
-            setLoading(true)
-            setError(null)
+            setLoading(true);
+            setError(null);
+
             try {
-                const API_BASE = process.env.NEXT_PUBLIC_API_BASE
+                const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
                 const res = await fetch(`${API_BASE}/get/loads/${id}`, {
                     cache: "no-cache",
-                })
-                if (!res.ok) throw new Error("Failed to fetch data")
-                const data = await res.json()
-                setData(data)
+                });
+
+                if (!res.ok) throw new Error("Failed to fetch data");
+                const data = await res.json();
+                setData(data);
 
                 if (data.stops && data.stops.length > 0) {
+                    // 🧠 Sort stops by appointment_time or fallback to window_end
+                    const sortedStops = [...data.stops].sort((a, b) => {
+                        const timeA = a.appointment_time
+                            ? new Date(a.appointment_time)
+                            : new Date(a.window_end);
+                        const timeB = b.appointment_time
+                            ? new Date(b.appointment_time)
+                            : new Date(b.window_end);
+                        return timeA - timeB;
+                    });
+
+                    // 📍 Add coordinates after sorting
                     const stopsWithCoordinates = await Promise.all(
-                        data.stops.map(async (stop) => {
-                            const coords = await geocodeAddress(stop.location)
+                        sortedStops.map(async (stop) => {
+                            const coords = await geocodeAddress(stop.location);
                             return {
                                 ...stop,
                                 coordinates: coords,
                                 lat: coords[1],
                                 lng: coords[0],
                                 type: stop.type.charAt(0).toUpperCase() + stop.type.slice(1),
-                            }
+                            };
                         })
-                    )
-                    setStopsWithCoords(stopsWithCoordinates)
+                    );
+
+                    setStopsWithCoords(stopsWithCoordinates);
                 }
-                setProgress(data.progress || 0)
+
+                setProgress(data.progress || 0);
             } catch (err) {
-                setError(err.message)
+                setError(err.message);
             } finally {
-                setLoading(false)
+                setLoading(false);
             }
-        }
-        fetchData()
-    }, [id])
+        };
+
+        fetchData();
+    }, [id]);
+
 
     if (loading) return <Loading />
     if (error) return <div className="text-red-500">Error: {error}</div>
@@ -905,6 +934,14 @@ export function LoadDetailsPage({ id }) {
     const pickupStop = data.stops?.find((stop) => stop.type === "pickup")
     const deliveryStop = data.stops?.find((stop) => stop.type === "delivery")
     const statusProgress = getStatusProgress(data.load_status)
+
+    const sortedStops = [...data.stops].sort((a, b) => {
+        // pick the relevant time for each stop
+        const timeA = a.appointment_time ? new Date(a.appointment_time) : new Date(a.window_end);
+        const timeB = b.appointment_time ? new Date(b.appointment_time) : new Date(b.window_end);
+
+        return timeA - timeB;
+    });
 
     return (
         <div className="flex-1 space-y-4 p-4 pt-6">
@@ -1047,15 +1084,16 @@ export function LoadDetailsPage({ id }) {
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 <div className="relative">
-                                    {data.stops.map((stop, index) => (
+                                    {sortedStops.map((stop, index) => (
                                         <div key={stop.id} className="relative">
                                             <div className="flex items-start gap-3">
                                                 {/* Marker icon */}
                                                 <div className="flex flex-col items-center">
                                                     <MapPin
-                                                        className={`h-5 w-5 ${stop.type === "pickup" ? "text-green-600" : "text-red-600"}`}
+                                                        className={`h-5 w-5 ${stop.type === "pickup" ? "text-green-600" : "text-red-600"
+                                                            }`}
                                                     />
-                                                    {index < data.stops.length - 1 && (
+                                                    {index < sortedStops.length - 1 && (
                                                         <div className="w-px h-16 border-l-2 border-dashed border-muted-foreground/30 mt-2" />
                                                     )}
                                                 </div>
@@ -1067,13 +1105,16 @@ export function LoadDetailsPage({ id }) {
                                                     <div className="flex items-center gap-2">
                                                         <Clock className="h-3 w-3 text-muted-foreground" />
                                                         <p className="text-xs text-muted-foreground">
-                                                            {formatTimeRange(stop.window_start, stop.window_end)}
+                                                            {stop.appointment_time
+                                                                ? formatDate(stop.appointment_time)
+                                                                : formatTimeRange(stop.window_start, stop.window_end)}
                                                         </p>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     ))}
+
                                 </div>
                             </CardContent>
                         </Card>
