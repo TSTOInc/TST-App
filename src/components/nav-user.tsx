@@ -118,7 +118,7 @@ export function NavUser({
 
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild className="cursor-pointer">
-              <Link href="/auth/logout" className="flex items-center gap-2">
+              <Link href="#" className="flex items-center gap-2">
                 <IconLogout />
                 Log out
               </Link>
