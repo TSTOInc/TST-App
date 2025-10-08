@@ -21,9 +21,21 @@ import { User, Bell, CreditCard } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { IconBuildings } from "@tabler/icons-react"
 import { useSession, useOrganization } from "@/components/session-provider"
+import { AlertCircleIcon, CheckCircle2Icon, PopcornIcon } from "lucide-react"
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert"
+import { useRouter, useSearchParams } from "next/navigation"
 
 
 export default function AccountClient() {
+
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+
   const real_session = useSession()
   const real_organization = useOrganization()
   const t_session = real_session || {
@@ -37,6 +49,34 @@ export default function AccountClient() {
     name: "Test Organization",
   };
 
+  const initialTab = searchParams.get("tab") || "tab-1"
+  const [activeTab, setActiveTab] = useState(initialTab)
+
+  // Update tab on user click
+  const handleTabChange = (value) => {
+    setActiveTab(value)
+    const params = new URLSearchParams(searchParams.toString())
+
+    if (value === "tab-1") {
+      // Profile tab → remove query
+      router.replace("/account", { scroll: false })
+    } else {
+      // Other tabs → set tab query
+      params.set("tab", value)
+      router.replace(`/account?${params.toString()}`, { scroll: false })
+    }
+  }
+
+
+  // Update tab if query changes manually
+  useEffect(() => {
+    const tabFromQuery = searchParams.get("tab") || "tab-1" // default to tab-1
+    if (tabFromQuery !== activeTab) {
+      setActiveTab(tabFromQuery)
+    }
+  }, [searchParams])
+
+
   return (
     <div className="lg:px-24 lg:py-20 px-4 py-8">
       <div className="flex items-center justify-between lg:mb-16 mb-8">
@@ -46,7 +86,7 @@ export default function AccountClient() {
             Account
           </h1>
           <span className="text-muted-foreground text-sm lg:text-lg">
-            Here you can view and manage your account details. 
+            Here you can view and manage your account details.
           </span>
         </div>
 
@@ -62,7 +102,8 @@ export default function AccountClient() {
       </div>
 
       <Tabs
-        defaultValue="tab-1"
+        value={activeTab}
+        onValueChange={handleTabChange}
         orientation="vertical"
         className="w-full flex lg:flex-row"
       >
@@ -181,7 +222,13 @@ export default function AccountClient() {
             <div className="w-full p-8">
               <FieldGroup>
                 <FieldLegend className="block lg:hidden">Notifications</FieldLegend>
-                <p className="text-muted-foreground px-4 py-3 text-xs">Content for Tab 3</p>
+                <Alert>
+                  <AlertCircleIcon />
+                  <AlertTitle>Notificaions - Feature Unavailable</AlertTitle>
+                  <AlertDescription>
+                    This feature is still in development.
+                  </AlertDescription>
+                </Alert>
               </FieldGroup>
             </div>
           </TabsContent>
@@ -190,7 +237,13 @@ export default function AccountClient() {
             <div className="w-full p-8">
               <FieldGroup>
                 <FieldLegend className="block lg:hidden">Billing Details</FieldLegend>
-                <p className="text-muted-foreground px-4 py-3 text-xs">Content for Tab 4</p>
+                <Alert>
+                  <AlertCircleIcon />
+                  <AlertTitle>Billing - Feature Unavailable</AlertTitle>
+                  <AlertDescription>
+                    This feature is still in development.
+                  </AlertDescription>
+                </Alert>
               </FieldGroup>
             </div>
           </TabsContent>

@@ -60,7 +60,7 @@ export default function TablePage() {
 
   const formatDueDate = (invoiceDateStr, daysToPay, paidDateStr) => {
     if (!invoiceDateStr || !daysToPay) {
-      return { text: "IN PROGRESS", color: "text-gray-400" }
+      return { text: "IN PROGRESS", color: "text-muted-foreground font-semibold dark:font-normal" }
     }
 
     const invoiceDate = new Date(invoiceDateStr)
@@ -71,17 +71,17 @@ export default function TablePage() {
     const diffTime = dueDate - now
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
-    if (paidDateStr) return { text: "PAID", color: "text-green-500" }
-    if (diffDays === 0) return { text: "DUE TODAY", color: "text-blue-400" }
+    if (paidDateStr) return { text: "PAID", color: "text-green-500 font-semibold dark:font-normal" }
+    if (diffDays === 0) return { text: "DUE TODAY", color: "text-blue-400 font-semibold dark:font-normal" }
     if (diffDays < 0) {
       return {
         text: `OVERDUE BY ${Math.abs(diffDays)} DAY${Math.abs(diffDays) > 1 ? "S" : ""}`,
-        color: "text-red-500",
+        color: "text-red-500 font-semibold dark:font-normal",
       }
     }
     return {
       text: `DUE IN ${diffDays} DAY${diffDays > 1 ? "S" : ""}`,
-      color: "text-blue-400",
+      color: "text-blue-400 font-semibold dark:font-normal",
     }
   }
 

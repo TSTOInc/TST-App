@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+import * as React from "react";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
-import { useIsMobile } from "@/hooks/use-mobile"
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Card,
   CardAction,
@@ -11,85 +11,79 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/components/ui/chart"
+} from "@/components/ui/chart";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import {
-  ToggleGroup,
-  ToggleGroupItem,
-} from "@/components/ui/toggle-group"
+} from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
-export const description = "An interactive area chart"
-
-const chartConfig = {
-  visitors: {
-    label: "Visitors",
-  },
-  revenue: {
-    label: "Revenue",
-    color: "var(--primary)",
-  },
-} satisfies ChartConfig
-
-export function ChartAreaInteractive({ chartData }: { chartData: any[] }) {
-  const isMobile = useIsMobile()
-  const [timeRange, setTimeRange] = React.useState("90d")
+interface ChartAreaInteractiveProps {
+  title: string;
+  chartData: any[];
+  color?: string;
+  formatValue?: (value: number) => string;
+  config?: ChartConfig; // optional, default can be provided
+}
+const defaultConfig: ChartConfig = {
+  revenue: { label: "Revenue", color: "var(--primary)" },
+  loads: { label: "Loads", color: "var(--primary)" },
+};
+export function ChartAreaInteractive({
+  title,
+  chartData,
+  color = "var(--primary)",
+  formatValue,
+}: ChartAreaInteractiveProps) {
+  const dataKey = title.toLowerCase().replace(/\s+/g, "_");
+  const isMobile = useIsMobile();
+  const [timeRange, setTimeRange] = React.useState("30d");
 
   React.useEffect(() => {
-    if (isMobile) {
-      setTimeRange("7d")
-    }
-  }, [isMobile])
+    if (isMobile) setTimeRange("7d");
+  }, [isMobile]);
 
+  const defaultFormatValue = React.useCallback(
+    (v: number) =>
+      formatValue
+        ? formatValue(v)
+        : title.toLowerCase().includes("revenue")
+          ? `$${v.toLocaleString()}`
+          : v.toLocaleString(),
+    [formatValue, title]
+  );
   const filteredData = chartData.filter((item) => {
-    const date = new Date(item.date)
-    const now = new Date()
-    let daysToSubtract = 90
-    if (timeRange === "30d") {
-      daysToSubtract = 30
-    } else if (timeRange === "7d") {
-      daysToSubtract = 7
-    }
-    const startDate = new Date(now)
-    startDate.setDate(now.getDate() - daysToSubtract)
-    return date >= startDate
-  })
+    const date = new Date(item.date);
+    const now = new Date();
+    let daysToSubtract = 90;
+    if (timeRange === "30d") daysToSubtract = 30;
+    if (timeRange === "7d") daysToSubtract = 7;
+    const startDate = new Date(now);
+    startDate.setDate(now.getDate() - daysToSubtract);
+    return date >= startDate;
+  });
 
   return (
     <Card className="@container/card">
       <CardHeader>
-        <CardTitle>Total Revenue</CardTitle>
+        <CardTitle>Total {title}</CardTitle>
         <CardDescription>
           <span className="hidden @[540px]/card:block">
             Total for the last{" "}
-            {timeRange === "90d"
-              ? "3 months"
-              : timeRange === "30d"
-              ? "30 days"
-              : timeRange === "7d"
-              ? "7 days"
-              : ""}
+            {timeRange === "90d" ? "3 months" : timeRange === "30d" ? "30 days" : "7 days"}
           </span>
           <span className="@[540px]/card:hidden">
             Last{" "}
-            {timeRange === "90d"
-              ? "3 months"
-              : timeRange === "30d"
-              ? "30 days"
-              : timeRange === "7d"
-              ? "7 days"
-              : ""}
+            {timeRange === "90d" ? "3 months" : timeRange === "30d" ? "30 days" : "7 days"}
           </span>
         </CardDescription>
         <CardAction>
@@ -104,6 +98,7 @@ export function ChartAreaInteractive({ chartData }: { chartData: any[] }) {
             <ToggleGroupItem value="30d">Last 30 days</ToggleGroupItem>
             <ToggleGroupItem value="7d">Last 7 days</ToggleGroupItem>
           </ToggleGroup>
+
           <Select value={timeRange} onValueChange={setTimeRange}>
             <SelectTrigger
               className="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"
@@ -126,24 +121,14 @@ export function ChartAreaInteractive({ chartData }: { chartData: any[] }) {
           </Select>
         </CardAction>
       </CardHeader>
+
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-        <ChartContainer
-          config={chartConfig}
-          className="aspect-auto h-[250px] w-full"
-        >
+        <ChartContainer config={defaultConfig} className="aspect-auto h-[250px] w-full">
           <AreaChart data={filteredData}>
             <defs>
-              <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="var(--color-revenue)"
-                  stopOpacity={1.0}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="var(--color-revenue)"
-                  stopOpacity={0.1}
-                />
+              <linearGradient id={`fill-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={color} stopOpacity={1.0} />
+                <stop offset="95%" stopColor={color} stopOpacity={0.1} />
               </linearGradient>
             </defs>
             <CartesianGrid vertical={false} />
@@ -153,38 +138,33 @@ export function ChartAreaInteractive({ chartData }: { chartData: any[] }) {
               axisLine={false}
               tickMargin={8}
               minTickGap={32}
-              tickFormatter={(value) => {
-                const date = new Date(value)
-                return date.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })
-              }}
+              tickFormatter={(value) =>
+                new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+              }
             />
+            <YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={defaultFormatValue} />
             <ChartTooltip
               cursor={false}
               content={
                 <ChartTooltipContent
                   labelFormatter={(value) =>
-                    new Date(value).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })
+                    new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric" })
                   }
                   indicator="dot"
                 />
               }
             />
+
             <Area
-              dataKey="revenue"
-              type="natural"
-              fill="url(#fillRevenue)"
-              stroke="var(--color-revenue)"
+              dataKey={dataKey}
+              type="monotone"
+              fill={`url(#fill-${dataKey})`}
+              stroke={color}
               stackId="a"
             />
           </AreaChart>
         </ChartContainer>
       </CardContent>
     </Card>
-  )
+  );
 }
