@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { IconLoader2, IconPlus, IconTrash } from '@tabler/icons-react'
+import { IconEye, IconLoader2, IconPlus, IconTrash } from '@tabler/icons-react'
 import { toast } from "sonner"; // or "@/components/ui/sonner" if aliased
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -24,6 +24,15 @@ import {
     SheetTitle,
     SheetTrigger,
 } from "@/components/ui/sheet"
+import {
+    Field,
+    FieldDescription,
+    FieldGroup,
+    FieldLabel,
+    FieldLegend,
+    FieldSeparator,
+    FieldSet,
+} from "@/components/ui/field"
 
 const ContactCard = ({ carrier }) => (
     <Card>
@@ -39,18 +48,120 @@ const ContactCard = ({ carrier }) => (
         </CardContent>
     </Card>
 )
-const AgentsCard = ({ broker }) => {
-    const [showAll, setShowAll] = useState(false);
+
+
+
+
+const AgentsCard = ({ broker, onAgentAdded }) => {
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [agent_name, setAgentName] = useState("")
+    const [email, setEmail] = useState("")
+    const [phone, setPhone] = useState("")
+    const [position, setPosition] = useState("")
+
+    const [open, setOpen] = useState(false) // controls sheet
 
     const agents = broker?.broker_agents ?? [];
-
     // Limit to 3 unless showAll is true
-    const agentsToShow = showAll ? agents : agents.slice(0, 3);
+    const agentsToShow = agents.slice(0, 2);
+
+    async function handleAddAgent() {
+        if (!agent_name) return toast.error("Agent name is required")
+        setIsSubmitting(true)
+
+        const payload = {
+            name: agent_name,
+            email,
+            phone,
+            position,
+            broker_id: broker.id,
+        }
+        console.log(payload)
+
+        const promise = fetch(`${process.env.NEXT_PUBLIC_API_BASE}/add/brokers/agents`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+        }).then(async (res) => {
+            if (!res.ok) throw new Error("Failed to add term")
+            return res.json()
+        })
+
+        toast.promise(promise, {
+            loading: "Adding Agent...",
+            success: "Agent added successfully!",
+            error: "Failed to add Agent",
+        })
+
+        try {
+            await promise
+            setOpen(false) // 👈 close the sheet
+            onAgentAdded?.();
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
 
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Broker Agents</CardTitle>
+                <Sheet open={open} onOpenChange={setOpen}>
+                    <SheetTrigger asChild>
+                        <Button>
+                            <IconPlus />
+                            Add Agent
+                        </Button>
+                    </SheetTrigger>
+                    <SheetContent>
+                        <SheetHeader className="p-4">
+                            <SheetTitle>Add Agent</SheetTitle>
+                            <SheetDescription>
+                                Add new Agent for {broker.name}
+                            </SheetDescription>
+                        </SheetHeader>
+
+                        <div className='p-4'>
+                            <FieldSet>
+                                <FieldGroup>
+                                    <Field>
+                                        <FieldLabel required htmlFor="name">Agent Name</FieldLabel>
+                                        <Input id="name" type="text" placeholder="Max Leiter" onChange={(e) => setAgentName(e.target.value)} />
+                                    </Field>
+                                    <Field>
+                                        <FieldLabel htmlFor="email">Email</FieldLabel>
+                                        <Input id="email" type="email" placeholder="example@email.com" onChange={(e) => setEmail(e.target.value)} />
+                                    </Field>
+                                    <Field>
+                                        <FieldLabel htmlFor="phone">Phone</FieldLabel>
+                                        <Input id="phone" type="text" placeholder="(123) 456-7890" onChange={(e) => setPhone(e.target.value)} />
+                                    </Field>
+                                    <Field>
+                                        <FieldLabel htmlFor="position">Position</FieldLabel>
+                                        <Input id="position" type="text" placeholder="Account Manager" onChange={(e) => setPosition(e.target.value)} />
+                                    </Field>
+                                </FieldGroup>
+                            </FieldSet>
+                        </div>
+
+                        <SheetFooter>
+                            {/* this button just triggers the handler */}
+                            <Button
+                                type="button"
+                                disabled={isSubmitting || !agent_name}
+                                onClick={handleAddAgent}
+                            >
+                                Add Agent
+                            </Button>
+
+                            <SheetClose asChild>
+                                <Button variant="outline">Cancel</Button>
+                            </SheetClose>
+                        </SheetFooter>
+                    </SheetContent>
+                </Sheet>
             </CardHeader>
 
             <CardContent className="space-y-2">
@@ -63,14 +174,16 @@ const AgentsCard = ({ broker }) => {
                             <Card className="py-2" key={agent.brokerId || brokerIdx}>
                                 <CardHeader className="flex flex-row items-center justify-between">
                                     <CardTitle>{agent.name}</CardTitle>
-                                    <Button variant="link"><Link href={`/brokers/${broker.id}/agents/${agent.id}`}>View</Link></Button>
+                                    <Link href={`/brokers/${broker.id}/agents/${agent.id}`} className='p-2 hover:bg-muted rounded-md'><IconEye className='w-5 h-5 ' /></Link>
                                 </CardHeader>
                             </Card>
                         ))}
 
-                        {!showAll && agents.length > 3 && (
-                            <Button onClick={() => setShowAll(true)} className="mt-2" variant="outline">
-                                Show All
+                        {agents.length > 2 && (
+                            <Button variant="outline" asChild>
+                                <Link href={`/brokers/${broker.id}/agents`}>
+                                    View All
+                                </Link>
                             </Button>
                         )}
                     </>
@@ -119,7 +232,7 @@ const LoadsCard = ({ broker }) => {
     );
 };
 
-const PaymentCard = ({ broker }) => {
+const PaymentCard = ({ broker, onPaymentTermAdded }) => {
     const [showAll, setShowAll] = useState(false)
     const [selected, setSelected] = useState("standard")
     const [days, setDays] = useState("3")
@@ -127,68 +240,91 @@ const PaymentCard = ({ broker }) => {
     const [email, setEmail] = useState("")
     const [isSubmitting, setIsSubmitting] = useState(false)
 
+    const [open, setOpen] = useState(false) // controls sheet
+
     const loads = broker?.payment_terms ?? []
     const loadsToShow = showAll ? loads : loads.slice(0, 3)
 
-    async function fetchTerms() {
-        try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/brokers/${broker.id}`)
-            if (res.ok) {
-                const data = await res.json()
-                setLoads(data.payment_terms ?? [])
-            }
-        } catch (err) {
-            console.error("Failed to refresh terms", err)
-        }
-    }
 
-
-    async function handleAddTerm(closeSheet) {
+    async function handleAddTerm() {
         setIsSubmitting(true)
 
         const payload = {
-            name: selected === "quickpay" ? `QuickPay ${days} Days - ${fee}%` : `Net ${days} days`,
+            name:
+                selected === "quickpay"
+                    ? `QuickPay ${days} Days - ${fee}%`
+                    : `Net ${days} days`,
             days_to_pay: Number(days),
             fee_percent: selected === "quickpay" ? Number(fee) : 0,
             is_quickpay: selected === "quickpay",
             email,
             broker_id: broker.id,
         }
-        console.log(payload)
-
-        const promise = fetch(`${process.env.NEXT_PUBLIC_API_BASE}/add/payment_terms`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-        }).then(async (res) => {
-            if (!res.ok) throw new Error("Failed to add term")
-            return res.json()
-        })
-
-        toast.promise(promise, {
-            loading: "Adding payment term...",
-            success: "Payment term added successfully!",
-            error: "Failed to add payment term",
-        })
 
         try {
-            await promise
+            await toast.promise(
+                (async () => {
+                    const res = await fetch(
+                        `${process.env.NEXT_PUBLIC_API_BASE}/add/payment_terms`,
+                        {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(payload),
+                        }
+                    )
 
+                    if (!res.ok) throw new Error("Failed to add term")
+
+                    const data = await res.json()
+                    await onPaymentTermAdded?.()
+                    setOpen(false)
+                    return data
+                })(),
+                {
+                    loading: "Adding payment term...",
+                    success: "Payment term added successfully!",
+                    error: "Failed to add payment term",
+                }
+            )
+        } catch (err) {
+            console.error("Failed to add term", err)
         } finally {
-            await fetchTerms()
-            closeSheet() // ✅ close on success
             setIsSubmitting(false)
         }
     }
+
+
+    async function handleDeleteTerm(termId) {
+        try {
+            await toast.promise(
+                (async () => {
+                    const res = await fetch(
+                        `${process.env.NEXT_PUBLIC_API_BASE}/delete/payment_terms/${termId}`,
+                        { method: "DELETE" }
+                    )
+                    if (!res.ok) throw new Error("Failed to delete term")
+                    const data = await res.json()
+                    await onPaymentTermAdded?.()
+                    return data
+                })(),
+                {
+                    loading: "Deleting payment term...",
+                    success: "Payment term deleted successfully!",
+                    error: "Failed to delete payment term",
+                }
+            )
+        } catch (err) {
+            console.error("Failed to delete term", err)
+        }
+    }
+
 
     return (
         <Card>
             <CardHeader>
                 <CardTitle className="flex flex-row items-center justify-between">
                     Broker Pay Terms
-                    <Sheet>
+                    <Sheet open={open} onOpenChange={setOpen}>
                         <SheetTrigger asChild>
                             <Button>
                                 <IconPlus />
@@ -316,7 +452,7 @@ const PaymentCard = ({ broker }) => {
                                         )}
                                     </div>
 
-                                    <Button variant="destructive" size="icon">
+                                    <Button variant="destructive" size="icon" onClick={() => handleDeleteTerm(agent.id)}>
                                         <IconTrash />
                                     </Button>
                                 </CardHeader>
@@ -432,26 +568,27 @@ export default function TablePage({ params }) {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
 
-    useEffect(() => {
-        const fetchdata = async () => {
-            setLoading(true)
-            setError(null)
-            try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/get/brokers/${brokerId}`, {
-                    cache: "no-cache"
-                })
-                if (!res.ok) throw new Error('Failed to fetch data')
+    const fetchdata = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/get/brokers/${brokerId}`, {
+                cache: "no-cache",
+            });
+            if (!res.ok) throw new Error("Failed to fetch data");
 
-                const data = await res.json()
-                setData(data || null)
-            } catch (err) {
-                setError(err.message)
-            } finally {
-                setLoading(false)
-            }
+            const json = await res.json();
+            setData(json || null);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
         }
-        fetchdata()
-    }, [])
+    };
+
+    useEffect(() => {
+        fetchdata();
+    }, [brokerId]);
 
     if (loading) return (
         <div>
@@ -480,8 +617,8 @@ export default function TablePage({ params }) {
             <div className="p-4 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <ContactCard carrier={data} />
-                    <AgentsCard broker={data} />
-                    <PaymentCard broker={data} />
+                    <AgentsCard broker={data} onAgentAdded={fetchdata} />
+                    <PaymentCard broker={data} onPaymentTermAdded={fetchdata} />
                     <NotesCard broker={data} />
 
                 </div>

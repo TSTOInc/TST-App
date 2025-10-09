@@ -6,6 +6,15 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import {
+  ButtonGroup,
+  ButtonGroupText,
+} from "@/components/ui/button-group"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 
 export interface SearchBarProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange"> {
   value?: string
@@ -79,39 +88,45 @@ export function SearchBar({
     return (
       <div className={cn("relative w-full flex justify-center", containerClassName)}>
         <div className="w-full max-w-xl relative">
-        <Skeleton className={cn("h-9 w-full rounded-full", className)} />
-        </div> 
-      </div>  
+          <Skeleton className={cn("h-9 w-full rounded-full", className)} />
+        </div>
+      </div>
     )
   }
 
   return (
     <div className={cn("relative w-full flex justify-center", containerClassName)}>
       <div className="w-full max-w-xl relative">
-        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          type="search"
-          value={value}
-          onChange={handleChange}
-          placeholder={placeholder}
-          className={cn(
-            "pl-10 pr-10 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden rounded-full w-full",
-            className,
-          )}
-          {...props}
-        />
-        {showClearButton && value && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="absolute right-2 top-1/2 size-7 -translate-y-1/2"
-            onClick={handleClear}
-            aria-label="Clear search"
-          >
-            <X className="size-4" />
-          </Button>
-        )}
+        <ButtonGroup className="w-full">
+          <InputGroup className="rounded-full">
+            <InputGroupInput
+              type="search"
+              value={value}
+              onChange={handleChange}
+              placeholder={placeholder}
+              className={cn(
+                "pl-4 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden",
+                className,
+              )}
+              {...props}
+            />
+            <InputGroupAddon align="inline-end">
+            {showClearButton && value && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-7"
+                onClick={handleClear}
+                aria-label="Clear search"
+              >
+                <X className="size-4" />
+              </Button>
+            )}
+            </InputGroupAddon>
+          </InputGroup>
+          <Button variant="outline" className="rounded-full"><Search className="text-muted-foreground" /></Button>
+        </ButtonGroup>
       </div>
     </div>
 

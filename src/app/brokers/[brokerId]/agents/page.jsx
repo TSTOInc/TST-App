@@ -2,20 +2,22 @@
 import React, { useEffect, useState } from "react"
 import CompanyCard from "../../../../components/custom/company-card"
 import {
-    Empty,
-    EmptyContent,
-    EmptyDescription,
-    EmptyHeader,
-    EmptyMedia,
-    EmptyTitle,
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
 } from "@/components/ui/empty"
 import { IconZoomQuestion } from "@tabler/icons-react"
+import { SearchBar } from "@/components/search-bar"
 
 const Page = ({ params }) => {
   const { brokerId } = React.use(params)
   const [brokers, setBrokers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [searchQuery, setSearchQuery] = useState("")
 
   useEffect(() => {
     const fetchBrokers = async () => {
@@ -38,9 +40,13 @@ const Page = ({ params }) => {
     .filter(agent => String(agent.broker_id) === String(brokerId))
     .map(({ created_at, updated_at, ...rest }) => rest)
 
+  const filteredData = filteredBrokers.filter((item) =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div className="p-4">
+    <div className="p-4 space-y-4">
+      <SearchBar skeleton={loading} value={searchQuery} onValueChange={setSearchQuery} placeholder="Search items..." />
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           {Array.from({ length: 8 }).map((_, i) => (

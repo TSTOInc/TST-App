@@ -41,15 +41,13 @@ const Page = () => {
     );
 
     return (
-        <div className="p-4">
+        <div className="p-4 space-y-4">
+            <SearchBar skeleton={loading} isLoading={true} value={searchQuery} onValueChange={setSearchQuery} placeholder="Search Equipment..." />
             {loading ? (
-                <div className="space-y-4">
-                    <SearchBar skeleton />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                        {Array.from({ length: 8 }).map((_, i) => (
-                            <CompanyCard key={i} skeleton />
-                        ))}
-                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                        <CompanyCard key={i} skeleton />
+                    ))}
                 </div>
             ) : error ? (
                 <Empty className="border border-dashed">
@@ -84,13 +82,10 @@ const Page = () => {
                     </EmptyContent>
                 </Empty>
             ) : (
-                <div className="space-y-4">
-                    <SearchBar isLoading={true} value={searchQuery} onValueChange={setSearchQuery} placeholder="Search Equipment..." />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                        {filteredData.map(driver => (
-                            <CompanyCard key={driver.id} company={driver} equipment />
-                        ))}
-                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    {filteredData.map(driver => (
+                        <CompanyCard key={driver.id} company={driver} equipment />
+                    ))}
                 </div>
             )}
         </div>
