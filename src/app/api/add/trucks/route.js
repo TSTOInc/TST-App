@@ -7,13 +7,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
-function createCorsResponse(data, status = 200) {
-  const res = NextResponse.json(data, { status });
-  res.headers.set('Access-Control-Allow-Origin', '*');
-  res.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.headers.set('Access-Control-Allow-Headers', 'Content-Type');
-  return res;
-}
+
 
 export async function POST(request) {
   const client = await pool.connect();
@@ -26,7 +20,7 @@ export async function POST(request) {
         const missingFields = [];
         if (!truck_number) missingFields.push('truck_number');
         if (!status) missingFields.push('status');
-      return createCorsResponse({ error: 'Missing required fields: ' + missingFields.join(', ') + '.' }, 400);
+      return NextResponse.json({ error: 'Missing required fields: ' + missingFields.join(', ') + '.' }, 400);
     }
 
     const insertText = `
@@ -50,14 +44,14 @@ export async function POST(request) {
     ]);
 
     const truckId = res.rows[0].id;
-    return createCorsResponse({ success: true, truck_id: truckId }, 201);
+    return NextResponse.json({ success: true, truck_id: truckId }, 201);
   } catch (error) {
-    return createCorsResponse({ error: error.message }, 500);
+    return NextResponse.json({ error: error.message }, 500);
   } finally {
     client.release();
   }
 }
 
 export async function OPTIONS() {
-  return createCorsResponse({}, 200);
+  return NextResponse.json({}, 200);
 }

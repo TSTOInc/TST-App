@@ -7,13 +7,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
-function createCorsResponse(data, status = 200) {
-  const res = NextResponse.json(data, { status });
-  res.headers.set("Access-Control-Allow-Origin", "*");
-  res.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS");
-  res.headers.set("Access-Control-Allow-Headers", "Content-Type");
-  return res;
-}
+
 
 // OPTIONAL: whitelist tables to prevent SQL injection
 const ALLOWED_TABLES = ["drivers", "trucks", "trailers"]; 
@@ -24,18 +18,18 @@ export async function PUT(request, { params }) {
   try {
     const { table, id } = await params;
     if (!ALLOWED_TABLES.includes(table)) {
-      return createCorsResponse({ error: "Table not allowed" }, 400);
+      return NextResponse.json({ error: "Table not allowed" }, 400);
     }
 
     const data = await request.json();
     const keys = Object.keys(data);
 
     if (!id) {
-      return createCorsResponse({ error: "ID is required" }, 400);
+      return NextResponse.json({ error: "ID is required" }, 400);
     }
 
     if (keys.length === 0) {
-      return createCorsResponse({ error: "No fields provided for update" }, 400);
+      return NextResponse.json({ error: "No fields provided for update" }, 400);
     }
 
     // Build dynamic query
@@ -60,17 +54,17 @@ export async function PUT(request, { params }) {
     const result = await client.query(queryText, values);
 
     if (result.rowCount === 0) {
-      return createCorsResponse({ error: "Record not found" }, 404);
+      return NextResponse.json({ error: "Record not found" }, 404);
     }
 
-    return createCorsResponse({ success: true, record: result.rows[0] }, 200);
+    return NextResponse.json({ success: true, record: result.rows[0] }, 200);
   } catch (error) {
-    return createCorsResponse({ error: error.message }, 500);
+    return NextResponse.json({ error: error.message }, 500);
   } finally {
     client.release();
   }
 }
 
 export async function OPTIONS() {
-  return createCorsResponse({}, 200);
+  return NextResponse.json({}, 200);
 }

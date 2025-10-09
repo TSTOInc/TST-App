@@ -7,13 +7,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
-function createCorsResponse(data, status = 200) {
-  const res = NextResponse.json(data, { status });
-  res.headers.set('Access-Control-Allow-Origin', '*');
-  res.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.headers.set('Access-Control-Allow-Headers', 'Content-Type');
-  return res;
-}
+
 
 export async function POST(request) {
   const client = await pool.connect();
@@ -23,7 +17,7 @@ export async function POST(request) {
     const { name, days_to_pay, fee_percent, is_quickpay, email, broker_id } = data;
 
     if (!name || !days_to_pay || is_quickpay === undefined || !broker_id) {
-      return createCorsResponse({ error: 'Missing required fields' }, 400);
+      return NextResponse.json({ error: 'Missing required fields' }, 400);
     }
 
     const insertText = `
@@ -42,14 +36,14 @@ export async function POST(request) {
     ]);
 
     const payment_termsId = res.rows[0].id;
-    return createCorsResponse({ success: true, payment_terms_id: payment_termsId }, 201);
+    return NextResponse.json({ success: true, payment_terms_id: payment_termsId }, 201);
   } catch (error) {
-    return createCorsResponse({ error: error.message }, 500);
+    return NextResponse.json({ error: error.message }, 500);
   } finally {
     client.release();
   }
 }
 
 export async function OPTIONS() {
-  return createCorsResponse({}, 200);
+  return NextResponse.json({}, 200);
 }

@@ -7,14 +7,6 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
-function createCorsResponse(data, status = 200) {
-  const res = NextResponse.json(data, { status });
-  res.headers.append("Access-Control-Allow-Origin", "*");
-  res.headers.append("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.headers.append("Access-Control-Allow-Headers", "Content-Type");
-  return res;
-}
-
 // Handle POST
 export async function POST(request) {
   const client = await pool.connect();
@@ -34,7 +26,7 @@ export async function POST(request) {
     } = data;
 
     if (!name || !usdot_number || !docket_number || !address) {
-      return createCorsResponse({ error: "Missing required fields" }, 400);
+      return NextResponse.json({ error: "Missing required fields" }, 400);
     }
 
     const insertText = `
@@ -56,19 +48,10 @@ export async function POST(request) {
     ]);
 
     const brokerId = resQuery.rows[0].id;
-    return createCorsResponse({ success: true, broker_id: brokerId }, 201);
+    return NextResponse.json({ success: true, broker_id: brokerId }, 201);
   } catch (err) {
-    return createCorsResponse({ error: err.message }, 500);
+    return NextResponse.json({ error: err.message }, 500);
   } finally {
     client.release();
   }
-}
-
-// Handle OPTIONS preflight
-export async function OPTIONS() {
-  const res = new NextResponse(null, { status: 204 });
-  res.headers.append("Access-Control-Allow-Origin", "*");
-  res.headers.append("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.headers.append("Access-Control-Allow-Headers", "Content-Type");
-  return res;
 }

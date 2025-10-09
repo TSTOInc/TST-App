@@ -7,13 +7,7 @@ const pool = new Pool({
     ssl: { rejectUnauthorized: false },
 })
 
-function createCorsResponse(data, status = 200) {
-    const res = NextResponse.json(data, { status })
-    res.headers.set('Access-Control-Allow-Origin', '*')
-    res.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS')
-    res.headers.set('Access-Control-Allow-Headers', 'Content-Type')
-    return res
-}
+
 
 export async function GET() {
     try {
@@ -82,12 +76,12 @@ export async function GET() {
         })
 
         const data = Array.from(loadsMap.values())
-        return createCorsResponse(data)
+        return NextResponse.json(data)
     } catch (error) {
-        return createCorsResponse({ error: error.message }, 500)
+        return NextResponse.json({ error: error.message }, 500)
     }
 }
 
 export async function OPTIONS() {
-    return createCorsResponse({}, 204)
+    return NextResponse.json({}, 204)
 }

@@ -1,4 +1,3 @@
-import { createCorsResponse, handleOptions } from "@/lib/cors"
 import pkg from "pg"
 const { Pool } = pkg
 
@@ -10,7 +9,7 @@ const pool = new Pool({
 export async function GET(req, { params }) {
   const { id } = params
 
-  if (!id) return createCorsResponse(req, { error: "Missing load ID" }, 400)
+  if (!id) return NextResponse.json(req, { error: "Missing load ID" }, 400)
 
   try {
     const result = await pool.query(
@@ -46,7 +45,7 @@ export async function GET(req, { params }) {
     )
 
     if (!result.rows.length)
-      return createCorsResponse(req, { error: "Load not found" }, 404)
+      return NextResponse.json(req, { error: "Load not found" }, 404)
 
     const row = result.rows[0]
     const load = {
@@ -109,9 +108,9 @@ export async function GET(req, { params }) {
       }
     })
 
-    return createCorsResponse(req, load)
+    return NextResponse.json(req, load)
   } catch (error) {
-    return createCorsResponse(req, { error: error.message }, 500)
+    return NextResponse.json(req, { error: error.message }, 500)
   }
 }
 

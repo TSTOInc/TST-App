@@ -24,19 +24,13 @@ const ALLOWED_TABLES = [
   'trucks',
 ]
 
-function createCorsResponse(data, status = 200) {
-  const res = NextResponse.json(data, { status })
-  res.headers.set('Access-Control-Allow-Origin', '*')
-  res.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS')
-  res.headers.set('Access-Control-Allow-Headers', 'Content-Type')
-  return res
-}
+
 
 export async function GET(req, { params }) {
   const { table, id } = await params
 
   if (!ALLOWED_TABLES.includes(table)) {
-    return createCorsResponse({ error: 'Invalid table name' }, 400)
+    return NextResponse.json({ error: 'Invalid table name' }, 400)
   }
 
   try {
@@ -93,12 +87,12 @@ export async function GET(req, { params }) {
       }
     }
 
-    return createCorsResponse(data)
+    return NextResponse.json(data)
   } catch (error) {
-    return createCorsResponse({ error: error.message }, 500)
+    return NextResponse.json({ error: error.message }, 500)
   }
 }
 
 export async function OPTIONS() {
-  return createCorsResponse({}, 204)
+  return NextResponse.json({}, 204)
 }

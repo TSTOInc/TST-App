@@ -1,12 +1,6 @@
 import { NextResponse } from "next/server"
 
-function createCorsResponse(data, status = 200) {
-  const res = NextResponse.json(data, { status })
-  res.headers.set("Access-Control-Allow-Origin", "*") // TODO: restrict in prod
-  res.headers.set("Access-Control-Allow-Methods", "GET, OPTIONS")
-  res.headers.set("Access-Control-Allow-Headers", "Content-Type")
-  return res
-}
+
 
 // normalize to only return important fields
 function normalizeCarrier(c) {
@@ -33,14 +27,14 @@ export async function GET(request) {
   const webKey = process.env.FMCAS_WEBKEY
 
   if (!type || !query) {
-    return createCorsResponse(
+    return NextResponse.json(
       { error: "Missing required query parameters: type and q" },
       400
     )
   }
 
   if (!webKey) {
-    return createCorsResponse(
+    return NextResponse.json(
       { error: "Missing FMCAS_WEBKEY environment variable" },
       500
     )
@@ -64,7 +58,7 @@ export async function GET(request) {
       )}?webKey=${encodeURIComponent(webKey)}`
       break
     default:
-      return createCorsResponse(
+      return NextResponse.json(
         { error: `Invalid type parameter: ${type}` },
         400
       )
@@ -73,7 +67,7 @@ export async function GET(request) {
   try {
     const res = await fetch(url)
     if (!res.ok) {
-      return createCorsResponse(
+      return NextResponse.json(
         { error: `External API error: ${res.status}` },
         res.status
       )
@@ -107,7 +101,7 @@ export async function GET(request) {
         }
       }
 
-      return createCorsResponse({ carriers: carrier ? [carrier] : [] })
+      return NextResponse.json({ carriers: carrier ? [carrier] : [] })
     }
 
     // Handle Name search
@@ -115,12 +109,12 @@ export async function GET(request) {
       const carriers = data.content
         .map((item) => normalizeCarrier(item.carrier))
         .filter(Boolean) // remove nulls
-      return createCorsResponse({ carriers })
+      return NextResponse.json({ carriers })
     }
 
-    return createCorsResponse({ carriers: [] })
+    return NextResponse.json({ carriers: [] })
   } catch (err) {
-    return createCorsResponse(
+    return NextResponse.json(
       { error: err?.message || "Unexpected error" },
       500
     )

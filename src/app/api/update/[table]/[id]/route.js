@@ -7,13 +7,6 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
-function createCorsResponse(data, status = 200) {
-  const res = NextResponse.json(data, { status });
-  res.headers.set('Access-Control-Allow-Origin', '*');
-  res.headers.set('Access-Control-Allow-Methods', 'GET, PATCH, OPTIONS');
-  res.headers.set('Access-Control-Allow-Headers', 'Content-Type');
-  return res;
-}
 
 const allowedTables = ['brokers', 'brokers_agents', 'loads'];
 
@@ -21,14 +14,14 @@ export async function PATCH(req, { params }) {
   const { table, id } = await params;
 
   if (!allowedTables.includes(table)) {
-    return createCorsResponse({ error: 'Invalid table' }, 400);
+    return NextResponse.json({ error: 'Invalid table' }, 400);
   }
 
   try {
     const body = await req.json();
 
     if (!body || Object.keys(body).length === 0) {
-      return createCorsResponse({ error: 'No data provided for update' }, 400);
+      return NextResponse.json({ error: 'No data provided for update' }, 400);
     }
 
     const setClauses = [];
@@ -45,12 +38,12 @@ export async function PATCH(req, { params }) {
     const result = await pool.query(query, values);
 
     if (result.rows.length === 0) {
-      return createCorsResponse({ error: 'Record not found' }, 404);
+      return NextResponse.json({ error: 'Record not found' }, 404);
     }
 
-    return createCorsResponse(result.rows[0]);
+    return NextResponse.json(result.rows[0]);
   } catch (error) {
-    return createCorsResponse({ error: error.message }, 500);
+    return NextResponse.json({ error: error.message }, 500);
   }
 }
 

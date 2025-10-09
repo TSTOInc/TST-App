@@ -8,17 +8,11 @@ const pool = new Pool({
 });
 
 // Helper to add CORS headers
-function createCorsResponse(data, status = 200) {
-  const res = NextResponse.json(data, { status });
-  res.headers.set('Access-Control-Allow-Origin', '*');
-  res.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.headers.set('Access-Control-Allow-Headers', 'Content-Type');
-  return res;
-}
+
 
 // Handle OPTIONS preflight request for CORS
 export async function OPTIONS() {
-  return createCorsResponse({}, 200);
+  return NextResponse.json({}, 200);
 }
 
 export async function POST(request) {
@@ -30,7 +24,7 @@ export async function POST(request) {
 
     // Validation
     if (!equipment_number || !equipment_type || !status) {
-      return createCorsResponse({ error: 'Missing required fields' }, 400);
+      return NextResponse.json({ error: 'Missing required fields' }, 400);
     }
 
     const insertText = `
@@ -47,9 +41,9 @@ export async function POST(request) {
     ]);
 
     const equipmentId = res.rows[0].id;
-    return createCorsResponse({ success: true, equipment_id: equipmentId }, 201);
+    return NextResponse.json({ success: true, equipment_id: equipmentId }, 201);
   } catch (error) {
-    return createCorsResponse({ error: error.message }, 500);
+    return NextResponse.json({ error: error.message }, 500);
   } finally {
     client.release();
   }
