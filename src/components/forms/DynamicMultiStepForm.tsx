@@ -18,6 +18,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import SearchableSelect from "../comp-229";
 
 type FieldType =
   | "text"
@@ -160,23 +161,24 @@ export default function DynamicMultiStepForm({
       case "combo":
         return (
           <div key={field.name}>
-            <Label required={field.required}>{field.label}</Label>
-            <Controller
-              name={field.name}
-              control={control}
-              render={({ field: rhfField }) => (
-                <ComboBox
-                  options={field.options || []}
-                  showBadges
-                  defaultValue={(field.options ?? []).find((o) => o.value === rhfField.value)}
-                  onSelect={(option) => rhfField.onChange(option.value)}
-                />
-              )}
-            />
-            {errors[field.name]?.message && (
-              <p className="text-red-500 text-sm">{String(errors[field.name]?.message)}</p>
-            )}
-          </div>
+      <Controller
+        name={field.name}
+        control={control}
+        render={({ field: rhfField }) => (
+          <SearchableSelect
+            label={field.label}
+            required={field.required}
+            options={field.options || []}
+            value={rhfField.value}
+            onChange={rhfField.onChange}
+            placeholder={`Select ${field.label.toLowerCase()}`}
+          />
+        )}
+      />
+      {errors[field.name]?.message && (
+        <p className="text-red-500 text-sm">{String(errors[field.name]?.message)}</p>
+      )}
+    </div>
         );
       case "file":
       case "picture":

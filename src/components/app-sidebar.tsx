@@ -33,7 +33,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-
+import { OrganizationSwitcher } from '@clerk/nextjs'
+import { Skeleton } from "./ui/skeleton"
 
 
 const data = {
@@ -79,6 +80,11 @@ const data = {
       title: "Equipment",
       url: "/equipment",
       icon: IconFolder,
+    },
+    {
+      title: "Directory",
+      url: "/directory",
+      icon: IconSearch,
     }
   ],
   navClouds: [
@@ -111,11 +117,7 @@ const data = {
     },
   ],
   navSecondary: [
-    {
-      title: "Directory",
-      url: "/directory",
-      icon: IconSearch,
-    }
+
   ],
 }
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
@@ -133,27 +135,30 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 export function AppSidebar({ user, organization, ...props }: AppSidebarProps) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
-            >
-              <a href="/">
-                <img src="/logo.png" alt="logo" className="h-8 w-8" />
-                <span className="text-base font-semibold">{organization.name}</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+      <SidebarHeader className="flex flex-col">
+        <OrganizationSwitcher
+          appearance={{
+            elements: {
+              rootBox: "w-full",
+              organizationSwitcherTrigger__organization: "w-full justify-between",
+              avatarBox: "h-8 w-8",
+              organizationSwitcherTrigger: "text-foreground text-left p-3"
+            }
+          }}
+          fallback={
+            <div className="w-full">
+              <Skeleton className="h-14 w-full rounded-md" />
+            </div>
+          }
+        />
       </SidebarHeader>
+
       <SidebarContent>
         <NavMain items={data.navMain} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={user as any} />
+
       </SidebarFooter>
     </Sidebar>
   )

@@ -11,11 +11,14 @@ import {
     EmptyTitle,
 } from "@/components/ui/empty"
 import { IconZoomQuestion } from "@tabler/icons-react"
+import { SearchBar } from "@/components/search-bar"
 
 const Page = () => {
     const [trucks, setTrucks] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+    const [searchQuery, setSearchQuery] = useState("")
+
 
     useEffect(() => {
         const fetchTrucks = async () => {
@@ -33,15 +36,20 @@ const Page = () => {
         fetchTrucks()
     }, [])
 
-
+const filteredData = trucks.filter((item) =>
+        item.truck_number.toLowerCase().includes(searchQuery.toLowerCase())    
+);
 
     return (
         <div className="p-4">
             {loading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="space-y-4"  >
+                    <SearchBar skeleton />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     {Array.from({ length: 8 }).map((_, i) => (
                         <CompanyCard key={i} skeleton />
                     ))}
+                </div>
                 </div>
             ) : error ? (
                 <Empty className="border border-dashed">
@@ -76,11 +84,15 @@ const Page = () => {
                     </EmptyContent>
                 </Empty>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                    {trucks.map(driver => (
+                <div className="space-y-4">
+                    <SearchBar value={searchQuery} onValueChange={setSearchQuery} placeholder="Search Trucks..." />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    {filteredData.map(driver => (
                         <CompanyCard key={driver.id} company={driver} truck />
                     ))}
                 </div>
+                </div>
+                
             )}
         </div>
 

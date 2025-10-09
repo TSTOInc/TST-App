@@ -11,12 +11,14 @@ import {
     EmptyTitle,
 } from "@/components/ui/empty"
 import { IconZoomQuestion } from "@tabler/icons-react"
+import { SearchBar } from "@/components/search-bar"
 
 
 const Page = () => {
     const [equipments, setEquipments] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+    const [searchQuery, setSearchQuery] = useState("")
 
     useEffect(() => {
         const fetchequipments = async () => {
@@ -34,15 +36,20 @@ const Page = () => {
         fetchequipments()
     }, [])
 
-
+    const filteredData = equipments.filter((item) =>
+        item.equipment_number.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     return (
         <div className="p-4">
             {loading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                    {Array.from({ length: 8 }).map((_, i) => (
-                        <CompanyCard key={i} skeleton />
-                    ))}
+                <div className="space-y-4">
+                    <SearchBar skeleton />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                        {Array.from({ length: 8 }).map((_, i) => (
+                            <CompanyCard key={i} skeleton />
+                        ))}
+                    </div>
                 </div>
             ) : error ? (
                 <Empty className="border border-dashed">
@@ -77,10 +84,13 @@ const Page = () => {
                     </EmptyContent>
                 </Empty>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                    {equipments.map(driver => (
-                        <CompanyCard key={driver.id} company={driver} equipment />
-                    ))}
+                <div className="space-y-4">
+                    <SearchBar isLoading={true} value={searchQuery} onValueChange={setSearchQuery} placeholder="Search Equipment..." />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                        {filteredData.map(driver => (
+                            <CompanyCard key={driver.id} company={driver} equipment />
+                        ))}
+                    </div>
                 </div>
             )}
         </div>

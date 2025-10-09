@@ -6,6 +6,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 import DynamicBreadcrumb from "./layout/DynamicBreadcrumb"
 import { ThemeToggle } from "./theme-toggle"
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs"
+import { Skeleton } from "./ui/skeleton"
 
 export function SiteHeader() {
   return (
@@ -16,13 +17,17 @@ export function SiteHeader() {
         <DynamicBreadcrumb />
         <div className="ml-auto flex items-center gap-2">
           <ThemeToggle />
-          <SignedIn>
-            <UserButton />
-          </SignedIn>
-          <SignedOut>
-            <Button asChild><SignInButton/></Button>
-          </SignedOut>
-          
+          <UserButton
+              appearance={{
+                elements: {
+                  rootBox: "h-9 w-9",
+                  avatarBox: "h-9 w-9",
+                }
+              }}
+              fallback={
+                <Skeleton className="h-9 w-9 rounded-full" />
+              } />
+
         </div>
       </div>
     </header>

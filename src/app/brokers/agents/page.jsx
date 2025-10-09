@@ -11,7 +11,7 @@ import {
     EmptyTitle,
 } from "@/components/ui/empty"
 import { IconZoomQuestion } from "@tabler/icons-react"
-
+import { SearchBar } from "@/components/search-bar"
 
 
 
@@ -36,6 +36,7 @@ const Page = () => {
     const [brokers, setBrokers] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+    const [searchQuery, setSearchQuery] = useState("")
 
     useEffect(() => {
         const fetchBrokers = async () => {
@@ -55,14 +56,20 @@ const Page = () => {
 
     // remove the last 2 columns from the data
     const filteredBrokers = brokers.map(brokers => { const { created_at, updated_at, ...rest } = brokers; return rest })
+    const filteredData = filteredBrokers.filter((item) =>
+        item.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     return (
         <div className="p-4">
             {loading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="space-y-4">
+                    <SearchBar skeleton />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     {Array.from({ length: 8 }).map((_, i) => (
                         <CompanyCard key={i} skeleton />
                     ))}
+                </div>
                 </div>
             ) : error ? (
                 <Empty className="border border-dashed">
@@ -97,10 +104,14 @@ const Page = () => {
                     </EmptyContent>
                 </Empty>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                    {filteredBrokers.map(agent => (
-                        <CompanyCard agent key={agent.id} company={agent} />
-                    ))}
+                <div className='space-y-4'>
+                    <SearchBar value={searchQuery} onValueChange={setSearchQuery} placeholder="Search Brokers Agents..." />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                        {filteredData.map(agent => (
+                            <CompanyCard agent key={agent.id} company={agent} />
+                        ))}
+                    </div>
                 </div>
             )}
 
