@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Card } from "@/components/ui/card"
-import { IconMapPin, IconEye, IconZoomQuestion } from "@tabler/icons-react"
+import { IconMapPin, IconEye, IconZoomQuestion, IconLoader2 } from "@tabler/icons-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import SearchBar from "@/components/ui/search-bar"
@@ -189,7 +189,7 @@ export default function TablePage() {
           <Empty className="border border-dashed">
             <EmptyHeader>
               <EmptyMedia variant="icon">
-                <IconZoomQuestion className="animate-pulse opacity-70" />
+                <IconLoader2 className="animate-spin" />
               </EmptyMedia>
               <EmptyTitle>Fetching Loads...</EmptyTitle>
               <EmptyDescription>Loading data, please wait.</EmptyDescription>

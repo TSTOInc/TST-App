@@ -69,7 +69,7 @@ export function NavMain({
               asChild
               disabled={!isValidPage}
               tooltip="Quick Create"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
+              className="bg-primary  text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
             >
               {isValidPage ? (
                 <Link href={`/${firstSegment}/add`} className="flex items-center gap-2 w-full h-full">
@@ -89,7 +89,7 @@ export function NavMain({
           {items.map((item) => (
             <React.Fragment key={item.title}>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild data-active={isItemActive(item)} tooltip={item.title} className="cursor-pointer">
+                <SidebarMenuButton asChild data-active={isItemActive(item)} tooltip={item.title} size={"lg"} variant={"secondary"} className="cursor-pointer">
                   <Link href={item.url}>
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>

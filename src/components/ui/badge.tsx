@@ -237,7 +237,7 @@ const Badge: React.FC<BadgeProps> = ({
   return (
     <Tooltip>
       <TooltipTrigger asChild>{badgeElement}</TooltipTrigger>
-      <TooltipContent side="top" align="center">
+      <TooltipContent status={hasValidStatus ? (status as StatusKey) : undefined} side="top" align="center">
         <p>{tooltipText}</p>
       </TooltipContent>
     </Tooltip>

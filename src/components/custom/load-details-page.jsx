@@ -954,7 +954,7 @@ export function LoadDetailsPage({ id }) {
                             <FileText className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold text-primary">#{data.load_number}</div>
+                            <div className="text-2xl font-bold">#{data.load_number}</div>
                         </CardContent>
                     </Card>
 
@@ -964,7 +964,7 @@ export function LoadDetailsPage({ id }) {
                             <DollarSign className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold text-primary">#{data.invoice_number}</div>
+                            <div className="text-2xl font-bold">#{data.invoice_number}</div>
                         </CardContent>
                     </Card>
                 </div>
