@@ -20,7 +20,6 @@ import {
 import { User, Bell, CreditCard } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { IconBuildings } from "@tabler/icons-react"
-import { useSession, useOrganization } from "@/components/session-provider"
 import { AlertCircleIcon, CheckCircle2Icon, PopcornIcon } from "lucide-react"
 import {
   Alert,
@@ -35,16 +34,15 @@ export default function AccountClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-
-  const real_session = useSession()
-  const real_organization = useOrganization()
-  const t_session = real_session || {
-    name: "Test Name",
-    nickname: "Test Nickname",
-    email: "Test Email",
-    picture: "https://placehold.co/600x400"
+  const t_session = {
+    user: {
+      name: "Test Name",
+      nickname: "Test Nickname",
+      email: "Test Email",
+      picture: "https://placehold.co/600x400"
+    }
   };
-  const t_organization = real_organization || {
+  const t_organization = {
     id: "0",
     name: "Test Organization",
   };

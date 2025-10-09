@@ -6,22 +6,11 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { shadcn } from '@clerk/themes'
 
-import { auth0 } from "@/lib/auth0";
-import { getToken } from "@/lib/getToken";
-import { SessionProvider } from "@/components/session-provider"
-import { IconBuildingPlus, IconUserPlus, IconZoomQuestion } from "@tabler/icons-react";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty"
-import { Button } from "@/components/ui/button";
-import { IconFolderCode } from "@tabler/icons-react";
-import Link from "next/link";
+//Clerk
+import { ClerkProvider, SignedIn, SignedOut } from "@clerk/nextjs";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,169 +29,73 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode; }) {
   // Fetch the user session
-  const auth0Session = await auth0.getSession();
-  // Redirect to login if no session
-  if (!auth0Session) {
-    return (
-      <html lang="en" suppressHydrationWarning>
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
-          <ThemeProvider
-            attribute="class"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <div className="min-h-screen flex flex-col">
-              <Empty>
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <IconZoomQuestion />
-                  </EmptyMedia>
-                  <EmptyTitle>401 - Not Authenticated</EmptyTitle>
-                  <EmptyDescription>
-                    You are not authenticated. Please log in.
-                  </EmptyDescription>
-                </EmptyHeader>
-                <EmptyContent>
-                  <div className="flex gap-2">
-                    <Button variant="outline" asChild>
-                      <Link href="/auth/login?screen_hint=signup">Sign up</Link>
-                    </Button>
-                    <Button asChild>
-                      <Link href="/auth/login">Log in</Link>
-                    </Button>
-
-                  </div>
-                </EmptyContent>
-                <EmptyDescription>
-                  Need help? <a href="#">Contact support</a>
-                </EmptyDescription>
-              </Empty>
-            </div>
-          </ThemeProvider>
-        </body>
-      </html>
-    )
+  const user = {
+    id: "user.id",
+    name: "user.name",
+    image: "user.image",
+    email: "user.email",
   }
-  if (!auth0Session.user.org_id) {
-    return (
-      <html lang="en" suppressHydrationWarning>
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
-          <ThemeProvider
-            attribute="class"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <div className="min-h-screen flex flex-col">
-              <Empty>
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <IconBuildingPlus className="w-12 h-12 text-muted-foreground" />
-                  </EmptyMedia>
-                  <EmptyTitle>401 - No Organization Found</EmptyTitle>
-                  <EmptyDescription>
-                    You’re not currently part of any organization.
-                    You can create a new one or join an existing team by invitation.
-                  </EmptyDescription>
-                </EmptyHeader>
 
-                <EmptyContent>
-                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                    <Button asChild>
-                      <Link href="/organization/new">
-                        <IconBuildingPlus className="mr-2 h-4 w-4" />
-                        Create Organization
-                      </Link>
-                    </Button>
-                    <Button variant="outline" asChild>
-                      <Link href="/auth/login?screen_hint=signup">
-                        <IconUserPlus className="mr-2 h-4 w-4" />
-                        Join with Invite
-                      </Link>
-                    </Button>
-                  </div>
-                </EmptyContent>
-                <EmptyDescription>
-                  {" "}
-                  <Link
-                    href="/auth/logout"
-                    className="underline underline-offset-4 text-primary hover:text-primary/80"
-                  >
-                    Log out
-                  </Link>
-                </EmptyDescription>
-                <EmptyDescription>
-                  Need help?{" "}
-                  <Link
-                    href="/support"
-                    className="underline underline-offset-4 text-primary hover:text-primary/80"
-                  >
-                    Contact support
-                  </Link>
-                </EmptyDescription>
-              </Empty>
-            </div>
-          </ThemeProvider>
-        </body>
-      </html>
-    )
-  }
-  const user = auth0Session.user
-  const orgId = user.org_id
-  const token = await getToken();
 
-  const res = await fetch(`https://dev-xmw2ajtl2wpc1npq.us.auth0.com/api/v2/organizations/${orgId}`, {
-    headers: {
-      Authorization: `Bearer ${token || "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Ikk5cW1SbkcwQ1RZbmVPbmtTZFNsOCJ9.eyJpc3MiOiJodHRwczovL2Rldi14bXcyYWp0bDJ3cGMxbnBxLnVzLmF1dGgwLmNvbS8iLCJzdWIiOiIxZmt4cThpbFVrVkJ0MzVmWVp0a1FDWFVndlFOeTdyQUBjbGllbnRzIiwiYXVkIjoiaHR0cHM6Ly9kZXYteG13MmFqdGwyd3BjMW5wcS51cy5hdXRoMC5jb20vYXBpL3YyLyIsImlhdCI6MTc1OTg5NDM3MywiZXhwIjoxNzU5OTgwNzczLCJzY29wZSI6InJlYWQ6Y2xpZW50X2dyYW50cyBjcmVhdGU6Y2xpZW50X2dyYW50cyBkZWxldGU6Y2xpZW50X2dyYW50cyB1cGRhdGU6Y2xpZW50X2dyYW50cyByZWFkOnVzZXJzIHVwZGF0ZTp1c2VycyBkZWxldGU6dXNlcnMgY3JlYXRlOnVzZXJzIHJlYWQ6dXNlcnNfYXBwX21ldGFkYXRhIHVwZGF0ZTp1c2Vyc19hcHBfbWV0YWRhdGEgZGVsZXRlOnVzZXJzX2FwcF9tZXRhZGF0YSBjcmVhdGU6dXNlcnNfYXBwX21ldGFkYXRhIHJlYWQ6dXNlcl9jdXN0b21fYmxvY2tzIGNyZWF0ZTp1c2VyX2N1c3RvbV9ibG9ja3MgZGVsZXRlOnVzZXJfY3VzdG9tX2Jsb2NrcyBjcmVhdGU6dXNlcl90aWNrZXRzIHJlYWQ6Y2xpZW50cyB1cGRhdGU6Y2xpZW50cyBkZWxldGU6Y2xpZW50cyBjcmVhdGU6Y2xpZW50cyByZWFkOmNsaWVudF9rZXlzIHVwZGF0ZTpjbGllbnRfa2V5cyBkZWxldGU6Y2xpZW50X2tleXMgY3JlYXRlOmNsaWVudF9rZXlzIHJlYWQ6Y2xpZW50X2NyZWRlbnRpYWxzIHVwZGF0ZTpjbGllbnRfY3JlZGVudGlhbHMgZGVsZXRlOmNsaWVudF9jcmVkZW50aWFscyBjcmVhdGU6Y2xpZW50X2NyZWRlbnRpYWxzIHJlYWQ6Y29ubmVjdGlvbnMgdXBkYXRlOmNvbm5lY3Rpb25zIGRlbGV0ZTpjb25uZWN0aW9ucyBjcmVhdGU6Y29ubmVjdGlvbnMgcmVhZDpyZXNvdXJjZV9zZXJ2ZXJzIHVwZGF0ZTpyZXNvdXJjZV9zZXJ2ZXJzIGRlbGV0ZTpyZXNvdXJjZV9zZXJ2ZXJzIGNyZWF0ZTpyZXNvdXJjZV9zZXJ2ZXJzIHJlYWQ6ZGV2aWNlX2NyZWRlbnRpYWxzIHVwZGF0ZTpkZXZpY2VfY3JlZGVudGlhbHMgZGVsZXRlOmRldmljZV9jcmVkZW50aWFscyBjcmVhdGU6ZGV2aWNlX2NyZWRlbnRpYWxzIHJlYWQ6cnVsZXMgdXBkYXRlOnJ1bGVzIGRlbGV0ZTpydWxlcyBjcmVhdGU6cnVsZXMgcmVhZDpydWxlc19jb25maWdzIHVwZGF0ZTpydWxlc19jb25maWdzIGRlbGV0ZTpydWxlc19jb25maWdzIHJlYWQ6aG9va3MgdXBkYXRlOmhvb2tzIGRlbGV0ZTpob29rcyBjcmVhdGU6aG9va3MgcmVhZDphY3Rpb25zIHVwZGF0ZTphY3Rpb25zIGRlbGV0ZTphY3Rpb25zIGNyZWF0ZTphY3Rpb25zIHJlYWQ6ZW1haWxfcHJvdmlkZXIgdXBkYXRlOmVtYWlsX3Byb3ZpZGVyIGRlbGV0ZTplbWFpbF9wcm92aWRlciBjcmVhdGU6ZW1haWxfcHJvdmlkZXIgYmxhY2tsaXN0OnRva2VucyByZWFkOnN0YXRzIHJlYWQ6aW5zaWdodHMgcmVhZDp0ZW5hbnRfc2V0dGluZ3MgdXBkYXRlOnRlbmFudF9zZXR0aW5ncyByZWFkOmxvZ3MgcmVhZDpsb2dzX3VzZXJzIHJlYWQ6c2hpZWxkcyBjcmVhdGU6c2hpZWxkcyB1cGRhdGU6c2hpZWxkcyBkZWxldGU6c2hpZWxkcyByZWFkOmFub21hbHlfYmxvY2tzIGRlbGV0ZTphbm9tYWx5X2Jsb2NrcyB1cGRhdGU6dHJpZ2dlcnMgcmVhZDp0cmlnZ2VycyByZWFkOmdyYW50cyBkZWxldGU6Z3JhbnRzIHJlYWQ6Z3VhcmRpYW5fZmFjdG9ycyB1cGRhdGU6Z3VhcmRpYW5fZmFjdG9ycyByZWFkOmd1YXJkaWFuX2Vucm9sbG1lbnRzIGRlbGV0ZTpndWFyZGlhbl9lbnJvbGxtZW50cyBjcmVhdGU6Z3VhcmRpYW5fZW5yb2xsbWVudF90aWNrZXRzIHJlYWQ6dXNlcl9pZHBfdG9rZW5zIGNyZWF0ZTpwYXNzd29yZHNfY2hlY2tpbmdfam9iIGRlbGV0ZTpwYXNzd29yZHNfY2hlY2tpbmdfam9iIHJlYWQ6Y3VzdG9tX2RvbWFpbnMgZGVsZXRlOmN1c3RvbV9kb21haW5zIGNyZWF0ZTpjdXN0b21fZG9tYWlucyB1cGRhdGU6Y3VzdG9tX2RvbWFpbnMgcmVhZDplbWFpbF90ZW1wbGF0ZXMgY3JlYXRlOmVtYWlsX3RlbXBsYXRlcyB1cGRhdGU6ZW1haWxfdGVtcGxhdGVzIHJlYWQ6bWZhX3BvbGljaWVzIHVwZGF0ZTptZmFfcG9saWNpZXMgcmVhZDpyb2xlcyBjcmVhdGU6cm9sZXMgZGVsZXRlOnJvbGVzIHVwZGF0ZTpyb2xlcyByZWFkOnByb21wdHMgdXBkYXRlOnByb21wdHMgcmVhZDpicmFuZGluZyB1cGRhdGU6YnJhbmRpbmcgZGVsZXRlOmJyYW5kaW5nIHJlYWQ6bG9nX3N0cmVhbXMgY3JlYXRlOmxvZ19zdHJlYW1zIGRlbGV0ZTpsb2dfc3RyZWFtcyB1cGRhdGU6bG9nX3N0cmVhbXMgY3JlYXRlOnNpZ25pbmdfa2V5cyByZWFkOnNpZ25pbmdfa2V5cyB1cGRhdGU6c2lnbmluZ19rZXlzIHJlYWQ6bGltaXRzIHVwZGF0ZTpsaW1pdHMgY3JlYXRlOnJvbGVfbWVtYmVycyByZWFkOnJvbGVfbWVtYmVycyBkZWxldGU6cm9sZV9tZW1iZXJzIHJlYWQ6ZW50aXRsZW1lbnRzIHJlYWQ6YXR0YWNrX3Byb3RlY3Rpb24gdXBkYXRlOmF0dGFja19wcm90ZWN0aW9uIHJlYWQ6b3JnYW5pemF0aW9uc19zdW1tYXJ5IGNyZWF0ZTphdXRoZW50aWNhdGlvbl9tZXRob2RzIHJlYWQ6YXV0aGVudGljYXRpb25fbWV0aG9kcyB1cGRhdGU6YXV0aGVudGljYXRpb25fbWV0aG9kcyBkZWxldGU6YXV0aGVudGljYXRpb25fbWV0aG9kcyByZWFkOm9yZ2FuaXphdGlvbnMgdXBkYXRlOm9yZ2FuaXphdGlvbnMgY3JlYXRlOm9yZ2FuaXphdGlvbnMgZGVsZXRlOm9yZ2FuaXphdGlvbnMgcmVhZDpvcmdhbml6YXRpb25fZGlzY292ZXJ5X2RvbWFpbnMgdXBkYXRlOm9yZ2FuaXphdGlvbl9kaXNjb3ZlcnlfZG9tYWlucyBjcmVhdGU6b3JnYW5pemF0aW9uX2Rpc2NvdmVyeV9kb21haW5zIGRlbGV0ZTpvcmdhbml6YXRpb25fZGlzY292ZXJ5X2RvbWFpbnMgY3JlYXRlOm9yZ2FuaXphdGlvbl9tZW1iZXJzIHJlYWQ6b3JnYW5pemF0aW9uX21lbWJlcnMgZGVsZXRlOm9yZ2FuaXphdGlvbl9tZW1iZXJzIGNyZWF0ZTpvcmdhbml6YXRpb25fY29ubmVjdGlvbnMgcmVhZDpvcmdhbml6YXRpb25fY29ubmVjdGlvbnMgdXBkYXRlOm9yZ2FuaXphdGlvbl9jb25uZWN0aW9ucyBkZWxldGU6b3JnYW5pemF0aW9uX2Nvbm5lY3Rpb25zIGNyZWF0ZTpvcmdhbml6YXRpb25fbWVtYmVyX3JvbGVzIHJlYWQ6b3JnYW5pemF0aW9uX21lbWJlcl9yb2xlcyBkZWxldGU6b3JnYW5pemF0aW9uX21lbWJlcl9yb2xlcyBjcmVhdGU6b3JnYW5pemF0aW9uX2ludml0YXRpb25zIHJlYWQ6b3JnYW5pemF0aW9uX2ludml0YXRpb25zIGRlbGV0ZTpvcmdhbml6YXRpb25faW52aXRhdGlvbnMgcmVhZDpzY2ltX2NvbmZpZyBjcmVhdGU6c2NpbV9jb25maWcgdXBkYXRlOnNjaW1fY29uZmlnIGRlbGV0ZTpzY2ltX2NvbmZpZyBjcmVhdGU6c2NpbV90b2tlbiByZWFkOnNjaW1fdG9rZW4gZGVsZXRlOnNjaW1fdG9rZW4gZGVsZXRlOnBob25lX3Byb3ZpZGVycyBjcmVhdGU6cGhvbmVfcHJvdmlkZXJzIHJlYWQ6cGhvbmVfcHJvdmlkZXJzIHVwZGF0ZTpwaG9uZV9wcm92aWRlcnMgZGVsZXRlOnBob25lX3RlbXBsYXRlcyBjcmVhdGU6cGhvbmVfdGVtcGxhdGVzIHJlYWQ6cGhvbmVfdGVtcGxhdGVzIHVwZGF0ZTpwaG9uZV90ZW1wbGF0ZXMgY3JlYXRlOmVuY3J5cHRpb25fa2V5cyByZWFkOmVuY3J5cHRpb25fa2V5cyB1cGRhdGU6ZW5jcnlwdGlvbl9rZXlzIGRlbGV0ZTplbmNyeXB0aW9uX2tleXMgcmVhZDpzZXNzaW9ucyB1cGRhdGU6c2Vzc2lvbnMgZGVsZXRlOnNlc3Npb25zIHJlYWQ6cmVmcmVzaF90b2tlbnMgZGVsZXRlOnJlZnJlc2hfdG9rZW5zIGNyZWF0ZTpzZWxmX3NlcnZpY2VfcHJvZmlsZXMgcmVhZDpzZWxmX3NlcnZpY2VfcHJvZmlsZXMgdXBkYXRlOnNlbGZfc2VydmljZV9wcm9maWxlcyBkZWxldGU6c2VsZl9zZXJ2aWNlX3Byb2ZpbGVzIGNyZWF0ZTpzc29fYWNjZXNzX3RpY2tldHMgZGVsZXRlOnNzb19hY2Nlc3NfdGlja2V0cyByZWFkOmZvcm1zIHVwZGF0ZTpmb3JtcyBkZWxldGU6Zm9ybXMgY3JlYXRlOmZvcm1zIHJlYWQ6Zmxvd3MgdXBkYXRlOmZsb3dzIGRlbGV0ZTpmbG93cyBjcmVhdGU6Zmxvd3MgcmVhZDpmbG93c192YXVsdCByZWFkOmZsb3dzX3ZhdWx0X2Nvbm5lY3Rpb25zIHVwZGF0ZTpmbG93c192YXVsdF9jb25uZWN0aW9ucyBkZWxldGU6Zmxvd3NfdmF1bHRfY29ubmVjdGlvbnMgY3JlYXRlOmZsb3dzX3ZhdWx0X2Nvbm5lY3Rpb25zIHJlYWQ6Zmxvd3NfZXhlY3V0aW9ucyBkZWxldGU6Zmxvd3NfZXhlY3V0aW9ucyByZWFkOmNvbm5lY3Rpb25zX29wdGlvbnMgdXBkYXRlOmNvbm5lY3Rpb25zX29wdGlvbnMgcmVhZDpzZWxmX3NlcnZpY2VfcHJvZmlsZV9jdXN0b21fdGV4dHMgdXBkYXRlOnNlbGZfc2VydmljZV9wcm9maWxlX2N1c3RvbV90ZXh0cyBjcmVhdGU6bmV0d29ya19hY2xzIHVwZGF0ZTpuZXR3b3JrX2FjbHMgcmVhZDpuZXR3b3JrX2FjbHMgZGVsZXRlOm5ldHdvcmtfYWNscyBkZWxldGU6dmRjc190ZW1wbGF0ZXMgcmVhZDp2ZGNzX3RlbXBsYXRlcyBjcmVhdGU6dmRjc190ZW1wbGF0ZXMgdXBkYXRlOnZkY3NfdGVtcGxhdGVzIGNyZWF0ZTpjdXN0b21fc2lnbmluZ19rZXlzIHJlYWQ6Y3VzdG9tX3NpZ25pbmdfa2V5cyB1cGRhdGU6Y3VzdG9tX3NpZ25pbmdfa2V5cyBkZWxldGU6Y3VzdG9tX3NpZ25pbmdfa2V5cyByZWFkOmZlZGVyYXRlZF9jb25uZWN0aW9uc190b2tlbnMgZGVsZXRlOmZlZGVyYXRlZF9jb25uZWN0aW9uc190b2tlbnMgY3JlYXRlOnVzZXJfYXR0cmlidXRlX3Byb2ZpbGVzIHJlYWQ6dXNlcl9hdHRyaWJ1dGVfcHJvZmlsZXMgdXBkYXRlOnVzZXJfYXR0cmlidXRlX3Byb2ZpbGVzIGRlbGV0ZTp1c2VyX2F0dHJpYnV0ZV9wcm9maWxlcyByZWFkOmV2ZW50X3N0cmVhbXMgY3JlYXRlOmV2ZW50X3N0cmVhbXMgZGVsZXRlOmV2ZW50X3N0cmVhbXMgdXBkYXRlOmV2ZW50X3N0cmVhbXMgcmVhZDpldmVudF9kZWxpdmVyaWVzIHVwZGF0ZTpldmVudF9kZWxpdmVyaWVzIGNyZWF0ZTpjb25uZWN0aW9uX3Byb2ZpbGVzIHJlYWQ6Y29ubmVjdGlvbl9wcm9maWxlcyB1cGRhdGU6Y29ubmVjdGlvbl9wcm9maWxlcyBkZWxldGU6Y29ubmVjdGlvbl9wcm9maWxlcyByZWFkOm9yZ2FuaXphdGlvbl9jbGllbnRfZ3JhbnRzIGNyZWF0ZTpvcmdhbml6YXRpb25fY2xpZW50X2dyYW50cyBkZWxldGU6b3JnYW5pemF0aW9uX2NsaWVudF9ncmFudHMgcmVhZDpzZWN1cml0eV9tZXRyaWNzIHJlYWQ6Y29ubmVjdGlvbnNfa2V5cyB1cGRhdGU6Y29ubmVjdGlvbnNfa2V5cyBjcmVhdGU6Y29ubmVjdGlvbnNfa2V5cyIsImd0eSI6ImNsaWVudC1jcmVkZW50aWFscyIsImF6cCI6IjFma3hxOGlsVWtWQnQzNWZZWnRrUUNYVWd2UU55N3JBIn0.W4RDSQvhGBeZwDTvyjCHuValcUoG5ufW58vXG6E-HZJWRpm3AZAjH39_YIBrEqC9aBce72Cm-XjKqGwfilies0fr4MB2BSRsgd8Ii-we5KVH_uvVB2gYurcATr0BCyakjONa0WNOxYr94NPpgxTe4cBMTQGCFnbOTAGbweNjQnlfNGh8LJ6WRmnAuAcWIK5V5tdnyFSoXoL6afif0xll74BiGnaRxLlcsnV5DJsJTpk1KERR1E-4PWA8JmbjQVssHLgJZ6mJldwoKEoGD_N5Be_cn9rjgKy0mhzReKTjuAmQJpye5wqF0hHS8XNRn14j90-mwUHhWylOH92nFMAoiA"}`,
-    },
-    cache: "no-store",
-  })
-
-  const organization = await res.json()
 
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <ThemeProvider
-          attribute="class"
-          enableSystem
-          disableTransitionOnChange
+    <ClerkProvider appearance={{ baseTheme: shadcn }}>
+      <html lang="en" suppressHydrationWarning>
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-          <SidebarProvider
-
-            style={
-              {
-                "--sidebar-width": "calc(var(--spacing) * 72)",
-                "--header-height": "calc(var(--spacing) * 12)",
-              } as React.CSSProperties
-            }
+          <ThemeProvider
+            attribute="class"
+            enableSystem
+            disableTransitionOnChange
           >
-            <SessionProvider value={auth0Session} organization={{
-              id: organization.id,
-              name: organization.display_name || organization.name,
-            }}>
-              <AppSidebar
-                variant="inset"
-                user={user}
-                organization={{
-                  id: organization.id,
-                  name: organization.display_name || organization.name,
-                }}
-              />
-              <SidebarInset>
-                <SiteHeader />
-                {children}
-                <Toaster richColors position="top-center" />
-              </SidebarInset>
-            </SessionProvider>
-          </SidebarProvider>
-        </ThemeProvider>
-      </body>
-    </html>
+            <SignedIn>
+              <SidebarProvider
+
+                style={
+                  {
+                    "--sidebar-width": "calc(var(--spacing) * 72)",
+                    "--header-height": "calc(var(--spacing) * 14)",
+                  } as React.CSSProperties
+                }
+              >
+                <AppSidebar
+                  variant="inset"
+                  user={user}
+                  organization={{
+                    id: "organization.id",
+                    name: "organization.display_name || organization.name",
+                  }}
+                />
+                <SidebarInset>
+                  <SiteHeader />
+                  {children}
+                  <Toaster richColors position="top-center" />
+                </SidebarInset>
+              </SidebarProvider>
+            </SignedIn>
+            <SignedOut>
+              <div className="relative h-screen">
+                <div className="absolute top-0 left-0 w-full flex flex-row items-center p-4 bg-card shadow">
+                  <div className="flex-1 text-left"></div>
+                  <div className="flex-1 text-center">
+                    <h1 className="font-semibold">TST Pro</h1>
+                  </div>
+                  <div className="flex-1 text-right">
+                    <ThemeToggle />
+                  </div>
+                </div>
+
+                <div className="h-screen flex items-center justify-center">
+                  {children}
+                </div>
+              </div>
+              <Toaster richColors position="top-center" />
+            </SignedOut>
+
+          </ThemeProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

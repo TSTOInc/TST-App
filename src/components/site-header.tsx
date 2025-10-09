@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import DynamicBreadcrumb from "./layout/DynamicBreadcrumb"
 import { ThemeToggle } from "./theme-toggle"
+import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs"
 
 export function SiteHeader() {
   return (
@@ -14,8 +15,14 @@ export function SiteHeader() {
         <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
         <DynamicBreadcrumb />
         <div className="ml-auto flex items-center gap-2">
-          {/* GitHub link */}
           <ThemeToggle />
+          <SignedIn>
+            <UserButton />
+          </SignedIn>
+          <SignedOut>
+            <Button asChild><SignInButton/></Button>
+          </SignedOut>
+          
         </div>
       </div>
     </header>

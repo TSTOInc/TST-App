@@ -3,6 +3,8 @@ import AccountClient from './accountClient'
 
 export default async function page() {
   return (
-    <AccountClient/>
+    <div>
+      <AccountClient />
+    </div>
   )
 }
