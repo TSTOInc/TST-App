@@ -37,11 +37,11 @@ export default function PartiesStep({ control, errors }: PartiesStepProps) {
     const fetchData = async () => {
       try {
         const endpoints = {
-          brokers: `${process.env.NEXT_PUBLIC_API_BASE}/get/brokers`,
-          paymentTerms: `${process.env.NEXT_PUBLIC_API_BASE}/get/payment_terms`,
-          drivers: `${process.env.NEXT_PUBLIC_API_BASE}/get/drivers`,
-          trucks: `${process.env.NEXT_PUBLIC_API_BASE}/get/trucks`,
-          trailers: `${process.env.NEXT_PUBLIC_API_BASE}/get/equipment`,
+          brokers: `api/get/brokers`,
+          paymentTerms: `api/get/payment_terms`,
+          drivers: `api/get/drivers`,
+          trucks: `api/get/trucks`,
+          trailers: `api/get/equipment`,
         }
 
         const results = await Promise.all(

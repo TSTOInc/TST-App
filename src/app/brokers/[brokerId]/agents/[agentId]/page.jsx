@@ -38,7 +38,7 @@ export default function TablePage({ params }) {
             setLoading(true)
             setError(null)
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/get/brokers_agents/${agentId}`, {
+                const res = await fetch(`api/get/brokers_agents/${agentId}`, {
                     cache: "no-cache"
                 })
                 if (!res.ok) throw new Error('Failed to fetch data')

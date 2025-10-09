@@ -128,7 +128,7 @@ const InspectionsCard = ({ truck, setTruckData, inspectionIntervalDays = 90 }) =
             (async () => {
                 // Submit inspection
                 const response = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_BASE}/add/truck_inspections`,
+                    `api/add/truck_inspections`,
                     {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -140,7 +140,7 @@ const InspectionsCard = ({ truck, setTruckData, inspectionIntervalDays = 90 }) =
                 await response.json();
 
                 // Refresh truck data
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/get/trucks/${truck.id}`, { cache: "no-cache" });
+                const res = await fetch(`api/get/trucks/${truck.id}`, { cache: "no-cache" });
                 const updatedTruck = await res.json();
                 setTruckData(updatedTruck);
 
@@ -338,14 +338,14 @@ const DocumentsCard = ({ truck, setTruckData }) => {
             formData.append("file", selectedFile);
 
             const uploadRes = await fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE}/upload/image/trucks/${truck.id}/docs`,
+                `api/upload/image/trucks/${truck.id}/docs`,
                 { method: "POST", body: formData }
             );
             if (!uploadRes.ok) throw new Error("Upload failed");
             const { url: documentUrl } = await uploadRes.json();
 
             const addRes = await fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE}/add/trucks/${truck.id}/docs`,
+                `api/add/trucks/${truck.id}/docs`,
                 { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ document_url: documentUrl }) }
             );
             if (!addRes.ok) throw new Error("Failed to save document to DB");
@@ -366,7 +366,7 @@ const DocumentsCard = ({ truck, setTruckData }) => {
     const handleDelete = async (documentUrl, truckId) => {
         try {
             await toast.promise(
-                fetch(`${process.env.NEXT_PUBLIC_API_BASE}/delete/trucks/${truckId}/docs`, {
+                fetch(`api/delete/trucks/${truckId}/docs`, {
                     method: "DELETE",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ document_url: documentUrl }),
@@ -528,7 +528,7 @@ export default function TablePage({ params }) {
             setLoading(true)
             setError(null)
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/get/trucks/${id}`, { cache: "no-cache" })
+                const res = await fetch(`api/get/trucks/${id}`, { cache: "no-cache" })
                 if (!res.ok) throw new Error('Failed to fetch data')
                 const data = await res.json()
                 setData(data || null)

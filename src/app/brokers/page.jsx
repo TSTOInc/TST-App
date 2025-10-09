@@ -24,7 +24,7 @@ const Page = () => {
     useEffect(() => {
         const fetchBrokers = async () => {
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/get/brokers`)
+                const res = await fetch(`api/get/brokers`)
                 if (!res.ok) throw new Error('Failed to fetch loads')
                 const data = await res.json()
                 setBrokers(data)

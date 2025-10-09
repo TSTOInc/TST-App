@@ -42,9 +42,9 @@ const Home = () => {
   useEffect(() => {
     async function fetchData() {
       try {
-        const loadRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/get/loads`);
+        const loadRes = await fetch(`api/get/loads`);
         const loads = await loadRes.json();
-        const brokerRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/get/brokers`);
+        const brokerRes = await fetch(`api/get/brokers`);
         const brokers = await brokerRes.json();
 
         const now = new Date();

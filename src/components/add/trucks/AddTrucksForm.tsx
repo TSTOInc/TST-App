@@ -89,7 +89,7 @@ export default function AddTrucksForm() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/upload/image/trucks`, {
+      const res = await fetch(`api/upload/image/trucks`, {
         method: "POST",
         body: formData,
       });
@@ -148,7 +148,7 @@ export default function AddTrucksForm() {
 
       console.log("Submitting payload:", JSON.stringify(payload));
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/add/trucks`, {
+      const response = await fetch(`api/add/trucks`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

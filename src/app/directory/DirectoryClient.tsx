@@ -44,7 +44,7 @@ export default function DirectoryClient() {
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE}/fmcsa/get?type=name&q=${encodeURIComponent(q)}`
+        `api/fmcsa/get?type=name&q=${encodeURIComponent(q)}`
       );
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();

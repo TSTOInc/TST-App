@@ -23,7 +23,7 @@ const Page = () => {
     useEffect(() => {
         const fetchTrucks = async () => {
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/get/trucks`)
+                const res = await fetch(`api/get/trucks`)
                 if (!res.ok) throw new Error('Failed to fetch loads')
                 const data = await res.json()
                 setTrucks(data)

@@ -23,7 +23,7 @@ const Page = () => {
     const fetchBrokers = async () => {
       setLoadingBrokers(true);
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/get/brokers`);
+        const res = await fetch(`api/get/brokers`);
         if (!res.ok) throw new Error("Failed to load brokers");
 
         const data = await res.json();
@@ -49,7 +49,7 @@ const Page = () => {
     console.log(data);
     try {
       await toast.promise(
-        fetch(`${process.env.NEXT_PUBLIC_API_BASE}/add/brokers/agents`, {
+        fetch(`api/add/brokers/agents`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data),
