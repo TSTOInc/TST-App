@@ -90,7 +90,7 @@ export default function TablePage() {
       setLoading(true)
       setError(null)
       try {
-        const res = await fetch(`api/get/loads`, {
+        const res = await fetch(`/api/get/loads`, {
           cache: "no-cache",
         })
         if (!res.ok) throw new Error("Failed to fetch data")
@@ -184,7 +184,7 @@ export default function TablePage() {
       />
 
       {/* Loads Display */}
-      <div className="flex-1 space-y-4">
+      <div className="flex-1">
         {loading ? (
           <Empty className="border border-dashed">
             <EmptyHeader>
@@ -225,49 +225,62 @@ export default function TablePage() {
             </EmptyContent>
           </Empty>
         ) : (
-          filteredData.map((load) => {
-            const status = formatDueDate(load.invoiced_at, load.payment_days_to_pay, load.paid_at)
+          <Card className="p-0 gap-0">
+  {filteredData.map((load, index) => {
+    const status = formatDueDate(load.invoiced_at, load.payment_days_to_pay, load.paid_at);
 
-            return (
-              <Card key={load.id} className="p-0">
-                <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition rounded-xl">
-                  <div className="flex flex-col w-full">
-                    <div className="font-semibold text-lg justify-between flex pr-4">
-                      <span>
-                        {load.broker_name || "N/A"}
-                        <Badge status={load.load_status} className="ml-2 capitalize">
-                          {load.load_status || "new"}
-                        </Badge>
-                      </span>
-                      <div className="flex items-center gap-4">
-                        <span>${load.rate || "0.00"}</span>
-                      </div>
-                    </div>
-                    <span className="text-muted-foreground text-sm">
-                      {load.invoice_number || "N/A"} • {load.load_number || "N/A"}
-                    </span>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <IconMapPin size={16} />
-                      <span>{formatCityState(load.stops[0]?.location) || "N/A"}</span>
-                      <span className="text-gray-400">→</span>
-                      <span>{formatCityState(load.stops[load.stops.length - 1]?.location) || "N/A"}</span>
-                    </div>
+    // Determine rounded corners
+    const roundedClass =
+      index === 0
+        ? "rounded-t-lg rounded-b-none" // first card top
+        : index === filteredData.length - 1
+        ? "rounded-b-lg rounded-t-none" // last card bottom
+        : "rounded-none"; // middle cards
 
-                    <div className={`text-md ${status.color}`}>{status.text}</div>
+    return (
+      <Card
+        key={load.id}
+        className={`flex items-center justify-between hover:bg-muted/50 transition py-5 px-4 border-l-0 border-r-0 border-t-0 border-b ${roundedClass}`}
+      >
+        <div className="flex flex-col w-full">
+          <div className="font-semibold text-lg justify-between flex pr-4">
+            <span>
+              {load.broker_name || "N/A"}
+              <Badge status={load.load_status} className="ml-2 capitalize">
+                {load.load_status || "new"}
+              </Badge>
+            </span>
+            <div className="flex items-center gap-4">
+              <span>${load.rate || "0.00"}</span>
+            </div>
+          </div>
+          <span className="text-muted-foreground text-sm">
+            {load.invoice_number || "N/A"} • {load.load_number || "N/A"}
+          </span>
+          <div className="flex items-center space-x-2 mt-1">
+            <IconMapPin size={16} />
+            <span>{formatCityState(load.stops[0]?.location) || "N/A"}</span>
+            <span className="text-gray-400">→</span>
+            <span>{formatCityState(load.stops[load.stops.length - 1]?.location) || "N/A"}</span>
+          </div>
 
-                    <div className="flex justify-end mt-2">
-                      <Button className="px-8 py-5" asChild>
-                        <Link href={`/loads/${load.id}`} className="flex items-center">
-                          <IconEye className="mr-2" />
-                          View Load
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            )
-          })
+          <div className={`text-md ${status.color}`}>{status.text}</div>
+
+          <div className="flex justify-end mt-2">
+            <Button className="px-8 py-5" asChild>
+              <Link href={`/loads/${load.id}`} className="flex items-center">
+                <IconEye className="mr-2" />
+                View Load
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </Card>
+    );
+  })}
+</Card>
+
+
         )}
       </div>
     </div>

@@ -111,7 +111,7 @@ export default function ExampleUsage() {
     const formData = new FormData();
     formData.append("file", file);
 
-    const res = await fetch(`api/upload/image/brokers`, {
+    const res = await fetch(`/api/upload/image/brokers`, {
       method: "POST",
       body: formData,
     });
@@ -140,7 +140,7 @@ export default function ExampleUsage() {
       };
 
       await toast.promise(
-        fetch(`api/add/brokers`, {
+        fetch(`/api/add/brokers`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),

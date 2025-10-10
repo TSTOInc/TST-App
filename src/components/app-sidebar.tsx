@@ -1,5 +1,4 @@
-"use client"
-
+'use client'
 import * as React from "react"
 import {
   IconCamera,
@@ -33,8 +32,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { OrganizationSwitcher } from '@clerk/nextjs'
+import { OrganizationSwitcher, useOrganization, useUser } from '@clerk/nextjs'
 import { Skeleton } from "./ui/skeleton"
+import { TeamSwitcher } from "@/components/ui/team-switcher"
 
 
 const data = {
@@ -132,17 +132,24 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   }
 }
 
-export function AppSidebar({ user, organization, ...props }: AppSidebarProps) {
+export function  AppSidebar({organization, ...props }: AppSidebarProps) {
+  const user = useUser()
+  const org = useOrganization()
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader className="flex flex-col">
-        <OrganizationSwitcher
+        <div className="hidden lg:block">
+          <OrganizationSwitcher
+          organizationProfileMode="navigation"
+          organizationProfileUrl="/account/organization"
           appearance={{
             elements: {
-              rootBox: "w-full",
+              rootBox: "w-full z-50",
               organizationSwitcherTrigger__organization: "w-full justify-between",
               avatarBox: "h-8 w-8",
-              organizationSwitcherTrigger: "text-foreground text-left p-3"
+              organizationSwitcherTrigger: "text-foreground text-left p-3",
+              organizationSwitcherPopoverCard: "w-70 z-50",
             }
           }}
           fallback={
@@ -151,6 +158,18 @@ export function AppSidebar({ user, organization, ...props }: AppSidebarProps) {
             </div>
           }
         />
+        </div>
+        <div className="lg:hidden">
+          {org.organization && (
+            <TeamSwitcher organizations={[
+              {
+                name: org.organization.name,
+                logo: org.organization.imageUrl,
+                plan: "Free"
+              }
+            ]} />
+          )}
+        </div>
       </SidebarHeader>
 
       <SidebarContent>

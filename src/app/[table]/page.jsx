@@ -40,7 +40,7 @@ export default function TablePage({ params }) {
             try {
 
 
-                const res = await fetch(`api/get/${table}`, {
+                const res = await fetch(`/api/get/${table}`, {
                     cache: "no-cache"
                 })
                 if (!res.ok) throw new Error('Failed to fetch data')

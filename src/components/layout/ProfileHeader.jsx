@@ -60,7 +60,7 @@ export default function ProfileHeader({
 
         try {
             await toast.promise(
-                fetch(`api/delete/${table}/${id}`, {
+                fetch(`/api/delete/${table}/${id}`, {
                     cache: "no-cache",
                     method: "DELETE",
                 }).then(async (res) => {

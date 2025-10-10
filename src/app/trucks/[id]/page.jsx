@@ -140,7 +140,7 @@ const InspectionsCard = ({ truck, setTruckData, inspectionIntervalDays = 90 }) =
                 await response.json();
 
                 // Refresh truck data
-                const res = await fetch(`api/get/trucks/${truck.id}`, { cache: "no-cache" });
+                const res = await fetch(`/api/get/trucks/${truck.id}`, { cache: "no-cache" });
                 const updatedTruck = await res.json();
                 setTruckData(updatedTruck);
 
@@ -366,7 +366,7 @@ const DocumentsCard = ({ truck, setTruckData }) => {
     const handleDelete = async (documentUrl, truckId) => {
         try {
             await toast.promise(
-                fetch(`api/delete/trucks/${truckId}/docs`, {
+                fetch(`/api/delete/trucks/${truckId}/docs`, {
                     method: "DELETE",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ document_url: documentUrl }),
@@ -528,7 +528,7 @@ export default function TablePage({ params }) {
             setLoading(true)
             setError(null)
             try {
-                const res = await fetch(`api/get/trucks/${id}`, { cache: "no-cache" })
+                const res = await fetch(`/api/get/trucks/${id}`, { cache: "no-cache" })
                 if (!res.ok) throw new Error('Failed to fetch data')
                 const data = await res.json()
                 setData(data || null)

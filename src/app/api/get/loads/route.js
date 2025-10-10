@@ -7,8 +7,6 @@ const pool = new Pool({
     ssl: { rejectUnauthorized: false },
 })
 
-
-
 export async function GET() {
     try {
         // Query loads, stops, and payment terms

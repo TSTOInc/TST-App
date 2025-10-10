@@ -39,7 +39,7 @@ const LicenseCard = ({ driver }) => {
         const handleDelete = async (documentUrl, driverId) => {
             try {
                 await toast.promise(
-                    fetch(`api/delete/drivers/${driverId}/docs`, {
+                    fetch(`/api/delete/drivers/${driverId}/docs`, {
                         method: "DELETE",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ document_url: documentUrl }),
@@ -139,10 +139,10 @@ export default function TablePage({ params }) {
 
     useEffect(() => {
         const fetchdata = async () => {
-            setLoading(true)
+            console.log(`api/get/drivers/${id}`)
             setError(null)
             try {
-                const res = await fetch(`api/get/drivers/${id}`, {
+                const res = await fetch(`/api/get/drivers/${id}`, {
                     cache: "no-cache"
                 })
                 if (!res.ok) throw new Error('Failed to fetch data')

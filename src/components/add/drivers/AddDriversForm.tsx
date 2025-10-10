@@ -81,7 +81,7 @@ export default function AddEquipmentForm() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch(`api/upload/image/drivers`, {
+      const res = await fetch(`/api/upload/image/drivers`, {
         method: "POST",
         body: formData,
       });
@@ -137,7 +137,7 @@ export default function AddEquipmentForm() {
       };
 
       console.log("Submitting payload:", JSON.stringify(payload));
-      const response = await fetch(`api/add/drivers`, {
+      const response = await fetch(`/api/add/drivers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

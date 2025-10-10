@@ -1,98 +1,19 @@
-"use client"
-import React, { useEffect, useState } from 'react'
-import { DataTable } from "../../components/data-table"
-import CompanyCard from "../../components/custom/company-card"
-import { Button } from "@/components/ui/button"
-import {
-    Empty,
-    EmptyContent,
-    EmptyDescription,
-    EmptyHeader,
-    EmptyMedia,
-    EmptyTitle,
-} from "@/components/ui/empty"
-import { IconZoomQuestion } from "@tabler/icons-react"
-import Link from 'next/link'
-import { SearchBar } from "@/components/search-bar"
+import React, { Suspense } from "react";
+import InfoGrid from "@/components/data/info-grid";
 
-const Page = () => {
-    const [brokers, setBrokers] = useState([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(null)
-    const [searchQuery, setSearchQuery] = useState("")
+const brokerSchema = {
+  title: "name", // simple key
+  description: ["DOT-","usdot_number"," • ","docket_number"], // multiple fields combined
+  image: "image_url", // single key
+  status: item => item.status ?? "UNKNOWN", // function
+  website: "website",
+};
 
-    useEffect(() => {
-        const fetchBrokers = async () => {
-            try {
-                const res = await fetch(`api/get/brokers`)
-                if (!res.ok) throw new Error('Failed to fetch loads')
-                const data = await res.json()
-                setBrokers(data)
-            } catch (err) {
-                setError(err.message)
-            } finally {
-                setLoading(false)
-            }
-        }
-        fetchBrokers()
-    }, [])
 
-    // remove the last 2 columns from the data
-    const filteredBrokers = brokers.map(broker => { const { created_at, updated_at, ...rest } = broker; return rest })
-    const filteredData = filteredBrokers.filter((item) =>
-        item.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    return (
-        <div className="p-4 space-y-4">
-            <SearchBar skeleton={loading} value={searchQuery} onValueChange={setSearchQuery} placeholder="Search Brokers..." />
-            {loading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {Array.from({ length: 8 }).map((_, i) => (
-                        <CompanyCard key={i} skeleton />
-                    ))}
-                </div>
-            ) : error ? (
-                <Empty className="border border-dashed">
-                    <EmptyHeader>
-                        <EmptyMedia variant="icon">
-                            <IconZoomQuestion />
-                        </EmptyMedia>
-                        <EmptyTitle>Error Loading Brokers</EmptyTitle>
-                        <EmptyDescription>{error}</EmptyDescription>
-                        <EmptyDescription>
-                            Need help? <a href="#">Contact support</a>
-                        </EmptyDescription>
-                    </EmptyHeader>
-                </Empty>
-            ) : filteredData.length === 0 ? (
-                <Empty className="border border-dashed">
-                    <EmptyHeader>
-                        <EmptyMedia variant="icon">
-                            <IconZoomQuestion />
-                        </EmptyMedia>
-                        <EmptyTitle>No Broker Found</EmptyTitle>
-                        <EmptyDescription>
-                            Create a new broker to get started.
-                        </EmptyDescription>
-                    </EmptyHeader>
-                    <EmptyContent>
-                        <Link href="/brokers/add">
-                            <Button variant="outline" size="sm">
-                                Add Broker
-                            </Button>
-                        </Link>
-                    </EmptyContent>
-                </Empty>
-            ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {filteredData.map(carrier => (
-                        <CompanyCard broker key={carrier.usdot_number || carrier.id} company={carrier} />
-                    ))}
-                </div>
-            )}
-        </div>
-    )
+export default function Page() {
+  return (
+    <Suspense fallback={<InfoGrid skeleton />}>
+      <InfoGrid table="brokers" fields={["title", "description", "status"]} schema={brokerSchema} skeleton={false} />
+    </Suspense>
+  );
 }
-
-export default Page

@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import pkg from 'pg'
+import { auth } from '@clerk/nextjs/server'
+
 const { Pool } = pkg
 
 const pool = new Pool({
@@ -27,6 +29,12 @@ const ALLOWED_TABLES = [
 
 
 export async function GET(req, { params }) {
+  const { isAuthenticated } = await auth();
+
+  if (!isAuthenticated) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { table, id } = await params
 
   if (!ALLOWED_TABLES.includes(table)) {

@@ -24,7 +24,7 @@ export default function TablePage({ params }) {
             setLoading(true)
             setError(null)
             try {
-                const res = await fetch(`api/fmcsa/get?type=usdot&q=${id}`, {
+                const res = await fetch(`/api/fmcsa/get?type=usdot&q=${id}`, {
                     cache: "no-cache"
                 })
                 if (!res.ok) throw new Error('Failed to fetch data')

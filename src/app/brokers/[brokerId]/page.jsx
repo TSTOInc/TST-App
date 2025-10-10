@@ -78,7 +78,7 @@ const AgentsCard = ({ broker, onAgentAdded }) => {
         }
         console.log(payload)
 
-        const promise = fetch(`api/add/brokers/agents`, {
+        const promise = fetch(`/api/add/brokers/agents`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -509,7 +509,7 @@ const NotesCard = ({ broker }) => {
         setSuccess(false);
 
         try {
-            const res = await fetch(`api/update/brokers/${broker.id}`, {
+            const res = await fetch(`/api/update/brokers/${broker.id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ notes }),
@@ -572,7 +572,7 @@ export default function TablePage({ params }) {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch(`api/get/brokers/${brokerId}`, {
+            const res = await fetch(`/api/get/brokers/${brokerId}`, {
                 cache: "no-cache",
             });
             if (!res.ok) throw new Error("Failed to fetch data");

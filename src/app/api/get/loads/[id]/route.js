@@ -1,3 +1,4 @@
+import { NextResponse } from 'next/server'
 import pkg from "pg"
 const { Pool } = pkg
 
@@ -45,7 +46,7 @@ export async function GET(req, { params }) {
     )
 
     if (!result.rows.length)
-      return NextResponse.json(req, { error: "Load not found" }, 404)
+      return NextResponse.json({ error: "Load not found" }, 404)
 
     const row = result.rows[0]
     const load = {
@@ -108,12 +109,8 @@ export async function GET(req, { params }) {
       }
     })
 
-    return NextResponse.json(req, load)
+    return NextResponse.json(load)
   } catch (error) {
-    return NextResponse.json(req, { error: error.message }, 500)
+    return NextResponse.json({ error: error.message }, 500)
   }
-}
-
-export async function OPTIONS(req) {
-  return handleOptions(req)
 }
