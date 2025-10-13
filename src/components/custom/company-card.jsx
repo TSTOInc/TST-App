@@ -38,7 +38,7 @@ const CompanyCard = ({ table, id, title, description, image, status, skeleton, w
             <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                     {title}
-                    {status && <Badge onlyIcon status={status} />}
+                    {status != "status" && <Badge onlyIcon status={status} />}
                 </CardTitle>
                 <CardDescription>{description}</CardDescription>
             </CardHeader>

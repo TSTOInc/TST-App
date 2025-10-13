@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { Card } from "@/components/ui/card"
 import { IconMapPin, IconEye, IconZoomQuestion, IconLoader2 } from "@tabler/icons-react"
@@ -17,14 +17,15 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
+import { useQuery } from "convex/react"
+import { api } from "@convex/_generated/api"
 
 export default function TablePage() {
   const searchParams = useSearchParams()
   const router = useRouter()
 
-  const [data, setData] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const loads = useQuery(api.getTable.all, { table: "loads" })
+  console.log("Loads:", loads)
   const [searchQuery, setSearchQuery] = useState("")
 
   const [filters, setFilters] = useState({
@@ -49,7 +50,7 @@ export default function TablePage() {
     router.replace(`?${params.toString()}`, { scroll: false })
   }
 
-  const q = searchParams.get("q")?.toLowerCase() || ""
+  const q = searchQuery.toLowerCase() || searchParams.get("q")?.toLowerCase() || ""
 
   const formatCityState = (address) => {
     if (!address) return "N/A"
@@ -85,33 +86,40 @@ export default function TablePage() {
     }
   }
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true)
-      setError(null)
-      try {
-        const res = await fetch(`/api/get/loads`, {
-          cache: "no-cache",
-        })
-        if (!res.ok) throw new Error("Failed to fetch data")
-        const json = await res.json()
-        setData(Array.isArray(json) ? json : [])
-      } catch (err) {
-        setError(err.message)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
-  }, [])
+  if (!loads) {
+    // Loading state while Convex fetches
+    return (
+      <Empty className="border border-dashed">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <IconLoader2 className="animate-spin" />
+          </EmptyMedia>
+          <EmptyTitle>Fetching Loads...</EmptyTitle>
+          <EmptyDescription>Loading data, please wait.</EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    )
+  }
 
-  // Filter data
-  const cleanedData = data.map(({ created_at, updated_at, ...rest }) => rest)
-  const filteredData = cleanedData.filter((load) => {
+  // Remove unwanted fields
+  const cleanedData = loads.map(({ created_at, updated_at, ...rest }) => rest)
+
+  // Sort stops by appointment_time, then window_end
+  const sortedData = cleanedData.map((load) => {
+    const sortedStops = [...(load.stops || [])].sort((a, b) => {
+      const aTime = a.appointment_time ? new Date(a.appointment_time) : new Date(a.window_end)
+      const bTime = b.appointment_time ? new Date(b.appointment_time) : new Date(b.window_end)
+      return aTime - bTime
+    })
+    return { ...load, stops: sortedStops }
+  })
+
+  // Apply filters & search
+  const filteredData = sortedData.filter((load) => {
     const query = q.toLowerCase()
 
     const matchesSearch =
-      !q ||
+      !query ||
       load.broker_name?.toLowerCase().includes(query) ||
       load.invoice_number?.toLowerCase().includes(query) ||
       load.load_number?.toLowerCase().includes(query)
@@ -167,8 +175,12 @@ export default function TablePage() {
 
   return (
     <div className="p-4 space-y-4">
-      {/* Search and Filters stay visible always */}
-      <SearchBar live={true} onSearch={(q) => setSearchQuery(q)} placeholder="Search broker, invoice, or load number" />
+      <SearchBar
+        live={true}
+        value={searchQuery}
+        onValueChange={setSearchQuery}
+        placeholder="Search broker, invoice, or load number"
+      />
       <FiltersToolbar
         filters={filters}
         setFilters={updateFilters}
@@ -183,106 +195,71 @@ export default function TablePage() {
         }
       />
 
-      {/* Loads Display */}
-      <div className="flex-1">
-        {loading ? (
-          <Empty className="border border-dashed">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <IconLoader2 className="animate-spin" />
-              </EmptyMedia>
-              <EmptyTitle>Fetching Loads...</EmptyTitle>
-              <EmptyDescription>Loading data, please wait.</EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        ) : error ? (
-          <Empty className="border border-dashed">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <IconZoomQuestion />
-              </EmptyMedia>
-              <EmptyTitle>Error Loading Loads</EmptyTitle>
-              <EmptyDescription>{error}</EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        ) : filteredData.length === 0 ? (
-          <Empty className="border border-dashed">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <IconZoomQuestion />
-              </EmptyMedia>
-              <EmptyTitle>No Load Found</EmptyTitle>
-              <EmptyDescription>
-                Create a new load to get started.
-              </EmptyDescription>
-            </EmptyHeader>
-            <EmptyContent>
-              <Link href="/loads/add">
-                <Button variant="outline" size="sm">
-                  Add Load
-                </Button>
-              </Link>
-            </EmptyContent>
-          </Empty>
-        ) : (
-          <Card className="p-0 gap-0">
-  {filteredData.map((load, index) => {
-    const status = formatDueDate(load.invoiced_at, load.payment_days_to_pay, load.paid_at);
+      {filteredData.length === 0 ? (
+        <Empty className="border border-dashed">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <IconZoomQuestion />
+            </EmptyMedia>
+            <EmptyTitle>No Load Found</EmptyTitle>
+            <EmptyDescription>Create a new load to get started.</EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <Link href="/loads/add">
+              <Button variant="outline" size="sm">
+                Add Load
+              </Button>
+            </Link>
+          </EmptyContent>
+        </Empty>
+      ) : (
+        <div className="space-y-4">
+          {filteredData.map((load) => {
+            const status = formatDueDate(load.invoiced_at, load.payment_days_to_pay, load.paid_at)
 
-    // Determine rounded corners
-    const roundedClass =
-      index === 0
-        ? "rounded-t-lg rounded-b-none" // first card top
-        : index === filteredData.length - 1
-        ? "rounded-b-lg rounded-t-none" // last card bottom
-        : "rounded-none"; // middle cards
+            return (
+              <Card
+                key={load._id}
+                className="flex items-center justify-between hover:bg-muted/50 transition py-5 px-4"
+              >
+                <div className="flex flex-col w-full">
+                  <div className="font-semibold text-lg justify-between flex pr-4">
+                    <span>
+                      {load.broker_name || "N/A"}
+                      <Badge status={load.load_status} className="ml-2 capitalize">
+                        {load.load_status || "new"}
+                      </Badge>
+                    </span>
+                    <div className="flex items-center gap-4">
+                      <span>${load.rate || "0.00"}</span>
+                    </div>
+                  </div>
+                  <span className="text-muted-foreground text-sm">
+                    {load.invoice_number || "N/A"} • {load.load_number || "N/A"}
+                  </span>
+                  <div className="flex items-center space-x-2 mt-1">
+                    <IconMapPin size={16} />
+                    <span>{formatCityState(load.stops?.[0]?.location) || "N/A"}</span>
+                    <span className="text-gray-400">→</span>
+                    <span>{formatCityState(load.stops?.[load.stops.length - 1]?.location) || "N/A"}</span>
+                  </div>
 
-    return (
-      <Card
-        key={load.id}
-        className={`flex items-center justify-between hover:bg-muted/50 transition py-5 px-4 border-l-0 border-r-0 border-t-0 border-b ${roundedClass}`}
-      >
-        <div className="flex flex-col w-full">
-          <div className="font-semibold text-lg justify-between flex pr-4">
-            <span>
-              {load.broker_name || "N/A"}
-              <Badge status={load.load_status} className="ml-2 capitalize">
-                {load.load_status || "new"}
-              </Badge>
-            </span>
-            <div className="flex items-center gap-4">
-              <span>${load.rate || "0.00"}</span>
-            </div>
-          </div>
-          <span className="text-muted-foreground text-sm">
-            {load.invoice_number || "N/A"} • {load.load_number || "N/A"}
-          </span>
-          <div className="flex items-center space-x-2 mt-1">
-            <IconMapPin size={16} />
-            <span>{formatCityState(load.stops[0]?.location) || "N/A"}</span>
-            <span className="text-gray-400">→</span>
-            <span>{formatCityState(load.stops[load.stops.length - 1]?.location) || "N/A"}</span>
-          </div>
+                  <div className={`text-md ${status.color}`}>{status.text}</div>
 
-          <div className={`text-md ${status.color}`}>{status.text}</div>
-
-          <div className="flex justify-end mt-2">
-            <Button className="px-8 py-5" asChild>
-              <Link href={`/loads/${load.id}`} className="flex items-center">
-                <IconEye className="mr-2" />
-                View Load
-              </Link>
-            </Button>
-          </div>
+                  <div className="flex justify-end mt-2">
+                    <Button className="px-8 py-2" asChild>
+                      <Link href={`/loads/${load._id}`} className="flex items-center">
+                        <IconEye className="mr-2" />
+                        View Load
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            )
+          })}
         </div>
-      </Card>
-    );
-  })}
-</Card>
-
-
-        )}
-      </div>
+      )}
     </div>
   )
 }

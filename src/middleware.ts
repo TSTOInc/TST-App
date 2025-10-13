@@ -1,7 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 
 const isProtectedFrontendRoute = createRouteMatcher([
-  '/((?!sign-in|sign-up|api/).*)'
+  '/((?!sign-in|sign-up|api|test).*)'
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
