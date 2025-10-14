@@ -45,10 +45,19 @@ import {
     SheetTrigger,
 } from "@/components/ui/sheet"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+import Copy from "@/components/copy"
 
 
 import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
+
+const Field = ({ label, value }) => (
+  <div className="flex items-center gap-1">
+    <span className="text-muted-foreground">{label}:</span>
+    <span>{value || "N/A"}</span>
+    <Copy value={value}></Copy>
+  </div>
+)
 
 
 const ContactCard = ({ truck }) => {
@@ -58,11 +67,15 @@ const ContactCard = ({ truck }) => {
             <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Truck Info</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 ml-4">
-                <p>Vin: {truck.vin || "N/A"}</p>
-                <p>Make: {truck.make || "N/A"} Model: {truck.model || "N/A"}</p>
-                <p>Year: {truck.year || "N/A"}</p>
+            <CardContent className="ml-4 space-y-2">
+                <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+                    <Field label="VIN" value={truck.vin} />
+                    <Field label="Year" value={truck.year} />
+                    <Field label="Make" value={truck.make} />
+                    <Field label="Model" value={truck.model} />
+                </div>
             </CardContent>
+
 
             <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Truck Plates</CardTitle>
@@ -546,9 +559,9 @@ export default function TablePage({ params }) {
                     </TabsList>
 
                     <TabsContent value="info"><ContactCard truck={data} /></TabsContent>
-                    <TabsContent value="inspections"><InspectionsCard truck={data}/></TabsContent>
+                    <TabsContent value="inspections"><InspectionsCard truck={data} /></TabsContent>
                     <TabsContent value="repairs"><RepairsCard truck={data} /></TabsContent>
-                    <TabsContent value="documents"><DocumentsCard truck={data}/></TabsContent>
+                    <TabsContent value="documents"><DocumentsCard truck={data} /></TabsContent>
                 </Tabs>
             </div>
         </div>
