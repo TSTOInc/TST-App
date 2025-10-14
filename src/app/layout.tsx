@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { shadcn } from '@clerk/themes'
+import ConvexClientProvider from '@/components/ConvexClientProvider'
 
 //Clerk
 import { ClerkProvider, SignedIn, SignedOut } from "@clerk/nextjs";
@@ -39,12 +40,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
 
   return (
-    <ClerkProvider appearance={{ baseTheme: shadcn }}>
-      <html lang="en" suppressHydrationWarning>
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
-          <ThemeProvider
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <ClerkProvider appearance={{ baseTheme: shadcn }}>
+           <ConvexClientProvider>
+<ThemeProvider
             attribute="class"
             enableSystem
             disableTransitionOnChange
@@ -94,8 +96,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </SignedOut>
 
           </ThemeProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+           </ConvexClientProvider>
+          
+        </ClerkProvider>
+
+      </body>
+    </html>
+
+
   );
 }

@@ -1,18 +1,19 @@
-import React, { Suspense } from "react";
 import InfoGrid from "@/components/data/info-grid";
 
-const brokerSchema = {
+const agentSchema = {
   title: "name", // simple key
   description: ["email", " • ", "phone"], // multiple fields combined
   image: "image_url", // single key
-  status: item => item.status ?? "UNKNOWN", // function
+  status: "status",
 };
 
 
 export default function Page() {
   return (
-    <Suspense fallback={<InfoGrid skeleton />}>
-      <InfoGrid table="brokers_agents" fields={["title", "description", "status"]} schema={brokerSchema} skeleton={false} />
-    </Suspense>
+    <InfoGrid
+      table="brokers_agents"
+      schema={agentSchema}
+      fields={["title", "description", "status"]}
+    />
   );
 }

@@ -48,13 +48,16 @@ const tooltipVariants = cva(
           "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
         fixing:
           "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100 ",
+        default:
+          "bg-primary text-primary-foreground dark:bg-primary dark:text-primary-foreground", // 🆕 default fallback
       },
     },
     defaultVariants: {
-      status: "at_pickup",
+      status: "default", // 🆕 fallback when no status
     },
   }
 )
+
 const tooltipArrowVariants = cva(
   "z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px]",
   {
@@ -79,10 +82,11 @@ const tooltipArrowVariants = cva(
         pass: "bg-green-100 dark:bg-green-900 fill-green-100 dark:fill-green-900",
         fail: "bg-red-100 dark:bg-red-900 fill-red-100 dark:fill-red-900",
         fixing: "bg-yellow-100 dark:bg-yellow-900 fill-yellow-100 dark:fill-yellow-900",
+        default: "bg-primary dark:bg-primary fill-primary dark:fill-primary dark:fill-primary", // 🆕 default fallback
       },
     },
     defaultVariants: {
-      status: "at_pickup",
+      status: "default", // 🆕 fallback when no status
     },
   }
 )
@@ -115,7 +119,6 @@ function TooltipTrigger({
 }: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
   return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
 }
-
 
 interface TooltipContentProps
   extends React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>,

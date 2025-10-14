@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,31 +21,36 @@ export default function DirectoryClient() {
   const [hasSearched, setHasSearched] = useState(false);
   const [ready, setReady] = useState(false);
 
-  useEffect(() => {
-    setQuery(initialQuery);
-    setReady(true);
+  // Live search toggle
+  const liveSearch = true;
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const liveSearchDelay = 500;
 
+  useEffect(() => {
+    setReady(true);
     if (initialQuery) {
-      handleSearch(initialQuery);
+      handleSearch(initialQuery, false); // don't debounce first load
     }
   }, [initialQuery]);
 
-  const handleSearch = async (q: string = query) => {
+  const handleSearch = async (q: string = query, updateUrl = true) => {
     if (!q) {
       setResults([]);
-      router.replace("/directory");
+      if (updateUrl) router.replace("/directory");
       return;
     }
 
     setHasSearched(true);
     setLoading(true);
     setError(null);
-    router.replace(`/directory?q=${encodeURIComponent(q)}`);
+
+    if (updateUrl) {
+      // Save query in URL
+      router.replace(`/directory?q=${encodeURIComponent(q)}`);
+    }
 
     try {
-      const res = await fetch(
-        `api/fmcsa/get?type=name&q=${encodeURIComponent(q)}`
-      );
+      const res = await fetch(`api/fmcsa/get?type=name&q=${encodeURIComponent(q)}`);
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
       setResults(data.carriers || []);
@@ -60,6 +65,18 @@ export default function DirectoryClient() {
     if (e.key === "Enter") handleSearch();
   };
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setQuery(val);
+
+    if (liveSearch) {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        handleSearch(val);
+      }, liveSearchDelay);
+    }
+  };
+
   if (!ready) return <Loading />;
 
   return (
@@ -69,7 +86,7 @@ export default function DirectoryClient() {
           type="text"
           placeholder="Search carriers..."
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={handleChange}
           onKeyDown={handleKeyDown}
           className="rounded-l-full rounded-r-none"
         />
@@ -111,7 +128,7 @@ export default function DirectoryClient() {
         {!loading &&
           results.length > 0 &&
           results.map((carrier: any) => (
-            <Card key={carrier.dotNumber} className="border-none p-4 bg-transparent">
+            <Card key={carrier.dotNumber} className="border-none p-4 bg-transparent shadow-none">
               <CardContent>
                 <CardTitle>
                   <Link
@@ -121,7 +138,7 @@ export default function DirectoryClient() {
                     {carrier.legalName}
                   </Link>
                 </CardTitle>
-                <p className="mt-1">
+                <p className="mt-1 text-muted-foreground">
                   {carrier.phyStreet}, {carrier.phyCity}, {carrier.phyState}{" "}
                   {carrier.phyZipcode}
                 </p>

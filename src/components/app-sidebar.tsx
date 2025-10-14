@@ -15,10 +15,9 @@ import {
   IconSearch,
   IconSettings,
   IconUsers,
-  IconUsersGroup,
+  IconMessageCircle,
   IconBuildings,
 } from "@tabler/icons-react"
-
 import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
@@ -85,7 +84,13 @@ const data = {
       title: "Directory",
       url: "/directory",
       icon: IconSearch,
-    }
+    },
+    {
+      title: "Chats",
+      url: "/chats",
+      icon: IconMessageCircle,
+    },
+    
   ],
   navClouds: [
     {

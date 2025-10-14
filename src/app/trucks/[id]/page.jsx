@@ -45,7 +45,19 @@ import {
     SheetTrigger,
 } from "@/components/ui/sheet"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+import Copy from "@/components/copy"
 
+
+import { useQuery } from "convex/react"
+import { api } from "@convex/_generated/api"
+
+const Field = ({ label, value }) => (
+  <div className="flex items-center gap-1">
+    <span className="text-muted-foreground">{label}:</span>
+    <span>{value || "N/A"}</span>
+    <Copy value={value}></Copy>
+  </div>
+)
 
 
 const ContactCard = ({ truck }) => {
@@ -55,11 +67,15 @@ const ContactCard = ({ truck }) => {
             <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Truck Info</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 ml-4">
-                <p>Vin: {truck.vin || "N/A"}</p>
-                <p>Make: {truck.make || "N/A"} Model: {truck.model || "N/A"}</p>
-                <p>Year: {truck.year || "N/A"}</p>
+            <CardContent className="ml-4 space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
+                    <Field label="VIN" value={truck.vin} />
+                    <Field label="Year" value={truck.year} />
+                    <Field label="Make" value={truck.make} />
+                    <Field label="Model" value={truck.model} />
+                </div>
             </CardContent>
+
 
             <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Truck Plates</CardTitle>
@@ -95,7 +111,7 @@ const formatDate = (dateString) => {
     return `${parts[0]} ${addOrdinalSuffix(parseInt(parts[1]))} ${parts[2]}`;
 };
 
-const InspectionsCard = ({ truck, setTruckData, inspectionIntervalDays = 90 }) => {
+const InspectionsCard = ({ truck, inspectionIntervalDays = 90 }) => {
     const inspections = truck?.inspections ?? [];
     const nextInspectionDate = () => {
         if (!inspections.length) return "N/A";
@@ -113,54 +129,54 @@ const InspectionsCard = ({ truck, setTruckData, inspectionIntervalDays = 90 }) =
     const [isSheetOpen, setIsSheetOpen] = useState(false); // <-- control sheet open state
 
     const handleSubmit = async (e) => {
-    e.preventDefault();
+        e.preventDefault();
 
-    const payload = {
-        truck_id: truck.id,
-        inspection_type: inspectionType,
-        inspection_date: inspectionDate,
-        result,
-        notes,
+        const payload = {
+            truck_id: truck.id,
+            inspection_type: inspectionType,
+            inspection_date: inspectionDate,
+            result,
+            notes,
+        };
+
+        try {
+            await toast.promise(
+                (async () => {
+                    // Submit inspection
+                    const response = await fetch(
+                        `api/add/truck_inspections`,
+                        {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(payload),
+                        }
+                    );
+
+                    if (!response.ok) throw new Error("Failed to create inspection");
+                    await response.json();
+
+                    // Refresh truck data
+                    const res = await fetch(`/api/get/trucks/${truck.id}`, { cache: "no-cache" });
+                    const updatedTruck = await res.json();
+                    //setTruckData(updatedTruck);
+
+                    // Reset form & close sheet
+                    setInspectionType("90_day");
+                    setResult("pass");
+                    setInspectionDate("");
+                    setNotes("");
+                    setIsSheetOpen(false);
+                })(),
+                {
+                    loading: "Adding inspection...",
+                    success: "Inspection added successfully!",
+                    error: (err) => err.message || "Failed to add inspection",
+                }
+            );
+        } catch (error) {
+            console.error(error);
+        }
     };
-
-    try {
-        await toast.promise(
-            (async () => {
-                // Submit inspection
-                const response = await fetch(
-                    `api/add/truck_inspections`,
-                    {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(payload),
-                    }
-                );
-
-                if (!response.ok) throw new Error("Failed to create inspection");
-                await response.json();
-
-                // Refresh truck data
-                const res = await fetch(`/api/get/trucks/${truck.id}`, { cache: "no-cache" });
-                const updatedTruck = await res.json();
-                setTruckData(updatedTruck);
-
-                // Reset form & close sheet
-                setInspectionType("90_day");
-                setResult("pass");
-                setInspectionDate("");
-                setNotes("");
-                setIsSheetOpen(false);
-            })(),
-            {
-                loading: "Adding inspection...",
-                success: "Inspection added successfully!",
-                error: (err) => err.message || "Failed to add inspection",
-            }
-        );
-    } catch (error) {
-        console.error(error);
-    }
-};
 
     return (
         <Card>
@@ -318,7 +334,7 @@ const RepairsCard = ({ truck, repairsIntervalDays = 90 }) => {
     );
 };
 
-const DocumentsCard = ({ truck, setTruckData }) => {
+const DocumentsCard = ({ truck }) => {
     const documents = truck?.docs ?? [];
     const [selectedDoc, setSelectedDoc] = useState(null);
     const [selectedFile, setSelectedFile] = useState(null);
@@ -351,7 +367,7 @@ const DocumentsCard = ({ truck, setTruckData }) => {
             if (!addRes.ok) throw new Error("Failed to save document to DB");
 
             // ✅ Refresh documents immediately
-            setTruckData(prev => ({ ...prev, docs: [...(prev.docs ?? []), documentUrl] }));
+            //setTruckData(prev => ({ ...prev, docs: [...(prev.docs ?? []), documentUrl] }));
 
             toast.success("Document uploaded and added successfully!");
             setSelectedFile(null);
@@ -513,33 +529,14 @@ const DocumentsCard = ({ truck, setTruckData }) => {
 };
 
 export default function TablePage({ params }) {
+
     const { id } = React.use(params);
-    const [data, setData] = useState([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(null)
+    const data = useQuery(api.getDoc.byId, { table: "trucks", id });
 
     const searchParams = useSearchParams();
     const router = useRouter();
     const tabFromQuery = searchParams.get("tab") || "info";
     const [activeTab, setActiveTab] = useState(tabFromQuery);
-
-    useEffect(() => {
-        const fetchdata = async () => {
-            setLoading(true)
-            setError(null)
-            try {
-                const res = await fetch(`/api/get/trucks/${id}`, { cache: "no-cache" })
-                if (!res.ok) throw new Error('Failed to fetch data')
-                const data = await res.json()
-                setData(data || null)
-            } catch (err) {
-                setError(err.message)
-            } finally {
-                setLoading(false)
-            }
-        }
-        fetchdata()
-    }, [])
 
     const handleTabChange = (tab) => {
         if (tab === activeTab) return;
@@ -547,14 +544,11 @@ export default function TablePage({ params }) {
         if (tab === "info") router.replace(window.location.pathname);
         else router.replace(`?tab=${tab}`);
     };
-
-    if (loading) return <div><ProfileHeader name="Loading..." role="Loading..." /><div className="p-4">Loading...</div></div>
-    if (error) return <div className="text-red-500">Error: {error}</div>
-    if (!data || data.length === 0) return <div>No data found for <b>{id}</b>.</div>
+    if (!data || data.length === 0) return <ProfileHeader skeleton={true} />
 
     return (
         <div>
-            <ProfileHeader data={data} id={data.id} table="trucks" image_url={data.image_url} name={data.truck_number} alias={data.truck_alias} role={`Year: ${data.year ?? "N/A"}`} status={data.status} color={data.color} />
+            <ProfileHeader data={data} id={data.id} table="trucks" image_url={data.image_url} name={data.truck_number} alias={data.truck_alias} description={`Year: ${data.year ?? "N/A"}`} status={data.status} color={data.color} />
             <div className="p-4">
                 <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                     <TabsList className="w-full h-10">
@@ -565,9 +559,9 @@ export default function TablePage({ params }) {
                     </TabsList>
 
                     <TabsContent value="info"><ContactCard truck={data} /></TabsContent>
-                    <TabsContent value="inspections"><InspectionsCard truck={data} setTruckData={setData} /></TabsContent>
+                    <TabsContent value="inspections"><InspectionsCard truck={data} /></TabsContent>
                     <TabsContent value="repairs"><RepairsCard truck={data} /></TabsContent>
-                    <TabsContent value="documents"><DocumentsCard truck={data} setTruckData={setData} /></TabsContent>
+                    <TabsContent value="documents"><DocumentsCard truck={data} /></TabsContent>
                 </Tabs>
             </div>
         </div>
