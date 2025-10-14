@@ -159,7 +159,7 @@ export default function ProfileHeader({
                     <div className="flex justify-center sm:justify-start">
                         <div className="w-36 h-36 sm:w-40 sm:h-40 rounded-full shadow-md sm:shadow-none">
                             <Avatar className="w-full h-full bg-background">
-                                <AvatarImage
+                                <AvatarImage fullsize
                                     src={image_url || "/placeholder-user.jpg"}
                                     alt={name}
                                 />

@@ -68,7 +68,7 @@ const ContactCard = ({ truck }) => {
                 <CardTitle>Truck Info</CardTitle>
             </CardHeader>
             <CardContent className="ml-4 space-y-2">
-                <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
                     <Field label="VIN" value={truck.vin} />
                     <Field label="Year" value={truck.year} />
                     <Field label="Make" value={truck.make} />
