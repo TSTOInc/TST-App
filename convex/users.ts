@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-
+import { internalMutation } from "./_generated/server";
 
 // Create a new user
 export const create = mutation({
@@ -25,7 +25,7 @@ export const getUser = query({
 });
 
 // Update or create a user
-export const updateOrCreateUser = mutation({
+export const updateOrCreateUser = internalMutation({
   args: { clerkUser: v.any() },
   handler: async (ctx, { clerkUser }) => {
     const existing = await ctx.db
@@ -42,7 +42,7 @@ export const updateOrCreateUser = mutation({
 });
 
 // Delete a user by Clerk ID
-export const deleteUser = mutation({
+export const deleteUser = internalMutation({
   args: { clerkId: v.string() },
   handler: async (ctx, { clerkId }) => {
     const user = await ctx.db
