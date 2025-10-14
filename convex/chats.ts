@@ -21,10 +21,10 @@ export const get = query({
     if (!identity) throw new Error("Not authenticated");
 
     const chatDocId = ctx.db.normalizeId("chats", args.id);
-    if (!chatDocId) throw new Error("Invalid document ID");
+    if (!chatDocId) return null;
 
     const chat = await ctx.db.get(chatDocId);
-    if (!chat) throw new Error("Document not found");
+    if (!chat) return null;
 
     const participants = await Promise.all(
       chat.participantsIds.map(async (participantId: Id<"users">) => {

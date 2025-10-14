@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button"
 import { SearchBar } from "@/components/search-bar"
 import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
+import { usePathname } from 'next/navigation'
 
 // --- Helper: safely get nested values ---
 function getValue(obj, path) {
@@ -51,6 +52,11 @@ export default function InfoGrid({
   error = null,
   onRetry,
 }) {
+
+  const pathname = usePathname();
+  const path = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
+
+
   const queryData = useQuery(api.getTable.all, { table })
 
   const [searchQuery, setSearchQuery] = useState("")
@@ -119,7 +125,7 @@ export default function InfoGrid({
             <CompanyCard key={i} skeleton />
           ))}
         </div>
-      ) : filteredData.length === 0 ? (
+      ) : filteredData.length > 0 ? (
         <Empty className="border border-dashed">
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -129,9 +135,10 @@ export default function InfoGrid({
             <EmptyDescription>Create a new {table} to get started.</EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Link href={`/${table}/add`}>
+            <Link href={`${path}/add`}>
               <Button variant="outline" size="sm">
-                Add {table.slice(0, -1)}
+                {/* We are replacing the underscore with a space and the 's' with an empty string */}
+                Add {table.replace(/_/g, ' ').replace(/s/g, '')}
               </Button>
             </Link>
           </EmptyContent>

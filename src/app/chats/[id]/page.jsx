@@ -10,9 +10,12 @@ import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
 import { useUser } from "@clerk/nextjs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Skeleton } from '@/components/ui/skeleton'
+import { useRouter } from "next/navigation"
 
 const Page = ({ params }) => {
     const { id } = React.use(params)
+
+    const router = useRouter()
 
     const { user } = useUser()
     const currentUserClerkId = user?.id
@@ -44,8 +47,19 @@ const Page = ({ params }) => {
         });
     }, [messages, currentUserId]);
 
-
-    if (!chatData) return <div className="flex flex-col h-[calc(100vh-100px)]">
+    if (chatData === null) {
+        return (
+            <div className="flex flex-col items-center justify-center h-[calc(100vh-100px)] text-center text-muted-foreground">
+                <h2 className="text-2xl font-semibold mb-2">No chat found</h2>
+                <p className="mb-4">This chat might have been deleted or doesn’t exist.</p>
+                {/* Go back button takes you to /chats page*/}
+                <Button variant="outline" onClick={() => router.push("/chats")}>
+                    Go back
+                </Button>
+            </div>
+        );
+    }
+    if (chatData === undefined) return <div className="flex flex-col h-[calc(100vh-100px)]">
         {/* Header */}
         <div className="flex-shrink-0 mb-4 p-4 border-b flex items-center gap-4">
             <>
