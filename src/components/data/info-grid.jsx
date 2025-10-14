@@ -125,7 +125,7 @@ export default function InfoGrid({
             <CompanyCard key={i} skeleton />
           ))}
         </div>
-      ) : filteredData.length > 0 ? (
+      ) : filteredData.length === 0 ? (
         <Empty className="border border-dashed">
           <EmptyHeader>
             <EmptyMedia variant="icon">
