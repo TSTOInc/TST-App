@@ -8,7 +8,7 @@ export default defineSchema({
     banned: v.boolean(),
     clerk_id: v.string(),
     create_organization_enabled: v.boolean(),
-    create_organizations_limit: v.float64(),
+    create_organizations_limit: v.optional(v.float64()),
     created_at: v.float64(),
     delete_self_enabled: v.boolean(),
     email_addresses: v.array(
