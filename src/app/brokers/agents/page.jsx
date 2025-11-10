@@ -2,7 +2,7 @@ import InfoGrid from "@/components/data/info-grid";
 
 const agentSchema = {
   title: "name", // simple key
-  description: ["email", " • ", "phone"], // multiple fields combined
+  description: ["broker_id", " • ", "email"], // multiple fields combined
   image: "image_url", // single key
   status: "status",
 };

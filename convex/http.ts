@@ -3,6 +3,7 @@ import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { WebhookEvent } from "@clerk/backend";
 import { Webhook } from "svix";
+import { api } from "./_generated/api";
 
 function ensureEnv(name: string): string {
   const val = process.env[name];
@@ -20,7 +21,7 @@ const handleClerkWebhook = httpAction(async (ctx, req) => {
     case "user.created":
     case "user.updated":
       // Update or create user
-      await ctx.runMutation(internal.users.updateOrCreateUser, {
+      await ctx.runAction(api.users.updateOrCreateUserAction, {
         clerkUser: event.data,
       });
       break;

@@ -3,12 +3,14 @@ import { query, QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 
 export const all = query({
-  args: { table: v.string() },
+  args: { table: v.string(), orgId: v.string() },
   handler: async (ctx, args) => {
+
+
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
-    const tasks = await (ctx.db.query(args.table) as any).collect();
+    const tasks = await ctx.db.query(args.table as any).withIndex("by_orgId", (q: any) => q.eq("org_id", args.orgId)).collect();
 
     if (args.table === "loads") {
       const tasksWithStops = await Promise.all(
@@ -20,7 +22,7 @@ export const all = query({
             .query("stops")
             .filter((q) => q.eq(q.field("load_id"), task._id))
             .collect();
-          
+
 
           return {
             ...task,
@@ -41,8 +43,10 @@ export const all = query({
 export const byUserIds = query({
   args: { userIds: v.array(v.string()) },
   handler: async (ctx, args) => {
+
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
+
 
     const usersQuery = ctx.db.query("users");
 

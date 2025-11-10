@@ -1,6 +1,6 @@
 "use client"
 export const dynamic = "force-dynamic";
-import React, { useEffect, useState } from 'react'
+import React, { use, useEffect, useState } from 'react'
 import ProfileHeader from '../../../components/layout/ProfileHeader'
 import { useSearchParams, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge"
@@ -45,55 +45,14 @@ import {
     SheetTrigger,
 } from "@/components/ui/sheet"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-import Copy from "@/components/copy"
 
 
-import { useQuery } from "convex/react"
+import InfoCard from '@/components/data/info-card';
+
+import { useQuery, useMutation } from "convex/react"
 import { api } from "@convex/_generated/api"
+import { useOrganization } from '@clerk/nextjs';
 
-const Field = ({ label, value }) => (
-  <div className="flex items-center gap-1">
-    <span className="text-muted-foreground">{label}:</span>
-    <span>{value || "N/A"}</span>
-    <Copy value={value}></Copy>
-  </div>
-)
-
-
-const ContactCard = ({ truck }) => {
-    const plates = truck?.plates ?? [];
-    return (
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Truck Info</CardTitle>
-            </CardHeader>
-            <CardContent className="ml-4 space-y-2">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
-                    <Field label="VIN" value={truck.vin} />
-                    <Field label="Year" value={truck.year} />
-                    <Field label="Make" value={truck.make} />
-                    <Field label="Model" value={truck.model} />
-                </div>
-            </CardContent>
-
-
-            <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Truck Plates</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-row flex-wrap gap-2 ml-4">
-                {plates.map((plate, index) => (
-                    <Card className="py-2 py-4" key={index}>
-                        <CardContent>
-                            <p>
-                                {plate.plate_number || "N/A"} | {plate.state || ""}, {plate.country || ""}
-                            </p>
-                        </CardContent>
-                    </Card>
-                ))}
-            </CardContent>
-        </Card>
-    )
-}
 
 const addOrdinalSuffix = (day) => {
     if (day > 3 && day < 21) return day + "th";
@@ -122,6 +81,9 @@ const InspectionsCard = ({ truck, inspectionIntervalDays = 90 }) => {
         nextDate.setDate(nextDate.getDate() + inspectionIntervalDays);
         return formatDate(nextDate)
     };
+
+    const createInspection = useMutation(api.truck_inspections.create);
+
     const [inspectionType, setInspectionType] = useState("90_day");
     const [result, setResult] = useState("pass");
     const [inspectionDate, setInspectionDate] = useState(""); // renamed to match API
@@ -132,47 +94,32 @@ const InspectionsCard = ({ truck, inspectionIntervalDays = 90 }) => {
         e.preventDefault();
 
         const payload = {
-            truck_id: truck.id,
-            inspection_type: inspectionType,
-            inspection_date: inspectionDate,
-            result,
-            notes,
+            truck_inspections: {
+                org_id: truck.org_id,
+                inspection_date: inspectionDate,
+                inspection_type: inspectionType,
+                notes: notes || null,
+                result,
+                truck_id: truck._id,
+            },
         };
 
         try {
             await toast.promise(
-                (async () => {
-                    // Submit inspection
-                    const response = await fetch(
-                        `api/add/truck_inspections`,
-                        {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify(payload),
-                        }
-                    );
-
-                    if (!response.ok) throw new Error("Failed to create inspection");
-                    await response.json();
-
-                    // Refresh truck data
-                    const res = await fetch(`/api/get/trucks/${truck.id}`, { cache: "no-cache" });
-                    const updatedTruck = await res.json();
-                    //setTruckData(updatedTruck);
-
-                    // Reset form & close sheet
-                    setInspectionType("90_day");
-                    setResult("pass");
-                    setInspectionDate("");
-                    setNotes("");
-                    setIsSheetOpen(false);
-                })(),
+                createInspection(payload), // ✅ directly call the mutation
                 {
                     loading: "Adding inspection...",
                     success: "Inspection added successfully!",
-                    error: (err) => err.message || "Failed to add inspection",
+                    error: "Failed to add inspection",
                 }
             );
+
+            // Reset form & close sheet
+            setInspectionType("90_day");
+            setResult("pass");
+            setInspectionDate("");
+            setNotes("");
+            setIsSheetOpen(false);
         } catch (error) {
             console.error(error);
         }
@@ -531,7 +478,10 @@ const DocumentsCard = ({ truck }) => {
 export default function TablePage({ params }) {
 
     const { id } = React.use(params);
-    const data = useQuery(api.getDoc.byId, { table: "trucks", id });
+
+    const { organization } = useOrganization();
+    const orgId = organization ? organization.id : "";
+    const data = useQuery(api.trucks.byId, { id, orgId: orgId });
 
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -548,7 +498,7 @@ export default function TablePage({ params }) {
 
     return (
         <div>
-            <ProfileHeader data={data} id={data.id} table="trucks" image_url={data.image_url} name={data.truck_number} alias={data.truck_alias} description={`Year: ${data.year ?? "N/A"}`} status={data.status} color={data.color} />
+            <ProfileHeader data={data} table="trucks" image_url={data.image_url} name={data.truck_number} alias={data.truck_alias} description={`Year: ${data.year ?? "N/A"}`} status={data.status} color={data.color} />
             <div className="p-4">
                 <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                     <TabsList className="w-full h-10">
@@ -558,7 +508,16 @@ export default function TablePage({ params }) {
                         <TabsTrigger value="documents"><span className="md:p-4 lg:p-6 xl:p-8">Documents</span></TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="info"><ContactCard truck={data} /></TabsContent>
+                    <TabsContent value="info"><InfoCard
+                        title="Truck Info"
+                        fields={[
+                            { label: "VIN", value: data.vin },
+                            { label: "Year", value: data.year },
+                            { label: "Make", value: data.make },
+                            { label: "Model", value: data.model },
+                        ]}
+                    />
+                    </TabsContent>
                     <TabsContent value="inspections"><InspectionsCard truck={data} /></TabsContent>
                     <TabsContent value="repairs"><RepairsCard truck={data} /></TabsContent>
                     <TabsContent value="documents"><DocumentsCard truck={data} /></TabsContent>

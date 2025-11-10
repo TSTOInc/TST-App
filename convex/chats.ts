@@ -1,12 +1,18 @@
 import { Id } from "./_generated/dataModel";
 import { mutation, query, QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
+import { decrypt } from "./encryption";
 
 // Create a new task with the given text
 export const create = mutation({
-  args: { participants: v.array(v.string()), type: v.string() },
+  args: { participants: v.array(v.string()), type: v.string(), orgId: v.string() },
   handler: async (ctx, args) => {
-    const newChatId = await ctx.db.insert("chats", { type: args.type, participantsIds: args.participants });
+
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+
+    const newChatId = await ctx.db.insert("chats", { type: args.type, participantsIds: args.participants as Id<"users">[], org_id: args.orgId });
     return newChatId;
   },
 });
@@ -51,12 +57,16 @@ export const get = query({
 export const byParticipant = query({
   args: { participantId: v.string() },
   handler: async (ctx, args) => {
+
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
     // Get all chats
     const allChats = await ctx.db.query("chats").collect()
 
     // Filter chats where the participant is included
     const userChats = allChats.filter((chat) =>
-      chat.participantsIds.includes(args.participantId)
+      chat.participantsIds.includes(args.participantId as Id<"users">)
     )
 
     // Map each chat to include participant objects with names
@@ -67,6 +77,12 @@ export const byParticipant = query({
           const lastMessageDocId = ctx.db.normalizeId("messages", chat.lastMessageId);
           if (!lastMessageDocId) throw new Error("Invalid document ID");
           lastMessage = await ctx.db.get(lastMessageDocId);
+        }
+        if (lastMessage) {
+          lastMessage = {
+            ...lastMessage,
+            text: lastMessage.text,
+          };
         }
         const participants = await Promise.all(
           chat.participantsIds.map(async (id: Id<"users">) => {

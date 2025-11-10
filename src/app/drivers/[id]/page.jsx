@@ -1,15 +1,9 @@
 "use client"
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import ProfileHeader from '../../../components/layout/ProfileHeader'
-import { use, useMemo } from "react"
-import { notFound } from "next/navigation"
-import Link from "next/link"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { IconLoader2, IconPlus, IconTrash } from '@tabler/icons-react'
+import { IconPlus, IconTrash } from '@tabler/icons-react'
 import { toast } from "sonner"; // or "@/components/ui/sonner" if aliased
 import PDFPreview from '../../../components/custom/PDFPreview'
 import {
@@ -19,49 +13,41 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-const ContactCard = ({ driver = {} }) => (
-    <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Driver Info</CardTitle>
-        </CardHeader>
+import InfoCard from '@/components/data/info-card'
+import { useQuery, useMutation } from "convex/react"
+import { api } from "@convex/_generated/api";
+import { useOrganization } from '@clerk/nextjs';
 
-        <CardContent className="space-y-2">
-            <p>License: {driver.license_number || "N/A"}</p>
-            <p>Phone: {driver.phone || "N/A"}</p>
-            <p>Email: {driver.email || "N/A"}</p>
-        </CardContent>
-    </Card>
-)
 const LicenseCard = ({ driver }) => {
     const license = driver?.license_url
     const [selectedDoc, setSelectedDoc] = useState(null);
 
-        const handleDelete = async (documentUrl, driverId) => {
-            try {
-                await toast.promise(
-                    fetch(`/api/delete/drivers/${driverId}/docs`, {
-                        method: "DELETE",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ document_url: documentUrl }),
-                    }).then(async (res) => {
-                        if (!res.ok) throw new Error("Failed to delete document");
-    
-                        // Update local state
-                        setTruckData((prev) => ({
-                            ...prev,
-                            docs: prev.docs.filter((doc) => doc !== documentUrl),
-                        }));
-                    }),
-                    {
-                        loading: "Deleting document...",
-                        success: "Document deleted successfully!",
-                        error: (err) => err.message || "Failed to delete document",
-                    }
-                );
-            } catch (error) {
-                console.error(error);
-            }
-        };
+    const handleDelete = async (documentUrl, driverId) => {
+        try {
+            await toast.promise(
+                fetch(`/api/delete/drivers/${driverId}/docs`, {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ document_url: documentUrl }),
+                }).then(async (res) => {
+                    if (!res.ok) throw new Error("Failed to delete document");
+
+                    // Update local state
+                    setTruckData((prev) => ({
+                        ...prev,
+                        docs: prev.docs.filter((doc) => doc !== documentUrl),
+                    }));
+                }),
+                {
+                    loading: "Deleting document...",
+                    success: "Document deleted successfully!",
+                    error: (err) => err.message || "Failed to delete document",
+                }
+            );
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
     return (
         <Card>
@@ -133,57 +119,29 @@ const LicenseCard = ({ driver }) => {
 export default function TablePage({ params }) {
     // Unwrap the params Promise
     const { id } = React.use(params);
-    const [data, setData] = useState([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(null)
 
-    useEffect(() => {
-        const fetchdata = async () => {
-            console.log(`api/get/drivers/${id}`)
-            setError(null)
-            try {
-                const res = await fetch(`/api/get/drivers/${id}`, {
-                    cache: "no-cache"
-                })
-                if (!res.ok) throw new Error('Failed to fetch data')
+    const { organization } = useOrganization();
+    const orgId = organization ? organization.id : "";
+    const data = useQuery(api.getDoc.byId, { table: "drivers", id: id , orgId: orgId });
 
-                const data = await res.json()
-                setData(data || null)
-            } catch (err) {
-                setError(err.message)
-            } finally {
-                setLoading(false)
-            }
-        }
-        fetchdata()
-    }, [])
-
-    if (loading) return (
-        <div>
-            <ProfileHeader name={"Loading..."} company={"Loading..."} />
-            <div className="p-4 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-                    <ContactCard carrier={data} />
-                </div>
-            </div>
-
-
-        </div>
-    )
-    if (error) return <div className="text-red-500">Error: {error}</div>
-    if (!data || data.length === 0) return <div>No data found for <b>{brokerId}</b>.</div>
+    if (!data || data.length === 0) return <ProfileHeader skeleton={true} />
 
     return (
         <div>
-            <ProfileHeader data={data} id={data.id} table="drivers" image_url={data.image_url} name={data.name} role={"Driver | Three Stars Transport Inc"} status={data.status} />
+            <ProfileHeader data={data} table="drivers" image_url={data.image_url} name={data.name} description={"Driver | Three Stars Transport Inc"} status={data.status} />
             <div className="p-4 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <ContactCard driver={data} />
+                    <InfoCard
+                        title="Driver Info"
+                        fields={[
+                            { label: "Driver License", value: data.license_number },
+                            { label: "Phone", value: data.phone, type: "phone" },
+                            { label: "Email", value: data.email },
+                        ]}
+                    />
                     <LicenseCard driver={data} />
                 </div>
             </div>
-
-
         </div>
     )
 }

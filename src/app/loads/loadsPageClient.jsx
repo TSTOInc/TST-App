@@ -19,12 +19,25 @@ import {
 } from "@/components/ui/empty"
 import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
-
+import { useOrganization } from "@clerk/nextjs"
+export function formatRate(value) {
+  const num = Number(value)
+  if (isNaN(num)) return "0.00"
+  return num.toFixed(2)
+}
 export default function TablePage() {
   const searchParams = useSearchParams()
   const router = useRouter()
-
-  const loads = useQuery(api.getTable.all, { table: "loads" })
+  const { organization } = useOrganization();
+  const orgId = organization ? organization.id : "";
+  const loadsUnsorted = useQuery(api.getTable.all, { table: "loads", orgId: orgId })
+  const loads = loadsUnsorted
+    ? [...loadsUnsorted].sort((a, b) => {
+      const aNum = Number(a.invoice_number) || 0;
+      const bNum = Number(b.invoice_number) || 0;
+      return bNum - aNum; // descending
+    })
+    : null;
   console.log("Loads:", loads)
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -220,34 +233,41 @@ export default function TablePage() {
             return (
               <Card
                 key={load._id}
-                className="flex items-center justify-between hover:bg-muted/50 transition py-5 px-4"
+                className="hover:bg-muted/50 transition py-5 px-4"
               >
-                <div className="flex flex-col w-full">
-                  <div className="font-semibold text-lg justify-between flex pr-4">
-                    <span>
-                      {load.broker_name || "N/A"}
-                      <Badge status={load.load_status} className="ml-2 capitalize">
-                        {load.load_status || "new"}
-                      </Badge>
-                    </span>
-                    <div className="flex items-center gap-4">
-                      <span>${load.rate || "0.00"}</span>
+                <div className="flex c w-full">
+                  {/* LEFT SIDE */}
+                  <div className="flex-1 pr-6 bg-">
+                    <div className="font-semibold text-lg flex pr-4">
+                      <span>
+                        {load.broker_name || "N/A"}
+                        <Badge status={load.load_status} className="ml-2 capitalize">
+                          {load.load_status || "new"}
+                        </Badge>
+                      </span>
                     </div>
-                  </div>
-                  <span className="text-muted-foreground text-sm">
-                    {load.invoice_number || "N/A"} • {load.load_number || "N/A"}
-                  </span>
-                  <div className="flex items-center space-x-2 mt-1">
-                    <IconMapPin size={16} />
-                    <span>{formatCityState(load.stops?.[0]?.location) || "N/A"}</span>
-                    <span className="text-gray-400">→</span>
-                    <span>{formatCityState(load.stops?.[load.stops.length - 1]?.location) || "N/A"}</span>
+
+                    <span className="text-muted-foreground text-sm">
+                      {load.invoice_number || "N/A"} • {load.load_number || "N/A"}
+                    </span>
+
+                    <div className="flex items-center space-x-2 mt-1">
+                      <IconMapPin size={16} />
+                      <span>{formatCityState(load.stops?.[0]?.location) || "N/A"}</span>
+                      <span className="text-gray-400">→</span>
+                      <span>{formatCityState(load.stops?.[load.stops.length - 1]?.location) || "N/A"}</span>
+                    </div>
+
+                    <div className={`text-md ${status.color}`}>{status.text}</div>
                   </div>
 
-                  <div className={`text-md ${status.color}`}>{status.text}</div>
+                  {/* RIGHT SIDE (auto width) */}
+                  <div className="flex flex-col items-end w-fit pl-4">
+                    <span className="font-semibold text-xl w-full text-center">${formatRate(load.rate)}</span>
 
-                  <div className="flex justify-end mt-2">
-                    <Button className="px-8 py-2" asChild>
+                    <div className="flex-1" /> {/* pushes button down */}
+
+                    <Button variant="outline" className="px-8 py-2 mt-2" asChild>
                       <Link href={`/loads/${load._id}`} className="flex items-center">
                         <IconEye className="mr-2" />
                         View Load
@@ -256,6 +276,8 @@ export default function TablePage() {
                   </div>
                 </div>
               </Card>
+
+
             )
           })}
         </div>

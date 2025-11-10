@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
 
-const CompanyCard = ({ table, id, title, description, image, status, skeleton, website }) => {
+export default function CompanyCard ({ table, id, title, description, image, status, skeleton, website }) {
+    const link = `/${(table || "").replace(/_/g, "/")}/${id}`; 
+
     if (skeleton)
         return (
             <div className="rounded-xl border px-6 py-6 space-y-4">
@@ -45,13 +47,11 @@ const CompanyCard = ({ table, id, title, description, image, status, skeleton, w
 
             <CardFooter>
                 <Button variant="outline" className="w-full" asChild>
-                    <Link href={`${table}/${id}`}>
-                        View {table.endsWith("s") ? table.charAt(0).toUpperCase() + table.slice(1, -1) : table.charAt(0).toUpperCase() + table.slice(1)}
+                    <Link href={link}>
+                        View {table.replace(/_/g, ' ').replace(/s/g, '')}
                     </Link>
                 </Button>
             </CardFooter>
         </Card>
     )
 }
-
-export default CompanyCard

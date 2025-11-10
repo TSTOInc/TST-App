@@ -190,5 +190,5 @@ export default function TruckRouteMap({ stops, progress }) {
     return () => map.remove();
   }, [stops, progress, theme]);
 
-  return <div ref={mapContainer} style={{ width: "100%", height: "300px", position: "relative" }} />;
+  return <div ref={mapContainer} style={{ width: "100%", height: "400px", position: "relative" }} />;
 }

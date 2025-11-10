@@ -7,6 +7,10 @@ import DynamicMultiStepForm, { StepConfig } from "../../../components/forms/Dyna
 import { ComboBoxOption } from "@/components/custom/ComboBox";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
+import { useOrganization } from "@clerk/nextjs";
+import { useMutation } from "convex/react";
+import { api } from "@convex/_generated/api";
+import { useRouter } from "next/navigation";
 
 const statusOptions: ComboBoxOption[] = [
   { label: "Active", value: "active" },
@@ -68,6 +72,10 @@ const exampleSchema = z.object({
 
 export default function ExampleUsage() {
 
+  const { organization } = useOrganization()
+  const orgId = organization ? organization.id : "";
+  const createBroker = useMutation(api.brokers.create)
+
   function parseAddress(input: string) {
     const regex =
       /^(.+?),\s*(.+?),\s*([A-Z]{2})\s*(\d{5}(?:-\d{4})?)$/;
@@ -124,36 +132,31 @@ export default function ExampleUsage() {
 
   const handleSubmitApi = async (data: any) => {
     try {
-      let pictureUrl = null;
+      //let pictureUrl = null;
 
-      if (data.picture) {
-        // Upload the picture first
-        pictureUrl = await uploadFile(data.picture);
-      }
+      //if (data.picture) {
+      // Upload the picture first
+      //pictureUrl = await uploadFile(data.picture);
+      //}
       const address_2 = `${data.city || ""}, ${data.state || ""} ${data.zip || ""}`.trim();
-
+      const { city, state, zip, picture, ...rest } = data
       // Prepare payload without the file
       const payload = {
-        ...data,
-        image_url: pictureUrl,
+        ...rest,
+        image_url: "",
         address_2,
-      };
+        notes: "",
+        org_id: orgId,
+      }
 
       await toast.promise(
-        fetch(`/api/add/brokers`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }).then(async (res) => {
-          if (!res.ok) throw new Error("Failed to submit");
-          return res.json();
-        }),
+        createBroker({ broker: payload }), // no need for fetch — Convex handles it
         {
           loading: "Submitting...",
           success: "Submitted successfully!",
           error: (err: any) => err?.message || "Submission failed",
         }
-      );
+      )
     } catch (err: any) {
       toast.error(err.message || "Something went wrong");
     }

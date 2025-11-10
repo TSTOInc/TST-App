@@ -1,6 +1,10 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { Id } from "./_generated/dataModel";
+import { encrypt, decrypt } from "./encryption";
 
+
+// Get messages by chat ID
 export const byChatId = query({
   args: { id: v.string() },
   handler: async (ctx, args) => {
@@ -9,7 +13,11 @@ export const byChatId = query({
       .filter((q) => q.eq(q.field("chatId"), args.id))
       .collect();
 
-    return messages;
+    // Decrypt each message before returning
+    return messages.map((m) => ({
+      ...m,
+      text: m.text,
+    }));
   },
 });
 
@@ -20,21 +28,20 @@ export const create = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
-    // Insert the message
+    // Encrypt text before saving
+    const encryptedText = args.text;
+
     const newMessageId = await ctx.db.insert("messages", {
-      chatId: args.chatId,
-      senderId: args.senderId,
-      text: args.text,
+      chatId: args.chatId as Id<"chats">,
+      senderId: args.senderId as Id<"users">,
+      text: encryptedText, // stored encrypted
       deliveredTo: [],
       seenBy: [],
     });
 
-    // Update chat with only lastMessageId
     const chatDocId = ctx.db.normalizeId("chats", args.chatId);
     if (chatDocId) {
-      await ctx.db.patch(chatDocId, {
-        lastMessageId: newMessageId,
-      });
+      await ctx.db.patch(chatDocId, { lastMessageId: newMessageId });
     }
 
     return newMessageId;
@@ -53,9 +60,9 @@ export const markAsDelivered = mutation({
     const message = await ctx.db.get(normalizedMessageId);
     if (!message) throw new Error("Message not found");
 
-    if (!message.deliveredTo.includes(userId)) {
+    if (!message.deliveredTo.includes(userId as Id<"users">)) {
       await ctx.db.patch(normalizedMessageId, {
-        deliveredTo: [...message.deliveredTo, userId],
+        deliveredTo: [...message.deliveredTo, userId as Id<"users">],
       });
     }
   },
@@ -74,8 +81,8 @@ export const markAsRead = mutation({
 
     const msg = await ctx.db.get(normalizedMessageId);
     if (!msg) return;
-    if (!msg.seenBy.includes(userId)) {
-      await ctx.db.patch(normalizedMessageId, { seenBy: [...msg.seenBy, userId] });
+    if (!msg.seenBy.includes(userId as Id<"users">)) {
+      await ctx.db.patch(normalizedMessageId, { seenBy: [...msg.seenBy, userId as Id<"users">] });
     }
   },
 });

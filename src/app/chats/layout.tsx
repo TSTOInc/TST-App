@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useQuery, useMutation } from "convex/react"
 import { useRouter } from "next/navigation"
 import { api } from '@convex/_generated/api'
-import { useUser } from '@clerk/nextjs'
+import { useUser, useOrganization } from '@clerk/nextjs'
 import {
   Avatar,
   AvatarFallback,
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/item"
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
+import { Id } from '@convex/_generated/dataModel'
 
 interface ChatsLayoutProps {
   selectedChatId?: string
@@ -50,13 +51,16 @@ function timeAgo(dateString: string | number | Date) {
 export default function ChatsLayout({ selectedChatId, children }: ChatsLayoutProps) {
   const router = useRouter()
   const { user } = useUser()
+  const { organization } = useOrganization();
+  const orgId = organization?.id || "";
   const currentUserId = user?.id
 
   // Queries
   const currentUserQuery = useQuery(api.users.getUser, {
     clerkId: currentUserId || "",
   })
-  const usersQuery = useQuery(api.getTable.all, { table: "users" })
+  console.log("orgId", orgId)
+  const usersQuery = useQuery(api.users.getAll, { orgId: orgId } )
   const currentUserIdFromDB = currentUserQuery?._id
   const chatsQuery = useQuery(api.chats.byParticipant, {
     participantId: currentUserIdFromDB || "",
@@ -101,6 +105,7 @@ export default function ChatsLayout({ selectedChatId, children }: ChatsLayoutPro
       const newChatId = await createChat({
         type: "direct",
         participants: [currentUser._id, otherUserId],
+        orgId: orgId
       })
       router.push(`/chats/${newChatId}`)
     } catch (err) {
@@ -157,7 +162,7 @@ export default function ChatsLayout({ selectedChatId, children }: ChatsLayoutPro
                     className={`flex items-center gap-2 ${
                       existingChat?.lastMessage &&
                       existingChat.lastMessage.senderId !== currentUserIdFromDB &&
-                      !existingChat.lastMessage.seenBy.includes(currentUserIdFromDB)
+                      !existingChat.lastMessage.seenBy.includes(currentUserIdFromDB as Id<"users">)
                         ? "font-bold"
                         : "font-normal"
                     }`}
@@ -169,7 +174,7 @@ export default function ChatsLayout({ selectedChatId, children }: ChatsLayoutPro
                     className={`${
                       existingChat?.lastMessage &&
                       existingChat.lastMessage.senderId !== currentUserIdFromDB &&
-                      !existingChat.lastMessage.seenBy.includes(currentUserIdFromDB)
+                      !existingChat.lastMessage.seenBy.includes(currentUserIdFromDB as Id<"users">)
                         ? "font-semibold text-foreground"
                         : "text-muted-foreground"
                     }`}
@@ -196,7 +201,7 @@ export default function ChatsLayout({ selectedChatId, children }: ChatsLayoutPro
                 <ItemActions>
                   {existingChat?.lastMessage &&
                     existingChat.lastMessage.senderId !== currentUserIdFromDB &&
-                    !existingChat.lastMessage.seenBy.includes(currentUserIdFromDB) && (
+                    !existingChat.lastMessage.seenBy.includes(currentUserIdFromDB as Id<"users">) && (
                       <span className="w-2 h-2 bg-blue-500 rounded-full inline-block" />
                     )}
                 </ItemActions>

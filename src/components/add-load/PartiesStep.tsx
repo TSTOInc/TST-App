@@ -1,17 +1,12 @@
 "use client"
 
-import React, { useEffect, useState, useRef } from "react"
+import React, { useEffect } from "react"
 import { Controller, useFieldArray, useWatch } from "react-hook-form"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command"
 import SearchableSelect from "@/components/comp-229"
+import { useQuery } from "convex/react"
+import { api } from "@convex/_generated/api"
 
 interface Option {
   value: string
@@ -23,90 +18,57 @@ interface Option {
 interface PartiesStepProps {
   control: any
   errors: any
+  orgId: string
 }
 
-export default function PartiesStep({ control, errors }: PartiesStepProps) {
-  const [brokers, setBrokers] = useState<Option[]>([])
-  const [paymentTerms, setPaymentTerms] = useState<Option[]>([])
-  const [drivers, setDrivers] = useState<Option[]>([])
-  const [trucks, setTrucks] = useState<Option[]>([])
-  const [trailers, setTrailers] = useState<Option[]>([])
+export default function PartiesStep({ control, errors, orgId }: PartiesStepProps) {
+  // Query all lookup data
+  const brokersData = useQuery(api.getTable.all, { table: "brokers", orgId })
+  const paymentTermsData = useQuery(api.getTable.all, { table: "payment_terms", orgId })
+  const driversData = useQuery(api.getTable.all, { table: "drivers", orgId })
+  const trucksData = useQuery(api.getTable.all, { table: "trucks", orgId })
+  const trailersData = useQuery(api.getTable.all, { table: "equipment", orgId })
 
-  // Fetch lookup data
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const endpoints = {
-          brokers: `api/get/brokers`,
-          paymentTerms: `api/get/payment_terms`,
-          drivers: `api/get/drivers`,
-          trucks: `api/get/trucks`,
-          trailers: `api/get/equipment`,
-        }
+  // Transform data for each select
+  const brokers: Option[] =
+    brokersData?.map((b: any) => ({
+      value: String(b._id),
+      label: b.name,
+      description: `${b.address || ""}${b.address_2 ? ", " + b.address_2 : ""}`,
+    })) ?? []
 
-        const results = await Promise.all(
-          Object.entries(endpoints).map(async ([key, url]) => {
-            const res = await fetch(url)
-            const json = await res.json()
-            return [key, json] as const
-          })
-        )
+  const paymentTerms: Option[] =
+    paymentTermsData?.map((pt: any) => ({
+      value: String(pt._id),
+      label: pt.name,
+      broker_id: pt.broker_id ? String(pt.broker_id) : undefined,
+      description: pt.description || "",
+    })) ?? []
 
-        const data = Object.fromEntries(results)
+  const drivers: Option[] =
+    driversData?.map((d: any) => ({
+      value: String(d._id),
+      label: d.name,
+      description: d.license_number ? `License: ${d.license_number}` : "",
+    })) ?? []
 
-        setBrokers(
-          (Array.isArray(data.brokers) ? data.brokers : data.brokers?.data || []).map((b: any) => ({
-            value: String(b.id),
-            label: b.name,
-            description: `${b.address || ""}${b.address_2 ? ", " + b.address_2 : ""}`,
-          }))
-        )
+  const trucks: Option[] =
+    trucksData?.map((t: any) => ({
+      value: String(t._id),
+      label: t.truck_number,
+      description: `${t.make || ""} ${t.model || ""}`.trim(),
+    })) ?? []
 
-        setPaymentTerms(
-          (Array.isArray(data.paymentTerms)
-            ? data.paymentTerms
-            : data.paymentTerms?.data || []
-          ).map((pt: any) => ({
-            value: String(pt.id),
-            label: pt.name,
-            broker_id: pt.broker_id ? String(pt.broker_id) : undefined,
-            description: pt.description || "",
-          }))
-        )
+  const trailers: Option[] =
+    trailersData?.map((t: any) => ({
+      value: String(t._id),
+      label: t.equipment_number,
+      description: t.equipment_type
+        ? t.equipment_type.charAt(0).toUpperCase() + t.equipment_type.slice(1)
+        : "",
+    })) ?? []
 
-        setDrivers(
-          (Array.isArray(data.drivers) ? data.drivers : data.drivers?.data || []).map((d: any) => ({
-            value: String(d.id),
-            label: d.name,
-            description: d.license_number ? `License: ${d.license_number}` : "",
-          }))
-        )
-
-        setTrucks(
-          (Array.isArray(data.trucks) ? data.trucks : data.trucks?.data || []).map((t: any) => ({
-            value: String(t.id),
-            label: t.truck_number,
-            description: `${t.make || ""} ${t.model || ""}`.trim(),
-          }))
-        )
-
-        setTrailers(
-          (Array.isArray(data.trailers) ? data.trailers : data.trailers?.data || []).map((t: any) => ({
-            value: String(t.id),
-            label: t.equipment_number,
-            description: t.equipment_type
-              ? t.equipment_type.charAt(0).toUpperCase() + t.equipment_type.slice(1)
-              : "",
-          }))
-        )
-      } catch (err) {
-        console.error("Fetch failed:", err)
-      }
-    }
-    fetchData()
-  }, [])
-
-  // Watch selected broker
+  // Watch selected broker to filter payment terms
   const selectedBroker = useWatch({
     control,
     name: "parties.broker",
@@ -114,10 +76,9 @@ export default function PartiesStep({ control, errors }: PartiesStepProps) {
 
   const brokerValue = selectedBroker?.trim() !== "" ? selectedBroker : null
 
-  // Filter payment terms by broker
   const filteredPaymentTerms = brokerValue
     ? paymentTerms.filter((pt) => pt.broker_id === brokerValue)
-    : paymentTerms // fallback: show all if none selected
+    : paymentTerms
 
   // Multi-driver setup
   const { fields, append, remove } = useFieldArray({
@@ -129,6 +90,14 @@ export default function PartiesStep({ control, errors }: PartiesStepProps) {
     if (fields.length === 0) append("")
   }, [fields.length, append])
 
+  // Handle loading state
+  const isLoading =
+    !brokersData || !paymentTermsData || !driversData || !trucksData || !trailersData
+
+  if (isLoading) {
+    return <p className="text-sm text-neutral-500">Loading party data...</p>
+  }
+
   return (
     <div className="space-y-4">
       {/* Broker */}
@@ -138,7 +107,7 @@ export default function PartiesStep({ control, errors }: PartiesStepProps) {
         render={({ field }) => (
           <SearchableSelect
             label="Broker"
-            required 
+            required
             value={field.value}
             onChange={field.onChange}
             options={brokers}

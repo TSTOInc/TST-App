@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useState } from "react"
 import { useForm, useFieldArray } from "react-hook-form"
 import * as z from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -12,11 +12,13 @@ import LoadDetailsStep from "./LoadDetailsStep"
 import PartiesStep from "./PartiesStep"
 import TagsStep from "./TagsStep"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useMutation } from "convex/react"
+import { api } from "@convex/_generated/api"
+import { useOrganization } from "@clerk/nextjs"
 
 const stepLabels = ["Stops", "Load Details", "Parties", "Tags"]
 
-
+// 🧩 Step validation schema
 const stopSchema = z.object({
   type: z.enum(["pickup", "stop", "delivery"]),
   location: z.string().min(1, "Location is required"),
@@ -31,7 +33,7 @@ const stopSchema = z.object({
         code: z.ZodIssueCode.custom,
         message: "Appointment time is required",
         path: ["appointmentTime"],
-      });
+      })
     }
   } else {
     if (!windowStart) {
@@ -39,24 +41,24 @@ const stopSchema = z.object({
         code: z.ZodIssueCode.custom,
         message: "Window start time is required",
         path: ["windowStart"],
-      });
+      })
     }
     if (!windowEnd) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Window end time is required",
         path: ["windowEnd"],
-      });
+      })
     }
     if (windowStart && windowEnd && windowStart >= windowEnd) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Window start must be before end",
         path: ["windowEnd"],
-      });
+      })
     }
   }
-});
+})
 
 const formSchema = z.object({
   stops: z.array(stopSchema).min(2, "At least 2 stops required").max(10, "Max 10 stops"),
@@ -76,7 +78,7 @@ const formSchema = z.object({
       .max(2, "Maximum two drivers allowed"),
     truck: z.string().min(1, "Truck required"),
     trailer: z.string().min(1, "Trailer required"),
-    paymentTerms: z.string().min(1, "Payment terms required"), // NEW
+    paymentTerms: z.string().min(1, "Payment terms required"),
   }),
   tags: z.array(z.string()).optional(),
 })
@@ -84,9 +86,11 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>
 
 export default function AddLoadForm() {
-
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
+  const { organization } = useOrganization()
+  const orgId = organization ? organization.id : "";
+  const createLoad = useMutation(api.loads.create)
 
   const {
     control,
@@ -130,21 +134,15 @@ export default function AddLoadForm() {
         driver: [""],
         truck: "",
         trailer: "",
-        paymentTerms: "", // <-- REQUIRED!
+        paymentTerms: "",
       },
-
       tags: [],
-
     },
   })
 
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "stops",
-  })
-
-  const [currentStep, setCurrentStep] = React.useState(1)
-  const [completedSteps, setCompletedSteps] = React.useState<number[]>([])
+  const { fields, append, remove } = useFieldArray({ control, name: "stops" })
+  const [currentStep, setCurrentStep] = useState(1)
+  const [completedSteps, setCompletedSteps] = useState<number[]>([])
   const stops = watch("stops")
 
   const validateStep = async (step: number) => {
@@ -163,95 +161,49 @@ export default function AddLoadForm() {
         valid = true
         break
     }
-    if (!valid) {
-      toast.error("Please fill all required fields in this step")
-    }
+    if (!valid) toast.error("Please fill all required fields in this step")
     return valid
   }
 
   const onNext = async () => {
     const valid = await validateStep(currentStep)
     if (!valid) return
-
-    if (!completedSteps.includes(currentStep)) {
+    if (!completedSteps.includes(currentStep))
       setCompletedSteps((steps) => [...steps, currentStep])
-    }
     setCurrentStep((s) => Math.min(s + 1, stepLabels.length))
   }
 
   const onPrev = () => setCurrentStep((s) => Math.max(s - 1, 1))
-
-  const onStepClick = async (step: number) => {
-    if (completedSteps.includes(step) || step < currentStep) {
-      setCurrentStep(step)
-    }
+  const onStepClick = (step: number) => {
+    if (completedSteps.includes(step) || step < currentStep) setCurrentStep(step)
   }
 
   const onSubmit = async (data: FormData) => {
-    const stops = data.stops.map((s) => ({
-      type: s.type,
-      location: s.location,
-      time_type: s.timeType,
-      appointment_time: s.appointmentTime ? s.appointmentTime.toISOString() : null,
-      window_start: s.windowStart ? s.windowStart.toISOString() : null,
-      window_end: s.windowEnd ? s.windowEnd.toISOString() : null,
-    }))
-
-    const payload = {
-      load_number: data.loadDetails.loadNumber,
-      invoice_number: null,
-      load_status: "new",
-      commodity: data.loadDetails.commodity,
-      load_type: data.loadDetails.loadType,
-      length_ft: Number(data.loadDetails.lengthFt),
-      rate: Number(data.loadDetails.rate),
-      payment_terms_id: data.parties.paymentTerms,
-      truck_id: data.parties.truck,  // UUID from select
-      equipment_id: data.parties.trailer, // UUID from select
-      broker_id: data.parties.broker, // UUID from select
-      instructions: data.loadDetails.instructions || null,
-      stops: data.stops.map((stop) => ({
-        type: stop.type,
-        location: stop.location,
-        time_type: stop.timeType,
-        appointment_time: stop.appointmentTime ? new Date(stop.appointmentTime).toISOString() : null,
-        window_start: stop.windowStart ? new Date(stop.windowStart).toISOString() : null,
-        window_end: stop.windowEnd ? new Date(stop.windowEnd).toISOString() : null,
+    const cleanData = {
+      ...data,
+      stops: data.stops.map((s) => ({
+        ...s,
+        appointmentTime: s.appointmentTime
+          ? s.appointmentTime.toISOString()
+          : null,
+        windowStart: s.windowStart ? s.windowStart.toISOString() : null,
+        windowEnd: s.windowEnd ? s.windowEnd.toISOString() : null,
       })),
-      tags: data.tags || [],
-    };
-
-    setSubmitting(true)
-    console.log("Submitting payload:", JSON.stringify(payload))
+    }
+    console.log(cleanData)
     await toast.promise(
-      (async () => {
-        const res = await fetch(`/api/add/loads`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        })
-
-        const result = await res.json()
-
-        if (!res.ok) {
-          throw new Error(result.error || "Failed to create load")
-        }
-
-        return result
-      })(),
+      async () => {
+        await createLoad({ org_id: orgId, data: cleanData }) // ✅ no Dates
+        router.push("/loads")
+      },
       {
         loading: "Creating load...",
-        success: (res) => {
-          // redirect back to /loads after success
-          router.push("/loads")
-          return `✅ Load created with ID: ${res.load_id}`
-        },
-        error: (err) => `❌ ${err.message}`,
+        success: "✅ Load created successfully",
+        error: "❌ Failed to create load",
       }
     )
-
-    setSubmitting(false)
   }
+
 
 
   const canAddStop = fields.length < 10
@@ -283,7 +235,7 @@ export default function AddLoadForm() {
           <LoadDetailsStep control={control} errors={errors} />
         )}
         {currentStep === 3 && (
-          <PartiesStep control={control} errors={errors} />
+          <PartiesStep control={control} errors={errors} orgId={orgId} />
         )}
         {currentStep === 4 && <TagsStep control={control} />}
       </div>
@@ -302,7 +254,9 @@ export default function AddLoadForm() {
             Next
           </Button>
         ) : (
-          <Button type="submit" disabled={submitting}>Submit</Button>
+          <Button type="submit" disabled={submitting}>
+            Submit
+          </Button>
         )}
       </div>
     </form>

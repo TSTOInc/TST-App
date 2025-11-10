@@ -74,9 +74,9 @@ export default function SearchableSelect({
                 {options.map((opt) => (
                   <CommandItem
                     key={opt.value}
-                    value={opt.value}
-                    onSelect={(currentValue) => {
-                      onChange?.(currentValue === value ? "" : currentValue)
+                    value={`${opt.label} ${opt.description ?? ""} ${opt.value}`}
+                    onSelect={() => {
+                      onChange?.(opt.value)
                       setOpen(false)
                     }}
                   >

@@ -21,6 +21,10 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { useMutation } from "convex/react";
+import { api } from "@convex/_generated/api";
+import { useOrganization } from "@clerk/nextjs";
+
 
 const statuses: ComboBoxOption[] = [
   { value: "active", label: "Active" },
@@ -69,6 +73,10 @@ type FormData = z.infer<typeof formSchema>;
 
 export default function AddEquipmentForm() {
   const router = useRouter();
+  const { organization } = useOrganization()
+  const orgId = organization ? organization.id : "";
+  const createEquipment = useMutation(api.equipment.create);
+
 
   const {
     handleSubmit,
@@ -142,6 +150,7 @@ export default function AddEquipmentForm() {
       }
 
       const payload = {
+        org_id: orgId,
         equipment_number: data.equipment_number,
         equipment_length: data.equipment_length || null,
         equipment_type: data.equipment_type,
@@ -149,15 +158,16 @@ export default function AddEquipmentForm() {
         image_url: imageUrl,
       };
 
-      const response = await fetch(`/api/add/equipment`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      await toast.promise(
+        createEquipment({ equipment: payload }), // ✅ convex mutation
+        {
+          loading: "Adding equipment...",
+          success: "✅ Equipment added successfully!",
+          error: (err: any) => `❌ ${err.message || "Failed to add equipment"}`,
+        }
+      );
 
-      if (!response.ok) throw new Error(await response.text());
       router.back();
-      toast.success("Equipment added successfully!");
     } catch (err: any) {
       console.error(err);
       toast.error(`Failed to submit form: ${err.message}`);
@@ -166,6 +176,7 @@ export default function AddEquipmentForm() {
       setOpenDialog(false);
     }
   };
+
 
   const handleFinalSubmit = handleSubmit((data: FormData) => {
     if (!data.picture) {

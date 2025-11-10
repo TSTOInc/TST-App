@@ -11,6 +11,7 @@ import { useUser } from "@clerk/nextjs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Skeleton } from '@/components/ui/skeleton'
 import { useRouter } from "next/navigation"
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 const Page = ({ params }) => {
     const { id } = React.use(params)
@@ -46,6 +47,12 @@ const Page = ({ params }) => {
             }
         });
     }, [messages, currentUserId]);
+    
+    useEffect(() => {
+    if (messagesContainerRef.current) {
+        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+    }
+}, [messages])
 
     if (chatData === null) {
         return (
@@ -159,10 +166,10 @@ const Page = ({ params }) => {
                             const isCurrentUser = msg.senderId === currentUserId
                             const prevMsg = messages[index - 1]
                             const nextMsg = messages[index + 1]
-
+                            const seenBy = msg.seenBy.filter((id) => id !== msg.senderId)
                             const sameSenderAsPrev = prevMsg && prevMsg.senderId === msg.senderId
                             const sameSenderAsNext = nextMsg && nextMsg.senderId === msg.senderId
-
+                            const isLastCurrentUserMsg = index === messages.length - 1
                             // Determine corner rounding
                             let roundedClass = ""
                             if (!sameSenderAsPrev && !sameSenderAsNext) {
@@ -179,19 +186,23 @@ const Page = ({ params }) => {
                             }
 
                             return (
-                                <div
-                                    key={msg._id}
-                                    className={`flex ${isCurrentUser ? "justify-end" : "justify-start"} ${sameSenderAsPrev ? "mt-0.5" : "mt-2"}`}
-                                >
+                                <div className="flex flex-col" key={msg._id}>
                                     <div
-                                        className={`relative p-1 px-3 max-w-xs break-words ${isCurrentUser ? "bg-blue-500 text-white" : "bg-secondary text-secondary-foreground"} ${roundedClass}`}
+                                        className={`flex ${isCurrentUser ? "justify-end" : "justify-start"} ${sameSenderAsPrev ? "mt-0.5" : "mt-2"}`}
                                     >
-                                        {msg.text}
+                                        <div
+                                            className={`relative p-1 px-3 max-w-xs break-words ${isCurrentUser ? "bg-blue-500 text-white" : "bg-secondary text-secondary-foreground"} ${roundedClass}`}
+                                        >
+                                            {msg.text}
+                                        </div>
+
                                     </div>
+                                    {isLastCurrentUserMsg && isCurrentUser && seenBy.length > 0 && (
+                                        <span className="text-xs text-muted-foreground mt-1 text-right px-2">Seen {seenBy.length > 1 ? `by ${seenBy.length} people` : ""}</span>
+                                    )}
                                 </div>
                             )
                         })}
-
                     <div ref={messagesEndRef} />
                 </div>
 

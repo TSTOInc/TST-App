@@ -17,6 +17,7 @@ import { SearchBar } from "@/components/search-bar"
 import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { usePathname } from 'next/navigation'
+import { useOrganization  } from "@clerk/nextjs"
 
 // --- Helper: safely get nested values ---
 function getValue(obj, path) {
@@ -53,11 +54,13 @@ export default function InfoGrid({
   onRetry,
 }) {
 
+  const { organization } = useOrganization();
+  const  orgId = organization ? organization.id : "";
   const pathname = usePathname();
   const path = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
 
 
-  const queryData = useQuery(api.getTable.all, { table })
+  const queryData = useQuery(api.getTable.all, { table, orgId: orgId })
 
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -131,8 +134,8 @@ export default function InfoGrid({
             <EmptyMedia variant="icon">
               <IconZoomQuestion />
             </EmptyMedia>
-            <EmptyTitle>No {table} Found</EmptyTitle>
-            <EmptyDescription>Create a new {table} to get started.</EmptyDescription>
+            <EmptyTitle>No {table.replace(/_/g, ' ')} Found</EmptyTitle>
+            <EmptyDescription>Create a new {table.replace(/_/g, ' ').replace(/s/g, '')} to get started.</EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
             <Link href={`${path}/add`}>

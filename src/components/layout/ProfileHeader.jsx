@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ColorBadge } from "@/components/ui/color-badge";
-import { IconEdit, IconTrash, IconExternalLink } from "@tabler/icons-react";
+import { IconEdit, IconTrash } from "@tabler/icons-react";
 import {
     Dialog,
     DialogClose,
@@ -30,13 +30,15 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import FieldRenderer from "@/components/custom/FieldRenderer";
-
+import LinkButton from "@/components/link"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useOrganization } from '@clerk/nextjs'
+import { useMutation } from "convex/react";
+import { api } from "@convex/_generated/api";
 
 
 export default function ProfileHeader({
     skeleton = false,
-    id,
     table,
     name,
     alias,
@@ -94,31 +96,30 @@ export default function ProfileHeader({
         );
     }
 
+    const { organization } = useOrganization();
+    const orgID = organization ? organization.id : "";
+    const deleteDoc = useMutation(api.delete.byId);
+
     const router = useRouter();
     const [open, setOpen] = useState(false);
 
     /** 🔥 Delete logic */
     const handleDelete = async () => {
-        if (!id || !table) {
+        if (!data._id || !table) {
             toast.error("Missing ID or table name");
             return;
         }
 
         try {
-            await toast.promise(
-                fetch(`/api/delete/${table}/${id}`, {
-                    cache: "no-cache",
-                    method: "DELETE",
-                }).then(async (res) => {
-                    if (!res.ok) throw new Error(await res.text());
-                    router.back();
-                }),
+            await toast.promise(deleteDoc({ id: data._id, table: table, orgId: orgID }),
                 {
                     loading: "Deleting...",
                     success: "Deleted successfully!",
                     error: (err) => `Error: ${err.message}`,
                 }
             );
+
+            router.push(`/${table}`);
         } catch (err) {
             console.error(err);
         }
@@ -160,7 +161,7 @@ export default function ProfileHeader({
                         <div className="w-36 h-36 sm:w-40 sm:h-40 rounded-full shadow-md sm:shadow-none">
                             <Avatar className="w-full h-full bg-background">
                                 <AvatarImage fullsize
-                                    src={image_url || "/placeholder-user.jpg"}
+                                    src={image_url || `https://img.logo.dev/${data.website}?token=pk_eshRuE0_Q422ZDQhht9A-g&retina=true`}
                                     alt={name}
                                 />
                                 <AvatarFallback fullsize>{name}</AvatarFallback>
@@ -184,14 +185,7 @@ export default function ProfileHeader({
                                 {color && <ColorBadge color={color} />}
                                 {description && <span>{description}</span>}
                                 {link && (
-                                    <Link
-                                        href={link}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="underline inline-flex items-center gap-1"
-                                    >
-                                        <IconExternalLink size={16} />
-                                    </Link>
+                                    <LinkButton href={link} external={false}/>
                                 )}
                             </p>
                         </div>

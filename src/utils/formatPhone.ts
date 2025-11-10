@@ -1,4 +1,4 @@
-export function formatPhoneNumber(phone: string) {
+export default function formatPhoneNumber(phone: string) {
   const digits = phone.replace(/\D/g, "")
 
   if (digits.length === 11 && digits.startsWith("1")) {
