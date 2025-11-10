@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { Plus } from "lucide-react"
 
 export function NavMain({
   items,
@@ -73,7 +74,7 @@ export function NavMain({
             >
               {isValidPage ? (
                 <Link href={`/${firstSegment}/add`} className="flex items-center gap-2 w-full h-full">
-                  <IconCirclePlusFilled />
+                  <Plus />
                   <span>Add {displayName}</span>
                 </Link>
               ) : (

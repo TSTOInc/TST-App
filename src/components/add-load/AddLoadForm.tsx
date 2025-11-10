@@ -16,7 +16,7 @@ import { useMutation } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { useOrganization } from "@clerk/nextjs"
 
-const stepLabels = ["Stops", "Load Details", "Parties", "Tags"]
+const stepLabels = ["Stops", "Load Details", "Parties"]
 
 // 🧩 Step validation schema
 const stopSchema = z.object({
@@ -157,9 +157,6 @@ export default function AddLoadForm() {
       case 3:
         valid = await trigger("parties")
         break
-      case 4:
-        valid = true
-        break
     }
     if (!valid) toast.error("Please fill all required fields in this step")
     return valid
@@ -237,7 +234,6 @@ export default function AddLoadForm() {
         {currentStep === 3 && (
           <PartiesStep control={control} errors={errors} orgId={orgId} />
         )}
-        {currentStep === 4 && <TagsStep control={control} />}
       </div>
 
       <div className="flex justify-between mt-6">
