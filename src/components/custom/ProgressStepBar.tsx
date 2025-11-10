@@ -26,7 +26,7 @@ export default function ProgressStepBar({
 
         let connectorColor = "bg-muted"
         if (isCompleted) connectorColor = "bg-green-600"
-        else if (isActive) connectorColor = "bg-white animate-pulse"
+        else if (isActive) connectorColor = "bg-foreground animate-pulse"
 
         const icon =
           isCompleted && !isActive ? (
@@ -40,7 +40,7 @@ export default function ProgressStepBar({
         const circleClasses = cn(
           "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 cursor-pointer",
           isActive
-            ? "bg-white text-black"
+            ? "bg-foreground text-background"
             : isCompleted
             ? "bg-green-600 text-white"
             : "bg-muted text-muted-foreground",
@@ -63,7 +63,7 @@ export default function ProgressStepBar({
             {!isLast && (
               <div
                 className={cn(
-                  "flex-grow h-[2px] mx-2 transition-all duration-900",
+                  "flex-grow h-[2px] mb-6 transition-all duration-900",
                   connectorColor
                 )}
               />

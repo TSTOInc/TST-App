@@ -7,7 +7,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
-export default function TruckRouteMap({ stops, progress }) {
+export default function TruckRouteMap({ stops, progress = 0, showTruck = true }) {
   const { theme } = useTheme();
   const mapContainer = useRef(null);
   const styleUrl =
@@ -50,30 +50,31 @@ export default function TruckRouteMap({ stops, progress }) {
             paint: { "line-color": "#0074D9", "line-width": 5 },
           });
 
-          // Truck icon
-          map.loadImage(
-            "https://bxporjcib7gy7ljf.public.blob.vercel-storage.com/resources/lorry_low.png",
-            (err, image) => {
-              if (err) throw err;
-              map.addImage("truck-icon", image);
-              const totalPoints = route.coordinates.length;
-              const index = Math.floor(progress * (totalPoints - 1));
-              const truckCoord = route.coordinates[index];
-              map.addSource("truck", {
-                type: "geojson",
-                data: {
-                  type: "FeatureCollection",
-                  features: [{ type: "Feature", geometry: { type: "Point", coordinates: truckCoord } }],
-                },
-              });
-              map.addLayer({
-                id: "truck-layer",
-                type: "symbol",
-                source: "truck",
-                layout: { "icon-image": "truck-icon", "icon-size": 0.8, "icon-allow-overlap": true },
-              });
-            }
-          );
+          if (showTruck) {
+            map.loadImage(
+              "https://bxporjcib7gy7ljf.public.blob.vercel-storage.com/resources/lorry_low.png",
+              (err, image) => {
+                if (err) throw err;
+                map.addImage("truck-icon", image);
+                const totalPoints = route.coordinates.length;
+                const index = Math.floor(progress * (totalPoints - 1));
+                const truckCoord = route.coordinates[index];
+                map.addSource("truck", {
+                  type: "geojson",
+                  data: {
+                    type: "FeatureCollection",
+                    features: [{ type: "Feature", geometry: { type: "Point", coordinates: truckCoord } }],
+                  },
+                });
+                map.addLayer({
+                  id: "truck-layer",
+                  type: "symbol",
+                  source: "truck",
+                  layout: { "icon-image": "truck-icon", "icon-size": 0.8, "icon-allow-overlap": true },
+                });
+              }
+            );
+          }
 
           // Waypoints
           const features = stops.map((stop) => ({
@@ -128,40 +129,44 @@ export default function TruckRouteMap({ stops, progress }) {
             { id: "satellite", type: "raster", source: "mapbox-satellite", layout: { visibility: "none" } },
             "route" // place below route layer
           );
+          const existingButton = mapContainer.current.querySelector(".satellite-toggle-btn");
+          if (existingButton) existingButton.remove();
 
           // ✅ Simple button to toggle satellite layer
           const toggleButton = document.createElement("button");
+          toggleButton.className = "satellite-toggle-btn"; // mark it so we can remove later
           toggleButton.style.color = "black";
           toggleButton.style.cursor = "pointer";
           toggleButton.style.borderRadius = "4px";
           toggleButton.textContent = "🛰️";
           toggleButton.style.position = "absolute";
-          toggleButton.style.top = "10px";
-          toggleButton.style.left = "10px";
+          toggleButton.style.top = "145px";
+          toggleButton.style.right = "10px";
           toggleButton.style.zIndex = 1;
           toggleButton.style.background = "#fff";
-          toggleButton.style.padding = "5px 10px";
-          toggleButton.style.border = "1px solid #ccc";
+          toggleButton.style.width = "29px";
+          toggleButton.style.height = "29px";
+          toggleButton.style.boxShadow = "rgba(0, 0, 0, 0.1) 0px 0px 0px 2px";
           toggleButton.onclick = () => {
             const visibility = map.getLayoutProperty("satellite", "visibility");
             map.setLayoutProperty("satellite", "visibility", visibility === "visible" ? "none" : "visible");
           };
           map.getContainer().appendChild(toggleButton);
 
-          // ✅ 3D Buildings button
+          /* ✅ 3D Buildings button
           const threeDButton = document.createElement("button");
-          threeDButton.style.color = "black";
+          threeDButton.style.color = "#2b2b2bff";
           threeDButton.style.cursor = "pointer";
           threeDButton.style.fontWeight = "bold";
           threeDButton.style.borderRadius = "4px";
-          threeDButton.textContent = "🏙️ 3D";
+          threeDButton.textContent = "3D";
           threeDButton.style.position = "absolute";
           threeDButton.style.top = "50px";
           threeDButton.style.left = "10px";
           threeDButton.style.zIndex = 1;
           threeDButton.style.background = "#fff";
           threeDButton.style.padding = "5px 10px";
-          threeDButton.style.border = "1px solid #ccc";
+          threeDButton.style.boxShadow = "rgba(0, 0, 0, 0.1) 0px 0px 0px 2px";
           threeDButton.onclick = () => {
             if (!map.getLayer("3d-buildings")) {
               map.addLayer({
@@ -182,7 +187,7 @@ export default function TruckRouteMap({ stops, progress }) {
               map.removeLayer("3d-buildings");
             }
           };
-          map.getContainer().appendChild(threeDButton);
+          map.getContainer().appendChild(threeDButton);*/
         })
         .catch((err) => console.error("Mapbox Directions API error:", err));
     });
@@ -190,5 +195,5 @@ export default function TruckRouteMap({ stops, progress }) {
     return () => map.remove();
   }, [stops, progress, theme]);
 
-  return <div ref={mapContainer} style={{ width: "100%", height: "400px", position: "relative" }} />;
+  return <div ref={mapContainer} style={{ width: "100%", height: "400px", borderRadius: "8px", position: "relative" }} />;
 }
