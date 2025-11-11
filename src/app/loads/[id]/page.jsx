@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
-import { FileText, DollarSign, Package, Building2, NotepadText, MapPin, ArrowUpFromLine, ArrowDownToLine, } from "lucide-react"
+import { FileText, DollarSign, Package, Building2, NotepadText, MapPin, ArrowUpFromLine, ArrowDownToLine, FileSearch, FileTextIcon, Unplug, } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
@@ -13,6 +13,7 @@ import TimelineVertical from "@/components/TimelineVertical"
 import TruckRouteMap from "@/components/custom/TruckRouteMap"
 import InfoCard from '@/components/data/info-card'
 import LoadProgressCard from '@/components/layout/LoadProgressCard'
+import { IconFileDollar, IconUsersGroup } from "@tabler/icons-react";
 
 // ---------------------- HELPERS ----------------------
 const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -207,9 +208,10 @@ export default function HomePage({ params }) {
 
       <Tabs defaultValue="details" className="w-full">
         <TabsList className="w-full h-10">
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="parties">Parties</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="details"><FileSearch className="h-4 w-4"/>Details</TabsTrigger>
+          <TabsTrigger value="parties"><Unplug className="h-4 w-4"/>Parties</TabsTrigger>
+          <TabsTrigger value="documents"><FileTextIcon className="h-4 w-4"/>Documents</TabsTrigger>
+          <TabsTrigger value="timeline"><IconFileDollar className="h-4 w-4"/>Invoice</TabsTrigger>
         </TabsList>
 
         <TabsContent value="details" className="space-y-4">
@@ -282,7 +284,7 @@ export default function HomePage({ params }) {
               fields={[
                 { label: "Name", value: data.broker.name, type: "link", href: `/brokers/${data.broker._id}`, external: false },
                 { label: "Address", value: data.broker.address + ", " + data.broker.address_2 },
-                { label: "Agent", value: data?.broker_agent?.name || "N/A" },
+                { label: "Agent", value: data?.broker_agent?.name || "No Agent" },
               ]}
             />
             <InfoCard
@@ -290,10 +292,24 @@ export default function HomePage({ params }) {
               title="Equipment Information"
               inline={false}
               fields={[
-                { label: "Truck", value: data.truck.truck_number, type: "link", href: `/trucks/${data.truck._id}`, external: false },
-                { label: "Equipment", value: data.equipment.equipment_number, type: "link", href: `/equipment/${data.equipment._id}`, external: false },
+                {
+                  label: "Truck",
+                  value: data.truck.truck_number,
+                  type: "link",
+                  href: `/trucks/${data.truck._id}`,
+                  external: false
+                },
+                {
+                  label: "Equipment",
+                  value: data.equipment?.equipment_number || "No Equipment",
+                  type: data.equipment ? "link" : "text",
+                  href: data.equipment ? `/equipment/${data.equipment._id}` : undefined,
+                  external: false
+                },
               ]}
             />
+
+
           </div>
         </TabsContent>
 

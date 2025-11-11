@@ -63,20 +63,34 @@ function mapLoadToInvoicePayload(load) {
                     type: (idx + 1) + ".- " + s.type.charAt(0).toUpperCase() + s.type.slice(1),
                     city: s.location.split(",")[0],
                     zip: s.location.split(" ").slice(-1)[0] || "",
-                    datetime: s.window_start || "",
+                    datetime: s.appointment_time || s.window_start || "",
+                    datetime2: s.window_end || "",
                 })),
         }] || [],
         color: "134A9E",
         secondaryColor: "134A9E",
     }
 }
-const handleGenerateInvoice = async (data) => {
+const handleGenerateInvoice = async (data, setInvoicedAt) => {
     if (!data) return
 
-    const payload = mapLoadToInvoicePayload(data)
+    const invoiceDate = data.invoiced_at && data.invoiced_at !== ""
+        ? data.invoiced_at
+        : new Date().toISOString()
+
+    const payload = mapLoadToInvoicePayload({
+        ...data,
+        invoiced_at: invoiceDate, // force sync
+    })
+
 
     await toast.promise(
         (async () => {
+            if (!data.invoiced_at || data.invoiced_at === "") {
+                await setInvoicedAt({ loadId: data._id, invoiced_at: invoiceDate })
+            }
+
+
             const res = await fetch("https://invoice4all.vercel.app/api", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -256,6 +270,7 @@ function mapProgressToUI(progress, stops) {
 export default function LoadProgressCard({ data }) {
 
     const updateProgress = useMutation(api.loads.updateProgress);
+    const setInvoicedAt = useMutation(api.loads.setInvoicedAt);
 
     const sortedStops = [...(data.stops || [])].sort((a, b) => {
         const timeA = a.appointment_time
@@ -397,7 +412,7 @@ export default function LoadProgressCard({ data }) {
                                             className="w-full"
                                             onClick={() => {
                                                 handleNext()
-                                                handleGenerateInvoice(data)
+                                                handleGenerateInvoice(data, setInvoicedAt)
                                             }}
                                         >
                                             Mark as Invoiced & Download

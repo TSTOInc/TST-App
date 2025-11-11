@@ -19,7 +19,9 @@ export const byId = query({
     payment_terms = await ctx.db.get(record.payment_terms_id as Id<"payment_terms">);
     broker = await ctx.db.get(record.broker_id as Id<"brokers">);
     truck = await ctx.db.get(record.truck_id as Id<"trucks">);
-    equipment = await ctx.db.get(record.equipment_id as Id<"equipment">);
+    if (typeof record.equipment_id === "string" && record.equipment_id.length > 0) {
+      equipment = await ctx.db.get(record.equipment_id as Id<"equipment">);
+    }
     if (typeof record.agent_id === "string" && record.agent_id.length > 0) {
       broker_Agent = await ctx.db.get(record.agent_id as Id<"brokers_agents">);
     }
@@ -71,7 +73,26 @@ export const updateProgress = mutation({
     return { updated: true, progress: safeProgress, load_status }
   },
 })
+export const setInvoicedAt = mutation({
+  args: {
+    loadId: v.id("loads"),
+    invoiced_at: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) throw new Error("Not authenticated")
 
+    const { loadId, invoiced_at } = args
+    const load = await ctx.db.get(loadId)
+    if (!load) throw new Error("Load not found")
+
+    await ctx.db.patch(loadId, {
+      invoiced_at,
+    })
+
+    return { updated: true, invoiced_at }
+  },
+})
 
 
 async function getNextInvoiceNumber(ctx: MutationCtx, orgId: string) {

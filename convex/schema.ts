@@ -129,7 +129,7 @@ export default defineSchema({
     broker_id: v.string(),
     commodity: v.string(),
     docs: v.array(v.string()),
-    equipment_id: v.string(),
+    equipment_id: v.optional(v.string()),
     instructions: v.union(v.null(), v.string()),
     invoice_number: v.string(),
     invoiced_at: v.optional(v.string()),

@@ -77,7 +77,7 @@ const formSchema = z.object({
       .min(1, "At least one driver required")
       .max(2, "Maximum two drivers allowed"),
     truck: z.string().min(1, "Truck required"),
-    trailer: z.string().min(1, "Trailer required"),
+    trailer: z.string().optional(),
     paymentTerms: z.string().min(1, "Payment terms required"),
   }),
   tags: z.array(z.string()).optional(),

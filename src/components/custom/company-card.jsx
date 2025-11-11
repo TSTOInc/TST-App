@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
 
-export default function CompanyCard ({ table, id, title, description, image, status, skeleton, website }) {
-    const link = `/${(table || "").replace(/_/g, "/")}/${id}`; 
+export default function CompanyCard({ table, id, title, description, image, status, skeleton, website }) {
+    const link = `/${(table || "").replace(/_/g, "/")}/${id}`;
 
     if (skeleton)
         return (
@@ -21,37 +21,33 @@ export default function CompanyCard ({ table, id, title, description, image, sta
         )
 
     return (
-        <Card>
-            <CardContent>
-                <img
-                    src={
-                        image
-                            ? image
-                            : website
-                                ? `https://img.logo.dev/${website}?token=pk_eshRuE0_Q422ZDQhht9A-g&retina=true`
-                                : `https://placehold.co/600x400/2c2c2c/ffffff?font=montserrat&text=${encodeURIComponent(title || "No Image")}`
-                    }
-                    alt={title}
-                    className="h-46 w-full object-cover mb-4 rounded-md bg-neutral-200 dark:bg-neutral-800"
-                />
+        <Link href={link}>
+            <Card className="border-none pt-0">
+                <CardContent className="px-0">
+                    <img
+                        src={
+                            image
+                                ? image
+                                : website
+                                    ? `https://img.logo.dev/${website}?token=pk_eshRuE0_Q422ZDQhht9A-g&retina=true`
+                                    : `https://placehold.co/600x400/2c2c2c/ffffff?font=montserrat&text=${encodeURIComponent(title || "No Image")}`
+                        }
+                        alt={title}
+                        className="aspect-video w-full rounded-t-xl object-cover bg-neutral-200 dark:bg-neutral-800"
+                    />
 
-            </CardContent>
+                </CardContent>
 
-            <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                    {title}
-                    {status != "status" && <Badge onlyIcon status={status} />}
-                </CardTitle>
-                <CardDescription>{description}</CardDescription>
-            </CardHeader>
+                <CardHeader className="mb-2">
+                    <CardTitle className="flex items-center justify-between">
+                        {title}
+                        {status != "status" && <Badge onlyIcon status={status} />}
+                    </CardTitle>
+                    <CardDescription>{description}</CardDescription>
+                </CardHeader>
 
-            <CardFooter>
-                <Button variant="outline" className="w-full" asChild>
-                    <Link href={link}>
-                        View {table.replace(/_/g, ' ').replace(/s/g, '')}
-                    </Link>
-                </Button>
-            </CardFooter>
-        </Card>
+            </Card>
+        </Link>
+
     )
 }
