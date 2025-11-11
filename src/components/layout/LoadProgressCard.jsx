@@ -61,8 +61,8 @@ function mapLoadToInvoicePayload(load) {
                 ?.filter((s) => ["pickup", "delivery"].includes(s.type.toLowerCase()))
                 .map((s, idx) => ({
                     type: (idx + 1) + ".- " + s.type.charAt(0).toUpperCase() + s.type.slice(1),
-                    city: s.location.split(",")[0],
-                    zip: s.location.split(" ").slice(-1)[0] || "",
+                    city: s.location.split(",")[1]?.trim() || "",
+                    zip: s.location.split(",")[2]?.trim().split(" ")[1] || "",
                     datetime: s.appointment_time || s.window_start || "",
                     datetime2: s.window_end || "",
                 })),
