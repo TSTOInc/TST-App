@@ -74,6 +74,8 @@ function mapLoadToInvoicePayload(load) {
 const handleGenerateInvoice = async (data, setInvoicedAt) => {
     if (!data) return
 
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+
     const invoiceDate = data.invoiced_at && data.invoiced_at !== ""
         ? data.invoiced_at
         : new Date().toISOString()
@@ -82,7 +84,7 @@ const handleGenerateInvoice = async (data, setInvoicedAt) => {
         ...data,
         invoiced_at: invoiceDate, // force sync
     })
-
+    payload.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
 
     await toast.promise(
         (async () => {
