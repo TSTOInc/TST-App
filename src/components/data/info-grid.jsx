@@ -55,12 +55,11 @@ export default function InfoGrid({
 }) {
 
   const { organization } = useOrganization();
-  const  orgId = organization ? organization.id : "";
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
   const path = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
 
 
-  const queryData = useQuery(api.getTable.all, { table, orgId: orgId })
+  const queryData = useQuery(api.getTable.all, organization ? { table, orgId: organization.id } : "skip")
 
   const [searchQuery, setSearchQuery] = useState("")
 

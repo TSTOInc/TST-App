@@ -47,14 +47,15 @@ const formatTimeRange = (start, end) => {
     : `${startDateStr}, ${startTime} - ${endDateStr}, ${endTime}`;
 };
 
-const formatDueDate = (invoiceDateStr, daysToPay) => {
-  if (!invoiceDateStr || typeof daysToPay !== "number") return "N/A";
+const formatDueDate = (invoiceDateStr, daysToPay, paid_at) => {
+  if (!invoiceDateStr || typeof daysToPay !== "number") return "";
   const invoiceDate = new Date(invoiceDateStr);
-  if (isNaN(invoiceDate)) return "N/A";
+  if (isNaN(invoiceDate)) return "";
   const dueDate = new Date(invoiceDate);
   dueDate.setDate(invoiceDate.getDate() + daysToPay);
 
   const diffDays = Math.ceil((dueDate.setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / (1000 * 60 * 60 * 24));
+  if (paid_at !== null) return "PAID";
   if (diffDays === 0) return "DUE TODAY";
   if (diffDays < 0) return `OVERDUE BY ${Math.abs(diffDays)} DAY${Math.abs(diffDays) !== 1 ? "S" : ""}`;
   return `DUE IN ${diffDays} DAY${diffDays !== 1 ? "S" : ""}`;
@@ -84,7 +85,7 @@ const ComplexCard = ({ title, icon: Icon, value }) => (
   </Card>
 );
 
-const RateCard = ({ rate, feePercent, invoicedAt, paymentTerms }) => {
+const RateCard = ({ rate, feePercent, invoicedAt, paymentTerms, paid_at }) => {
   const netRate = useMemo(() => rate - rate * (feePercent / 100), [rate, feePercent]);
   return (
     <Card className="md:col-span-2">
@@ -96,7 +97,7 @@ const RateCard = ({ rate, feePercent, invoicedAt, paymentTerms }) => {
         <div className="flex justify-between items-center">
           <span className="text-2xl font-bold text-green-500">{currencyFormatter.format(netRate)}</span>
           <span className="text-xl font-medium text-blue-400">
-            {formatDueDate(invoicedAt, paymentTerms.days_to_pay)}
+            {formatDueDate(invoicedAt, paymentTerms.days_to_pay, paid_at)}
           </span>
         </div>
         <div className="space-y-2">
@@ -203,6 +204,7 @@ export default function HomePage({ params }) {
           feePercent={data.payment_terms.fee_percent}
           invoicedAt={data.invoiced_at}
           paymentTerms={data.payment_terms}
+          paid_at={data.paid_at}
         />
       </div>
 

@@ -10,14 +10,16 @@ export default function CompanyCard({ table, id, title, description, image, stat
 
     if (skeleton)
         return (
-            <div className="rounded-xl border px-6 py-6 space-y-4">
-                <Skeleton className="h-46 w-full rounded-lg" />
-                <div className="space-y-3 mt-10 mb-8">
-                    <Skeleton className="h-4 w-3/4" />
-                    <Skeleton className="h-4 w-1/2" />
-                </div>
-                <Skeleton className="h-8 w-full rounded-md" />
-            </div>
+            <Card className="rounded-xl border-none pt-0">
+                <Skeleton className="aspect-video w-full rounded-t-xl rounded-b-none object-cover" />
+                <CardHeader className="mb-2">
+                    <CardTitle className="flex items-center justify-between">
+                        <Skeleton className="h-5 w-3/4" />
+                        <Skeleton className="h-5.5 w-8.5" />
+                    </CardTitle>
+                    <Skeleton className="h-5 w-2/4" />
+                </CardHeader>
+            </Card>
         )
 
     return (
