@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -11,7 +15,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "incremental": true,
     "plugins": [
       {
@@ -19,10 +23,41 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"],
-      "@convex/*": ["./convex/*"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@convex/*": [
+        "./convex/*"
+      ]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/loads/add/page.jsx", "src/app/directory/page.jsx", "src/components/custom/load-details-page.jsx", "src/components/providers/theme-wrapper.jsx", "src/app/loads/loadsPageClient.jsx", "src/lib/email.js", "src/lib/mapLoadToInvoicePayload.js", "src/components/dashboard/section-cards.jsx", "src/app/page.jsx", "src/components/forms/DynamicMultiStepForm.Jsx", "src/app/brokers/add/ExampleUsage.JSX", "src/app/account/accountClient.jsx", "src/app/api/protected/[...all]/route.js", "src/components/app-sidebar.tsx", "convex/ts.config.jon", "src/app/chats/[id]/pagejsx", "src/app/chats/[id]/page.jsx", "convex/mutate.js", "src/components/layout/LoadProgressCardj.sx"],
-  "exclude": ["node_modules"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "src/app/loads/add/page.jsx",
+    "src/app/directory/page.jsx",
+    "src/components/custom/load-details-page.jsx",
+    "src/components/providers/theme-wrapper.jsx",
+    "src/app/loads/loadsPageClient.jsx",
+    "src/lib/email.js",
+    "src/lib/mapLoadToInvoicePayload.js",
+    "src/components/dashboard/section-cards.jsx",
+    "src/app/page.jsx",
+    "src/components/forms/DynamicMultiStepForm.Jsx",
+    "src/app/brokers/add/ExampleUsage.JSX",
+    "src/app/account/accountClient.jsx",
+    "src/app/api/protected/[...all]/route.js",
+    "src/components/app-sidebar.tsx",
+    "convex/ts.config.jon",
+    "src/app/chats/[id]/pagejsx",
+    "src/app/chats/[id]/page.jsx",
+    "convex/mutate.js",
+    "src/components/layout/LoadProgressCardj.sx",
+    ".next/dev/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
