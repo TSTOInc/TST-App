@@ -267,7 +267,7 @@ export default function HomePage({ params }) {
               </CardHeader>
               <CardContent>
                 {stopsWithCoords.length > 0 ? (
-                  <TruckRouteMap stops={stopsWithCoords} progress={data.progress} />
+                  <TruckRouteMap stops={stopsWithCoords} progress={(data.progress-1)/2} />
                 ) : (
                   <div className="aspect-video bg-muted rounded-lg flex flex-col items-center justify-center text-center space-y-2">
                     <MapPin className="h-12 w-12 text-muted-foreground" />
