@@ -93,7 +93,44 @@ export const setInvoicedAt = mutation({
     return { updated: true, invoiced_at }
   },
 })
+export const setPaidAt = mutation({
+  args: {
+    loadId: v.id("loads"),
+    paid_at: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) throw new Error("Not authenticated")
 
+    const { loadId, paid_at } = args
+    const load = await ctx.db.get(loadId)
+    if (!load) throw new Error("Load not found")
+
+    await ctx.db.patch(loadId, {
+      paid_at,
+    })
+
+    return { updated: true, paid_at }
+  },
+})
+export const clearPaidAt = mutation({
+  args: {
+    loadId: v.id("loads"),
+  },
+  handler: async (ctx, { loadId }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const load = await ctx.db.get(loadId);
+    if (!load) throw new Error("Load not found");
+
+    await ctx.db.patch(loadId, {
+      paid_at: null,
+    });
+
+    return { updated: true, paid_at: null };
+  },
+})
 
 async function getNextInvoiceNumber(ctx: MutationCtx, orgId: string) {
   const existing = await ctx.db

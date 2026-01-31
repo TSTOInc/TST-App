@@ -189,7 +189,8 @@ export default function HomePage({ params }) {
     };
     fetchStops();
   }, [sortedStops]);
-
+  console.log("Stops:", stopsWithCoords.length);
+  console.log("Max progress:", stopsWithCoords.length - 1);
   if (!data) return <div>Loading...</div>;
 
   return (
@@ -210,10 +211,10 @@ export default function HomePage({ params }) {
 
       <Tabs defaultValue="details" className="w-full">
         <TabsList className="w-full h-10">
-          <TabsTrigger value="details"><FileSearch className="h-4 w-4"/>Details</TabsTrigger>
-          <TabsTrigger value="parties"><Unplug className="h-4 w-4"/>Parties</TabsTrigger>
-          <TabsTrigger value="documents"><FileTextIcon className="h-4 w-4"/>Documents</TabsTrigger>
-          <TabsTrigger value="timeline"><IconFileDollar className="h-4 w-4"/>Invoice</TabsTrigger>
+          <TabsTrigger value="details"><FileSearch className="h-4 w-4" />Details</TabsTrigger>
+          <TabsTrigger value="parties"><Unplug className="h-4 w-4" />Parties</TabsTrigger>
+          <TabsTrigger value="documents"><FileTextIcon className="h-4 w-4" />Documents</TabsTrigger>
+          <TabsTrigger value="timeline"><IconFileDollar className="h-4 w-4" />Invoice</TabsTrigger>
         </TabsList>
 
         <TabsContent value="details" className="space-y-4">
@@ -261,11 +262,12 @@ export default function HomePage({ params }) {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="h-5 w-5" /> Route Map
+                  <span className="text-xs text-muted-foreground ml-1">({Math.max(0, (data.progress - 1) / 2)}/{stopsWithCoords.length} stops)</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {stopsWithCoords.length > 0 ? (
-                  <TruckRouteMap stops={stopsWithCoords} progress={0} />
+                  <TruckRouteMap stops={stopsWithCoords} progress={data.progress} />
                 ) : (
                   <div className="aspect-video bg-muted rounded-lg flex flex-col items-center justify-center text-center space-y-2">
                     <MapPin className="h-12 w-12 text-muted-foreground" />

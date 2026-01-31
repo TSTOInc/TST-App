@@ -12,8 +12,9 @@ export default function TruckRouteMap({ stops, progress = 0, showTruck = true })
   const mapContainer = useRef(null);
   const styleUrl =
     theme === "dark"
-      ? "mapbox://styles/angel-dom/cmez8t10k011701ssgj5uco9c" // your dark style
-      : "mapbox://styles/angel-dom/cmfsxqoz900a301s0gzp917we"; // your light style
+      ? "mapbox://styles/angel-dom/cmez8t10k011701ssgj5uco9c"
+      : "mapbox://styles/angel-dom/cmfsxqoz900a301s0gzp917we";
+
   useEffect(() => {
     if (stops.length < 2) return;
 
@@ -25,23 +26,33 @@ export default function TruckRouteMap({ stops, progress = 0, showTruck = true })
       attributionControl: false,
     });
 
-    // ✅ Add built-in controls
-    map.addControl(new mapboxgl.NavigationControl(), "top-right"); // zoom + rotation
-    map.addControl(new mapboxgl.FullscreenControl(), "top-right"); // fullscreen
-    map.addControl(new mapboxgl.ScaleControl({ maxWidth: 100, unit: "imperial" }), "bottom-right"); // scale bar
-
+    map.addControl(new mapboxgl.NavigationControl(), "top-right");
+    map.addControl(new mapboxgl.FullscreenControl(), "top-right");
+    map.addControl(
+      new mapboxgl.ScaleControl({ maxWidth: 100, unit: "imperial" }),
+      "bottom-right"
+    );
 
     map.on("load", () => {
       const coordinates = stops.map((s) => `${s.lng},${s.lat}`).join(";");
-      const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coordinates}?geometries=geojson&overview=full&steps=true&access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`;
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coordinates}?geometries=geojson&overview=full&steps=true&annotations=distance&access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`;
 
       fetch(url)
         .then((res) => res.json())
         .then((data) => {
-          const route = data.routes[0].geometry;
+          if (!data.routes || data.routes.length === 0) return;
+
+          const route = data.routes[0];
 
           // Route line
-          map.addSource("route", { type: "geojson", data: { type: "Feature", geometry: route } });
+          map.addSource("route", {
+            type: "geojson",
+            data: {
+              type: "Feature",
+              geometry: route.geometry,
+            },
+          });
+
           map.addLayer({
             id: "route",
             type: "line",
@@ -50,39 +61,103 @@ export default function TruckRouteMap({ stops, progress = 0, showTruck = true })
             paint: { "line-color": "#0074D9", "line-width": 5 },
           });
 
+          // 🚛 Truck position (STOP-BASED PROGRESS)
           if (showTruck) {
             map.loadImage(
               "https://bxporjcib7gy7ljf.public.blob.vercel-storage.com/resources/lorry_low.png",
               (err, image) => {
                 if (err) throw err;
                 map.addImage("truck-icon", image);
-                const totalPoints = route.coordinates.length;
-                const index = Math.floor(progress * (totalPoints - 1));
-                const truckCoord = route.coordinates[index];
+
+                const legs = route.legs;
+                const maxLegIndex = legs.length - 1;
+
+                console.log("🚦 INPUT progress:", progress);
+                console.log("🛣️ Total legs:", legs.length);
+
+                const clampedProgress = Math.max(
+                  0,
+                  Math.min(progress, legs.length - 1e-6)
+                );
+
+
+                console.log("📏 Clamped progress:", clampedProgress);
+
+                const legIndex = Math.floor(clampedProgress);
+                const legProgress = clampedProgress - legIndex;
+
+                console.log("📍 Current leg index:", legIndex);
+                console.log("📊 Progress within leg (0–1):", legProgress);
+
+                const steps =
+                  legs[Math.min(legIndex, maxLegIndex)].steps;
+
+                console.log("👣 Steps in leg:", steps.length);
+
+                const legCoords = steps.flatMap(
+                  (step) => step.geometry.coordinates
+                );
+
+                console.log("🗺️ Coordinates in leg:", legCoords.length);
+
+                const pointIndex = Math.floor(
+                  legProgress * (legCoords.length - 1)
+                );
+
+                console.log("🎯 Point index:", pointIndex);
+                console.log("📌 Truck coordinate:", legCoords[pointIndex]);
+
+                const truckCoord = legCoords[pointIndex];
+
                 map.addSource("truck", {
                   type: "geojson",
                   data: {
                     type: "FeatureCollection",
-                    features: [{ type: "Feature", geometry: { type: "Point", coordinates: truckCoord } }],
+                    features: [
+                      {
+                        type: "Feature",
+                        geometry: {
+                          type: "Point",
+                          coordinates: truckCoord,
+                        },
+                      },
+                    ],
                   },
                 });
+
                 map.addLayer({
                   id: "truck-layer",
                   type: "symbol",
                   source: "truck",
-                  layout: { "icon-image": "truck-icon", "icon-size": 0.8, "icon-allow-overlap": true },
+                  layout: {
+                    "icon-image": "truck-icon",
+                    "icon-size": 0.8,
+                    "icon-allow-overlap": true,
+                  },
                 });
               }
             );
           }
 
+
+
           // Waypoints
           const features = stops.map((stop) => ({
             type: "Feature",
-            geometry: { type: "Point", coordinates: [stop.lng, stop.lat] },
+            geometry: {
+              type: "Point",
+              coordinates: [stop.lng, stop.lat],
+            },
             properties: { label: stop.type || "Stop" },
           }));
-          map.addSource("waypoints", { type: "geojson", data: { type: "FeatureCollection", features } });
+
+          map.addSource("waypoints", {
+            type: "geojson",
+            data: {
+              type: "FeatureCollection",
+              features,
+            },
+          });
 
           map.getStyle().glyphs ||= "mapbox://fonts/mapbox/{fontstack}/{range}.pbf";
 
@@ -91,14 +166,18 @@ export default function TruckRouteMap({ stops, progress = 0, showTruck = true })
             (err, image) => {
               if (err) throw err;
               map.addImage("custom-marker", image);
+
               map.addLayer({
                 id: "waypoints-layer",
                 type: "symbol",
                 source: "waypoints",
                 layout: {
                   "icon-image": "custom-marker",
-                  "text-field": ["get", "label"],  // keep your labels
-                  "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
+                  "text-field": ["get", "label"],
+                  "text-font": [
+                    "Open Sans Semibold",
+                    "Arial Unicode MS Bold",
+                  ],
                   "text-offset": [0, 1.5],
                   "text-anchor": "bottom",
                   "icon-allow-overlap": true,
@@ -114,10 +193,12 @@ export default function TruckRouteMap({ stops, progress = 0, showTruck = true })
 
           // Fit bounds
           const bounds = new mapboxgl.LngLatBounds();
-          stops.forEach((stop) => bounds.extend([stop.lng, stop.lat]));
+          stops.forEach((stop) =>
+            bounds.extend([stop.lng, stop.lat])
+          );
           map.fitBounds(bounds, { padding: 50 });
 
-          // ✅ Add Satellite toggle
+          // Satellite toggle
           map.addSource("mapbox-satellite", {
             type: "raster",
             tiles: [
@@ -125,75 +206,69 @@ export default function TruckRouteMap({ stops, progress = 0, showTruck = true })
             ],
             tileSize: 256,
           });
+
           map.addLayer(
-            { id: "satellite", type: "raster", source: "mapbox-satellite", layout: { visibility: "none" } },
-            "route" // place below route layer
+            {
+              id: "satellite",
+              type: "raster",
+              source: "mapbox-satellite",
+              layout: { visibility: "none" },
+            },
+            "route"
           );
-          const existingButton = mapContainer.current.querySelector(".satellite-toggle-btn");
+
+          const existingButton =
+            mapContainer.current.querySelector(
+              ".satellite-toggle-btn"
+            );
           if (existingButton) existingButton.remove();
 
-          // ✅ Simple button to toggle satellite layer
           const toggleButton = document.createElement("button");
-          toggleButton.className = "satellite-toggle-btn"; // mark it so we can remove later
-          toggleButton.style.color = "black";
-          toggleButton.style.cursor = "pointer";
-          toggleButton.style.borderRadius = "4px";
+          toggleButton.className = "satellite-toggle-btn";
           toggleButton.textContent = "🛰️";
           toggleButton.style.position = "absolute";
           toggleButton.style.top = "145px";
           toggleButton.style.right = "10px";
-          toggleButton.style.zIndex = 1;
-          toggleButton.style.background = "#fff";
           toggleButton.style.width = "29px";
           toggleButton.style.height = "29px";
-          toggleButton.style.boxShadow = "rgba(0, 0, 0, 0.1) 0px 0px 0px 2px";
-          toggleButton.onclick = () => {
-            const visibility = map.getLayoutProperty("satellite", "visibility");
-            map.setLayoutProperty("satellite", "visibility", visibility === "visible" ? "none" : "visible");
-          };
-          map.getContainer().appendChild(toggleButton);
+          toggleButton.style.background = "#fff";
+          toggleButton.style.borderRadius = "4px";
+          toggleButton.style.cursor = "pointer";
+          toggleButton.style.zIndex = 1;
+          toggleButton.style.boxShadow =
+            "rgba(0, 0, 0, 0.1) 0px 0px 0px 2px";
 
-          /* ✅ 3D Buildings button
-          const threeDButton = document.createElement("button");
-          threeDButton.style.color = "#2b2b2bff";
-          threeDButton.style.cursor = "pointer";
-          threeDButton.style.fontWeight = "bold";
-          threeDButton.style.borderRadius = "4px";
-          threeDButton.textContent = "3D";
-          threeDButton.style.position = "absolute";
-          threeDButton.style.top = "50px";
-          threeDButton.style.left = "10px";
-          threeDButton.style.zIndex = 1;
-          threeDButton.style.background = "#fff";
-          threeDButton.style.padding = "5px 10px";
-          threeDButton.style.boxShadow = "rgba(0, 0, 0, 0.1) 0px 0px 0px 2px";
-          threeDButton.onclick = () => {
-            if (!map.getLayer("3d-buildings")) {
-              map.addLayer({
-                id: "3d-buildings",
-                source: "composite",
-                "source-layer": "building",
-                filter: ["==", "extrude", "true"],
-                type: "fill-extrusion",
-                minzoom: 15,
-                paint: {
-                  "fill-extrusion-color": "#aaa",
-                  "fill-extrusion-height": ["get", "height"],
-                  "fill-extrusion-base": ["get", "min_height"],
-                  "fill-extrusion-opacity": 0.6,
-                },
-              });
-            } else {
-              map.removeLayer("3d-buildings");
-            }
+          toggleButton.onclick = () => {
+            const visibility = map.getLayoutProperty(
+              "satellite",
+              "visibility"
+            );
+            map.setLayoutProperty(
+              "satellite",
+              "visibility",
+              visibility === "visible" ? "none" : "visible"
+            );
           };
-          map.getContainer().appendChild(threeDButton);*/
+
+          map.getContainer().appendChild(toggleButton);
         })
-        .catch((err) => console.error("Mapbox Directions API error:", err));
+        .catch((err) =>
+          console.error("Mapbox Directions API error:", err)
+        );
     });
 
     return () => map.remove();
   }, [stops, progress, theme]);
 
-  return <div ref={mapContainer} style={{ width: "100%", height: "400px", borderRadius: "8px", position: "relative" }} />;
+  return (
+    <div
+      ref={mapContainer}
+      style={{
+        width: "100%",
+        height: "400px",
+        borderRadius: "8px",
+        position: "relative",
+      }}
+    />
+  );
 }

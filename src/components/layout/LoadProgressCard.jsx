@@ -272,218 +272,248 @@ function mapProgressToUI(progress, stops) {
 
 
 export default function LoadProgressCard({ data }) {
+  const updateProgress = useMutation(api.loads.updateProgress);
+  const setInvoicedAt = useMutation(api.loads.setInvoicedAt);
+  const setPaidAt = useMutation(api.loads.setPaidAt);
+  const clearPaidAt = useMutation(api.loads.clearPaidAt);
 
-    const updateProgress = useMutation(api.loads.updateProgress);
-    const setInvoicedAt = useMutation(api.loads.setInvoicedAt);
+  const [progress, setProgress] = useState(data.progress);
+  const [showUndoPaid, setShowUndoPaid] = useState(false);
 
-    const sortedStops = [...(data.stops || [])].sort((a, b) => {
-        const timeA = a.appointment_time
-            ? new Date(a.appointment_time)
-            : new Date(a.window_end);
-        const timeB = b.appointment_time
-            ? new Date(b.appointment_time)
-            : new Date(b.window_end);
-        return timeA - timeB;
-    });
+  const sortedStops = [...(data.stops || [])].sort((a, b) => {
+    const timeA = a.appointment_time
+      ? new Date(a.appointment_time)
+      : new Date(a.window_end);
+    const timeB = b.appointment_time
+      ? new Date(b.appointment_time)
+      : new Date(b.window_end);
+    return timeA - timeB;
+  });
 
-    const detailedSteps = buildDetailedSteps(sortedStops);
-    const uiSteps = buildVisibleSteps(sortedStops);
+  const detailedSteps = buildDetailedSteps(sortedStops);
+  const uiSteps = buildVisibleSteps(sortedStops);
 
-    const [progress, setProgress] = useState(data.progress); // detailed step index
+  const uiIndex = mapProgressToUI(progress, sortedStops);
+  const progressValue = (uiIndex / (uiSteps.length - 1)) * 100;
 
-    const uiIndex = mapProgressToUI(progress, sortedStops);
-    const progressValue = (uiIndex / (uiSteps.length - 1)) * 100;
+  function getLoadStatus(progress, totalSteps) {
+    if (progress === 0) return "new";
+    if (progress === 1) return "at_pickup";
+    if (progress === 2) return "in_transit";
+    if (progress === totalSteps - 3) return "delivered";
+    if (progress === totalSteps - 2) return "invoiced";
+    if (progress === totalSteps - 1) return "paid";
+    return "in_transit";
+  }
 
-    function getLoadStatus(progress, totalSteps) {
-        if (progress === 0) return "new";
-        if (progress === 1) return "at_pickup";
-        if (progress === 2) return "in_transit";
-        if (progress === totalSteps - 3) return "delivered";
-        if (progress === totalSteps - 2) return "invoiced";
-        if (progress === totalSteps - 1) return "paid";
-        return "in_transit"; // default
+  async function handleNext() {
+    if (progress < detailedSteps.length - 1) {
+      const newProgress = progress + 1;
+      const newStatus = getLoadStatus(newProgress, detailedSteps.length);
+
+      setProgress(newProgress);
+
+      await updateProgress({
+        loadId: data._id,
+        progress: newProgress,
+        load_status: newStatus,
+      });
     }
-    async function handleNext() {
-        if (progress < detailedSteps.length - 1) {
-            const newProgress = progress + 1;
-            const newStatus = getLoadStatus(newProgress, detailedSteps.length);
-            setProgress(newProgress);
+  }
 
-            try {
+  async function handlePrev() {
+    // If currently PAID → confirm undo
+    if (progress === detailedSteps.length - 1) {
+      setShowUndoPaid(true);
+      return;
+    }
+
+    if (progress > 0) {
+      const newProgress = progress - 1;
+      const newStatus = getLoadStatus(newProgress, detailedSteps.length);
+
+      setProgress(newProgress);
+
+      await updateProgress({
+        loadId: data._id,
+        progress: newProgress,
+        load_status: newStatus,
+      });
+    }
+  }
+
+  const visibleLabels = getVisibleStepLabels(progress, sortedStops);
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Route className="h-5 w-5" />
+              Load Progress
+              <Badge status={getLoadStatus(progress, detailedSteps.length)}>
+                {detailedSteps[progress]}
+              </Badge>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handlePrev}
+                disabled={progress === 0}
+              >
+                <ChevronLeft />
+              </Button>
+
+              {/* SEND INVOICE */}
+              {progress === detailedSteps.length - 3 && (
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="outline">Send Invoice</Button>
+                  </SheetTrigger>
+
+                  <SheetContent side="right" className="flex flex-col h-full">
+                    <div className="mx-auto w-full max-w-sm flex-1 overflow-auto">
+                      <SheetHeader>
+                        <SheetTitle>Send Invoice</SheetTitle>
+                      </SheetHeader>
+
+                      <div className="p-4 space-y-4">
+                        <p><strong>Broker:</strong> {data.broker.name}</p>
+                        <p><strong>Email:</strong> {data.payment_terms.email}</p>
+                        <p><strong>Load #:</strong> {data.load_number}</p>
+                        <p><strong>Invoice:</strong> {data.invoice_number}.pdf</p>
+                      </div>
+                    </div>
+
+                    <SheetFooter className="p-4 border-t flex flex-col gap-2">
+                      <Button
+                        className="w-full"
+                        onClick={() => {
+                          handleSendEmail(data);
+                          handleNext();
+                        }}
+                      >
+                        Send Invoice to Broker
+                      </Button>
+
+                      <Button
+                        className="w-full"
+                        onClick={() => {
+                          handleGenerateInvoice(data, setInvoicedAt);
+                          handleNext();
+                        }}
+                      >
+                        Mark as Invoiced & Download
+                      </Button>
+                    </SheetFooter>
+                  </SheetContent>
+                </Sheet>
+              )}
+
+              {/* RECORD PAYMENT */}
+              {progress === detailedSteps.length - 2 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline">Record Payment</Button>
+                  </AlertDialogTrigger>
+
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Confirm Payment</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will mark the load as paid.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={async () => {
+                          const paidAt = new Date().toISOString();
+
+                          await setPaidAt({
+                            loadId: data._id,
+                            paid_at: paidAt,
+                          });
+
+                          await handleNext();
+                        }}
+                      >
+                        Payment Received
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+
+              {progress <= detailedSteps.length - 4 && (
+                <Button variant="outline" onClick={handleNext}>
+                  <ChevronRight />
+                </Button>
+              )}
+            </div>
+          </CardTitle>
+        </CardHeader>
+
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex justify-between text-sm font-medium">
+              {visibleLabels.map((step, i) => (
+                <span key={i} className="flex-1 text-center">
+                  {step}
+                </span>
+              ))}
+            </div>
+
+            <Progress value={progressValue} className="h-3" />
+
+            <p className="text-sm text-muted-foreground">
+              Current step: {detailedSteps[progress]}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* UNDO PAID MODAL */}
+      <AlertDialog open={showUndoPaid} onOpenChange={setShowUndoPaid}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Undo Payment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove the payment date and move the load back to
+              invoiced.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                const newProgress = progress - 1;
+                const newStatus = getLoadStatus(
+                  newProgress,
+                  detailedSteps.length
+                );
+
+                await clearPaidAt({ loadId: data._id });
+
                 await updateProgress({
-                    loadId: data._id,
-                    progress: newProgress,
-                    load_status: newStatus,
+                  loadId: data._id,
+                  progress: newProgress,
+                  load_status: newStatus,
                 });
-            } catch (error) {
-                console.error(error);
-            }
-        }
-    }
 
-    async function handlePrev() {
-        if (progress > 0) {
-            const newProgress = progress - 1;
-            const newStatus = getLoadStatus(newProgress, detailedSteps.length);
-            setProgress(newProgress);
-
-            try {
-                await updateProgress({
-                    loadId: data._id,
-                    progress: newProgress,
-                    load_status: newStatus,
-                });
-            } catch (error) {
-                console.error(error);
-            }
-        }
-    }
-
-    const visibleLabels = getVisibleStepLabels(progress, sortedStops)
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                        <Route className="h-5 w-5" />
-                        Load Progress
-                        <Badge status={`${getLoadStatus(progress, detailedSteps.length)}`}>
-                            {detailedSteps[progress]}
-                        </Badge>
-                    </div>
-                    <div className="flex gap-2">
-
-                        <Button variant={"outline"} onClick={handlePrev} disabled={progress === 0}>
-                            <ChevronLeft />
-                        </Button>
-
-
-
-                        {progress === detailedSteps.length - 3 && (
-                            <Sheet>
-                                <SheetTrigger asChild>
-                                    <Button variant="outline">Send Invoice</Button>
-                                </SheetTrigger>
-
-                                <SheetContent side="right" className="flex flex-col h-full">
-                                    <div className="mx-auto w-full max-w-sm flex-1 overflow-auto">
-                                        <SheetHeader>
-                                            <SheetTitle>Send Invoice</SheetTitle>
-                                            <p className="text-sm text-muted-foreground">
-                                                Sending email to broker about invoice.
-                                            </p>
-                                        </SheetHeader>
-
-                                        <div className="p-4 space-y-4">
-                                            {/* Broker & Invoice Info */}
-                                            <div>
-                                                <p><strong>Broker:</strong> {data.broker.name}</p>
-                                                <p><strong>Email:</strong> {data.payment_terms.email}</p>
-                                                <p><strong>Load #:</strong> {data.load_number}</p>
-                                                <p>
-                                                    <strong>Amount:</strong>{" "}
-                                                    {data.payment_terms.is_quickpay ? (() => {
-                                                        // Calculate amount, discount, and final amount
-                                                        const amountDue = data.rate ? `$${parseFloat(data.rate).toFixed(2)}` : "$0.00";
-                                                        const amount = parseFloat(data.rate) || 0;
-                                                        const discount = amount * ((data.payment_terms?.fee_percent || 0) / 100);
-                                                        const finalAmount = amount - discount;
-                                                        return `${amountDue} - $${discount.toFixed(2)} = $${finalAmount.toFixed(2)}`;
-                                                    })()
-                                                        : data.rate}
-                                                </p>
-                                            </div>
-
-                                            {/* Invoice preview / file info */}
-                                            <div>
-                                                <p><strong>Invoice:</strong> {data.invoice_number}.pdf</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <SheetFooter className="p-4 border-t flex flex-col gap-2">
-                                        <Button
-                                            className="w-full"
-                                            onClick={() => {
-                                                handleSendEmail(data)
-                                                handleNext()
-                                            }}
-                                        >
-                                            Send Invoice to Broker
-                                        </Button>
-
-                                        <Button
-                                            className="w-full"
-                                            onClick={() => {
-                                                handleNext()
-                                                handleGenerateInvoice(data, setInvoicedAt)
-                                            }}
-                                        >
-                                            Mark as Invoiced & Download
-                                        </Button>
-
-                                        <Button variant="outline" className="w-full">
-                                            Cancel
-                                        </Button>
-                                    </SheetFooter>
-                                </SheetContent>
-                            </Sheet>
-                        )}
-                        {progress === detailedSteps.length - 2 && <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="outline">Record Payment</Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        This is the last step, are you sure you want to record payment?
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>No, Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleNext}>Yes, Payment Received</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>}
-                        {progress <= detailedSteps.length - 4 && <Button variant={"outline"} onClick={handleNext}>
-                            <ChevronRight />
-                        </Button>
-                        }
-                    </div>
-                </CardTitle>
-            </CardHeader>
-
-            <CardContent>
-                <div className="space-y-4">
-                    {/* Labels */}
-
-
-                    <div className="flex justify-between text-sm font-medium">
-                        {visibleLabels.map((step, i) => (
-                            <span
-                                key={i}
-                                className={`flex-1 text-center ${i === 0
-                                    ? "text-left"
-                                    : i === visibleLabels.length - 1
-                                        ? "text-right"
-                                        : "text-center"
-                                    }`}
-                            >
-                                {step}
-                            </span>
-                        ))}
-                    </div>
-
-
-                    {/* Progress Bar */}
-                    <Progress value={progressValue} className="h-3" />
-
-                    <p className="text-sm text-muted-foreground">
-                        Current step: {detailedSteps[progress]}
-                    </p>
-                </div>
-            </CardContent>
-        </Card>
-    )
+                setProgress(newProgress);
+                setShowUndoPaid(false);
+              }}
+            >
+              Yes, Undo Payment
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
 }
