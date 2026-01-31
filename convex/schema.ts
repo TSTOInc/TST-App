@@ -198,4 +198,36 @@ export default defineSchema({
     vin: v.string(),
     year: v.union(v.null(), v.float64()),
   }).index("by_orgId", ["org_id"]),
+
+  files: defineTable({
+    storageKey: v.string(), // blob key / object key
+    url: v.string(),        // optional: cached public or signed URL
+    filename: v.string(),
+    mimeType: v.string(),
+    size: v.number(),
+
+    category: v.union(
+    v.literal("CDL"),
+    v.literal("BOL"),
+    v.literal("POD"),
+    v.literal("RATE_CONFIRMATION"),
+    v.literal("CARRIER_AGREEMENT"),
+    v.literal("TRAILER_INTERCHANGE"),
+    v.literal("REGISTRATION"),
+  ),
+
+  uploadedBy: v.id("users"),
+  createdAt: v.number(),
+
+  entityType: v.union(
+    v.literal("driver"),
+    v.literal("load"),
+    v.literal("broker"),
+    v.literal("truck"),
+    v.literal("trailer")
+  ),
+  entityId: v.string(),
+  }),
 });
+
+
