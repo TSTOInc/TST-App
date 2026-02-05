@@ -23,9 +23,9 @@ export default function CompanyCard({ table, id, title, description, image, stat
         )
 
     return (
-        <Link href={link}>
+        <Link href={link} className="group block transition-transform duration-200 ease-in-out hover:scale-[1.01]">
             <Card className="border-none pt-0">
-                <CardContent className="px-0">
+                <CardContent className="px-0 relative overflow-hidden rounded-t-xl">
                     <img
                         src={
                             image
@@ -35,7 +35,18 @@ export default function CompanyCard({ table, id, title, description, image, stat
                                     : `https://placehold.co/600x400/2c2c2c/ffffff?font=montserrat&text=${encodeURIComponent(title || "No Image")}`
                         }
                         alt={title}
-                        className="aspect-video w-full rounded-t-xl object-cover bg-neutral-200 dark:bg-neutral-800"
+                        className="absolute inset-0 w-full object-cover scale-110 blur-3xl pointer-events-none"
+                    />
+                    <img
+                        src={
+                            image
+                                ? image
+                                : website
+                                    ? `https://img.logo.dev/${website}?token=pk_eshRuE0_Q422ZDQhht9A-g&retina=true`
+                                    : `https://placehold.co/600x400/2c2c2c/ffffff?font=montserrat&text=${encodeURIComponent(title || "No Image")}`
+                        }
+                        alt={title}
+                        className="relative z-10 w-full aspect-video object-contain scale-200 rounded-t-xl group-hover:scale-100 transition-transform duration-300 ease-in-out"
                     />
 
                 </CardContent>

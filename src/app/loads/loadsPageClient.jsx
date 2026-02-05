@@ -29,8 +29,12 @@ export default function TablePage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { organization } = useOrganization();
-  const orgId = organization ? organization.id : "";
-  const loadsUnsorted = useQuery(api.getTable.all, { table: "loads", orgId: orgId })
+const loadsUnsorted = useQuery(
+  api.getTable.all,
+  organization
+    ? { table: "loads", orgId: organization.id }
+    : "skip"
+)
   const loads = loadsUnsorted
     ? [...loadsUnsorted].sort((a, b) => {
       const aNum = Number(a.invoice_number) || 0;
@@ -38,7 +42,6 @@ export default function TablePage() {
       return bNum - aNum; // descending
     })
     : null;
-  console.log("Loads:", loads)
   const [searchQuery, setSearchQuery] = useState("")
 
   const [filters, setFilters] = useState({
@@ -189,7 +192,7 @@ export default function TablePage() {
   return (
     <div className="p-4 space-y-4">
       <SearchBar
-        live={true}
+        live={false}
         value={searchQuery}
         onValueChange={setSearchQuery}
         placeholder="Search broker, invoice, or load number"
