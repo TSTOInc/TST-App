@@ -65,7 +65,7 @@ export default defineSchema({
     verification_attempts_remaining: v.float64(),
     web3_wallets: v.array(v.any()),
     organization_ids: v.optional(v.array(v.string())),
-  }),
+  }).index("by_clerkId", ["clerk_id"]),
 
   brokers: defineTable({
     org_id: v.string(),
@@ -201,7 +201,6 @@ export default defineSchema({
 
   files: defineTable({
     storageKey: v.string(), // blob key / object key
-    url: v.string(),        // optional: cached public or signed URL
     filename: v.string(),
     mimeType: v.string(),
     size: v.number(),
@@ -217,17 +216,17 @@ export default defineSchema({
   ),
 
   uploadedBy: v.id("users"),
-  createdAt: v.number(),
-
   entityType: v.union(
-    v.literal("driver"),
-    v.literal("load"),
-    v.literal("broker"),
-    v.literal("truck"),
-    v.literal("trailer")
+    v.literal("drivers"),
+    v.literal("loads"),
+    v.literal("brokers"),
+    v.literal("trucks"),
+    v.literal("trailers")
   ),
   entityId: v.string(),
-  }),
+  expiresAt: v.optional(v.number()),
+  org_id: v.string(),
+  }).index("by_orgId", ["org_id"]).index("by_entity", ["entityType", "entityId", "org_id"]),
 });
 
 

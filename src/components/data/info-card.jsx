@@ -20,7 +20,7 @@ const Field = ({ label, value, type, inline, href, blank, external }) => {
   const content = (
     <div className="flex items-center gap-1">
       <p>{type === "date" ? formatTimestamp(value): type === "phone" ? formatPhoneNumber(value) : value || "N/A"}</p>
-      {type !== "link" && value && <Copy text={value} />}
+      {type !== "link" && value && <Copy value={value} />}
       {type === "link" && link && <LinkButton href={link} blank={blank} external={external} />}
     </div>
   )

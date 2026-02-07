@@ -13,6 +13,7 @@ import type * as chats from "../chats.js";
 import type * as delete_ from "../delete.js";
 import type * as encryption from "../encryption.js";
 import type * as equipment from "../equipment.js";
+import type * as files from "../files.js";
 import type * as getDoc from "../getDoc.js";
 import type * as getTable from "../getTable.js";
 import type * as http from "../http.js";
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   delete: typeof delete_;
   encryption: typeof encryption;
   equipment: typeof equipment;
+  files: typeof files;
   getDoc: typeof getDoc;
   getTable: typeof getTable;
   http: typeof http;

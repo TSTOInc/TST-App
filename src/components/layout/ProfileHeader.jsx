@@ -173,8 +173,10 @@ export default function ProfileHeader({
                     <div className="flex flex-1 flex-col sm:flex-row sm:justify-between sm:items-end text-center sm:text-left gap-2 pb-7">
                         {/* Info */}
                         <div>
-                            <h1 className="flex items-center justify-center sm:justify-start gap-2 text-2xl sm:text-3xl font-bold">
-                                <span>{name}</span>
+                            <h1 className="flex min-w-0 items-center justify-center sm:justify-start gap-2 text-2xl sm:text-3xl font-bold">
+                                <span className="truncate max-w-[20rem] sm:max-w-[28rem]">
+                                    {name}
+                                </span>
                                 {alias && (
                                     <span className="text-muted-foreground font-semibold italic">{alias}</span>
                                 )}
@@ -185,7 +187,7 @@ export default function ProfileHeader({
                                 {color && <ColorBadge color={color} />}
                                 {description && <span>{description}</span>}
                                 {link && (
-                                    <LinkButton href={link} external={false}/>
+                                    <LinkButton href={link} external={false} />
                                 )}
                             </p>
                         </div>

@@ -52,7 +52,6 @@ export const create = mutation({
         const identity = await ctx.auth.getUserIdentity();
         if (!identity) throw new Error("Not authenticated");
 
-
         try {
             const newTruckId = await ctx.db.insert("trucks",
                 {

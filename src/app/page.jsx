@@ -1,20 +1,30 @@
 "use client";
+
 import { useEffect, useState } from "react";
+import { useQuery } from "convex/react";
+import { api } from "@convex/_generated/api";
+import { usePathname } from 'next/navigation';
+import { useOrganization  } from "@clerk/nextjs";
+
 import { SectionCards } from "@/components/dashboard/section-cards";
 import { ChartAreaInteractive } from "@/components/chart-area-interactive";
 
 function getPeriodStats(loads, brokers, start, end) {
   const payedPeriodLoads = loads.filter((load) => {
     const invoicedAt = load.invoiced_at ? new Date(load.invoiced_at) : null;
-    return invoicedAt && invoicedAt >= start && invoicedAt < end && load.paid_at !== null;
+    return invoicedAt && invoicedAt >= start && invoicedAt < end && load.paid_at;
   });
+
   const periodLoads = loads.filter((load) => {
     const createdAt = load.created_at ? new Date(load.created_at) : null;
     return createdAt && createdAt >= start && createdAt < end;
   });
 
+  const revenue = payedPeriodLoads.reduce(
+    (acc, load) => acc + Number(load.rate || 0),
+    0
+  );
 
-  const revenue = payedPeriodLoads.reduce((acc, load) => acc + Number(load.rate || 0), 0);
   const periodBrokers = brokers.filter((broker) => {
     const createdAt = broker.created_at ? new Date(broker.created_at) : null;
     return createdAt && createdAt >= start && createdAt < end;
@@ -32,85 +42,91 @@ function getPeriodStats(loads, brokers, start, end) {
 }
 
 const Home = () => {
+  const { organization } = useOrganization();
+  const pathname = usePathname() ?? "";
+  const path = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
+
+  const loads = useQuery(api.getTable.all, organization ? { table: "loads", orgId: organization.id } : "skip");
+  const brokers = useQuery(api.getTable.all, organization ? { table: "brokers", orgId: organization.id } : "skip");
+
   const [stats, setStats] = useState({
     last30Days: { revenue: "$0", brokers: 0, loads: 0 },
     prev30Days: { revenue: "$0", brokers: 0, loads: 0 },
   });
+
   const [chartRevenueData, setChartRevenueData] = useState([]);
   const [chartLoadsData, setChartLoadsData] = useState([]);
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        const loadRes = await fetch(`/api/get/loads`);
-        const loads = await loadRes.json();
-        const brokerRes = await fetch(`/api/get/brokers`);
-        const brokers = await brokerRes.json();
+    if (!loads || !brokers) return;
 
-        const now = new Date();
+    const now = new Date();
 
-        // --- 📊 Stats Calculations ---
-        const last30Start = new Date(now);
-        last30Start.setDate(now.getDate() - 30);
-        const last30Days = getPeriodStats(loads, brokers, last30Start, now);
+    // --- 📊 Stats ---
+    const last30Start = new Date(now);
+    last30Start.setDate(now.getDate() - 30);
 
-        const prev30End = new Date(last30Start);
-        const prev30Start = new Date(now);
-        prev30Start.setDate(now.getDate() - 60);
-        const prev30Days = getPeriodStats(loads, brokers, prev30Start, prev30End);
+    const last30Days = getPeriodStats(loads, brokers, last30Start, now);
 
-        // --- 📆 Build 90-Day Chart Data ---
-        const startDate = new Date(now);
-        startDate.setDate(now.getDate() - 89); // last 90 days including today
+    const prev30End = new Date(last30Start);
+    const prev30Start = new Date(now);
+    prev30Start.setDate(now.getDate() - 60);
 
-        const dailyRevenueMap = {};
-        const dailyLoadsMap = {};
+    const prev30Days = getPeriodStats(loads, brokers, prev30Start, prev30End);
 
-        for (let d = new Date(startDate); d <= now; d = new Date(d.getTime() + 86400000)) {
-          const key = d.toISOString().split("T")[0];
-          dailyRevenueMap[key] = 0;
-          dailyLoadsMap[key] = 0;
+    // --- 📆 90-Day Charts ---
+    const startDate = new Date(now);
+    startDate.setDate(now.getDate() - 89);
+
+    const dailyRevenueMap = {};
+    const dailyLoadsMap = {};
+
+    for (
+      let d = new Date(startDate);
+      d <= now;
+      d = new Date(d.getTime() + 86400000)
+    ) {
+      const key = d.toISOString().split("T")[0];
+      dailyRevenueMap[key] = 0;
+      dailyLoadsMap[key] = 0;
+    }
+
+    // 💰 Revenue by paid_at
+    for (const load of loads) {
+      if (load.paid_at && load.rate) {
+        const key = new Date(load.paid_at).toISOString().split("T")[0];
+        if (dailyRevenueMap[key] !== undefined) {
+          dailyRevenueMap[key] += Number(load.rate);
         }
-
-        // 💰 Sum revenue per day (based on paid_at)
-        for (const load of loads) {
-          if (load.paid_at && load.rate) {
-            const paidDate = new Date(load.paid_at);
-            const key = paidDate.toISOString().split("T")[0];
-            if (dailyRevenueMap[key] !== undefined) {
-              dailyRevenueMap[key] += Number(load.rate);
-            }
-          }
-        }
-        // 🚚 Count loads per day (based on created_at)
-        for (const load of loads) {
-          if (load.created_at) {
-            const createdDate = new Date(load.created_at);
-            const key = createdDate.toISOString().split("T")[0];
-            if (dailyLoadsMap[key] !== undefined) {
-              dailyLoadsMap[key] += 1;
-            }
-          }
-        }
-        const revenueArray = Object.entries(dailyRevenueMap).map(([date, revenue]) => ({
-          date,
-          revenue, // keep consistent with your ChartAreaInteractive keys
-        }));
-        const loadsArray = Object.entries(dailyLoadsMap).map(([date, loads]) => ({
-          date,
-          loads,
-        }));
-
-        setStats({ last30Days, prev30Days });
-        setChartRevenueData(revenueArray);
-        setChartLoadsData(loadsArray);
-      } catch (err) {
-        console.error("Failed to fetch data", err);
       }
     }
 
-    fetchData();
-  }, []);
+    // 🚚 Loads by created_at
+    for (const load of loads) {
+      if (load.created_at) {
+        const key = new Date(load.created_at).toISOString().split("T")[0];
+        if (dailyLoadsMap[key] !== undefined) {
+          dailyLoadsMap[key] += 1;
+        }
+      }
+    }
+
+    setStats({ last30Days, prev30Days });
+
+    setChartRevenueData(
+      Object.entries(dailyRevenueMap).map(([date, revenue]) => ({
+        date,
+        revenue,
+      }))
+    );
+
+    setChartLoadsData(
+      Object.entries(dailyLoadsMap).map(([date, loads]) => ({
+        date,
+        loads,
+      }))
+    );
+  }, [loads, brokers]);
 
   return (
     <div className="flex flex-1 flex-col">
