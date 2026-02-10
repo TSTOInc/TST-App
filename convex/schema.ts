@@ -143,7 +143,7 @@ export default defineSchema({
     rate: v.number(),
     truck_id: v.string(),
     drivers: v.optional(v.array(v.string())),
-  }).index("by_orgId", ["org_id"]),
+  }).index("by_brokerId", ["broker_id"]).index("by_orgId", ["org_id"]),
 
   messages: defineTable({
     chatId: v.id("chats"),
@@ -206,27 +206,42 @@ export default defineSchema({
     size: v.number(),
 
     category: v.union(
-    v.literal("CDL"),
-    v.literal("BOL"),
-    v.literal("POD"),
-    v.literal("RATE_CONFIRMATION"),
-    v.literal("CARRIER_AGREEMENT"),
-    v.literal("TRAILER_INTERCHANGE"),
-    v.literal("REGISTRATION"),
-  ),
+      v.literal("CDL"),
+      v.literal("BOL"),
+      v.literal("POD"),
+      v.literal("RATE_CONFIRMATION"),
+      v.literal("INNOUT_TICKET"),
+      v.literal("LUMPER"),
+      v.literal("SCALE_TICKET"),
+      v.literal("TRAILER_INTERCHANGE"),
+      v.literal("CARRIER_AGREEMENT"),
+      v.literal("QUICKPAY_AGREEMENT"),
+      v.literal("REGISTRATION"),
+      v.literal("ID_CARD"),
+      v.literal("MISC"),
+    ),
 
-  uploadedBy: v.id("users"),
-  entityType: v.union(
-    v.literal("drivers"),
-    v.literal("loads"),
-    v.literal("brokers"),
-    v.literal("trucks"),
-    v.literal("trailers")
-  ),
-  entityId: v.string(),
-  expiresAt: v.optional(v.number()),
-  org_id: v.string(),
-  }).index("by_orgId", ["org_id"]).index("by_entity", ["entityType", "entityId", "org_id"]),
+    uploadedBy: v.id("users"),
+    entityType: v.union(
+      v.literal("drivers"),
+      v.literal("loads"),
+      v.literal("brokers"),
+      v.literal("trucks"),
+      v.literal("equipment"),
+    ),
+    entityId: v.string(),
+    expiresAt: v.optional(v.number()),
+    org_id: v.string(),
+
+    status: v.union(
+      v.literal("uploading"),
+      v.literal("ready"),
+      v.literal("failed"),
+      v.literal("deleted")
+    ),
+
+
+  }).index("by_status", ["status"]).index("by_orgId", ["org_id", "status"]).index("by_entity", ["entityType", "entityId", "org_id", "status"]),
 });
 
 

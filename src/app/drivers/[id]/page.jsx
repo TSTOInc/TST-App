@@ -12,13 +12,17 @@ import {
     DialogTrigger,
     DialogHeader,
     DialogTitle,
+    DialogFooter,
+    DialogDescription,
+    DialogClose
+
 } from "@/components/ui/dialog";
 import InfoCard from '@/components/data/info-card'
 import { useQuery, useMutation } from "convex/react"
 import { api } from "@convex/_generated/api";
 import { useOrganization } from '@clerk/nextjs';
 import { DialogDemo } from "@/components/data/upload/upload-doc";
-import { CreditCardIcon, EllipsisVertical, EllipsisVerticalIcon, EyeIcon, FileTextIcon, LogOutIcon, OctagonAlertIcon, PencilIcon, RefreshCwIcon, SettingsIcon, SirenIcon, TrashIcon, UserIcon } from 'lucide-react'
+import { EllipsisVerticalIcon, EyeIcon, FileTextIcon, OctagonAlertIcon, PencilIcon, RefreshCwIcon, TrashIcon, FileIcon, FileImageIcon, FileVideoIcon, DownloadIcon } from 'lucide-react'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -28,7 +32,16 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { createClient } from '@supabase/supabase-js'
 import { cn } from '@/lib/utils'
-
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupInput,
+    InputGroupText,
+    InputGroupTextarea,
+} from "@/components/ui/input-group"
+import { DocumentCard } from '@/components/documents/document-card'
 
 
 const statusColor = {
@@ -37,7 +50,20 @@ const statusColor = {
     Expired: "text-red-600",
     Unknown: "text-muted-foreground",
 };
-
+function formatBytes(bytes) {
+    if (bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB", "TB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+}
+function getFileIcon(mimeType) {
+    if (mimeType.startsWith('image/')) return FileImageIcon;
+    if (mimeType === 'application/pdf') return FileTextIcon;
+    if (mimeType.startsWith('video/')) return FileVideoIcon;
+    if (mimeType.startsWith('text/')) return FileTextIcon;
+    return FileIcon; // fallback generic file icon
+}
 // Helper function to determine license status
 const getLicenseStatus = (expiresAt) => {
     if (!expiresAt) return { status: "Unknown" };
@@ -55,10 +81,13 @@ const getLicenseStatus = (expiresAt) => {
     return { status: "Active", daysLeft };
 };
 
-const LicenseCard = ({ driver, files }) => {
+const LicenseCard = ({ driver, files, orgId }) => {
     const license = files?.find((file) => file.category === "CDL");
     const [selectedDoc, setSelectedDoc] = useState(null);
-
+    const [renameFileOriginal, setRenameFileOriginal] = useState(null);
+    const [renameFile, setRenameFile] = useState(null);
+    const renameFileMutation = useMutation(api.files.renameFile);
+    const deleteFileMutation = useMutation(api.files.deleteFile);
     const licenseStatus = license
         ? getLicenseStatus(license.expiresAt)
         : { status: "Unknown" };
@@ -82,31 +111,75 @@ const LicenseCard = ({ driver, files }) => {
             console.error(err)
         }
     }
-
-    const handleDelete = async (documentUrl, driverId) => {
+    const handleDownload = async (filePath, filename) => {
         try {
-            await toast.promise(
-                fetch(`/api/delete/drivers/${driverId}/docs`, {
-                    method: "DELETE",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ document_url: documentUrl }),
-                }).then(async (res) => {
-                    if (!res.ok) throw new Error("Failed to delete document");
-
-                    // Update local state
-                    setTruckData((prev) => ({
-                        ...prev,
-                        docs: prev.docs.filter((doc) => doc !== documentUrl),
-                    }));
-                }),
-                {
-                    loading: "Deleting document...",
-                    success: "Document deleted successfully!",
-                    error: (err) => err.message || "Failed to delete document",
-                }
+            const supabase = createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL,
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
             );
+
+            // Generate signed URL
+            const { data, error } = await supabase.storage
+                .from('TST')
+                .createSignedUrl(filePath, 60); // 60 seconds should be enough for download
+
+            if (error) throw error;
+
+            // Download file with signed URL
+            const res = await fetch(data.signedUrl);
+            if (!res.ok) {
+                throw new Error("Failed to download file");
+            }
+            const blob = await res.blob();
+
+            // Create a temporary link to trigger download
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename || "download";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to download file");
+        }
+    };
+    const handleRename = async () => {
+        if (!renameFile) return;
+
+        // Remove file extension for comparison
+        const newName = renameFile.name.replace(/\.pdf$/i, "");
+        const originalName = renameFileOriginal.replace(/\.pdf$/i, "");
+
+        // Check if name actually changed and is at least 2 characters
+        if (newName.length < 2) {
+            toast.error("File name must be at least 2 characters");
+            return;
+        }
+        if (newName === originalName) {
+            toast.error("No changes detected");
+            return;
+        }
+
+        try {
+            await renameFileMutation({ id: renameFile.id, filename: renameFile.name });
+            toast.success("Document renamed successfully!");
+            setRenameFile(null);
         } catch (error) {
             console.error(error);
+            toast.error("Failed to rename document");
+        }
+    };
+    const handleDelete = async (documentId) => {
+        try {
+            await deleteFileMutation({ id: documentId, orgId: orgId });
+            toast.success("License deleted successfully!");
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to delete license");
         }
     };
 
@@ -125,85 +198,54 @@ const LicenseCard = ({ driver, files }) => {
                         No license found for {driver.name}
                     </p>
                 ) : (
-                    <div className="w-full grid gap-4 grid-cols-1 sm:grid-cols-3 md:grid-cols-1 px-4">
+                    <div className="w-full grid gap-4 grid-cols-1 px-4">
 
-                        <div
-                            className="flex items-center justify-between gap-2 rounded-lg border bg-background p-2 pe-3"
-                            key={license || idx}
-
-                        >
-                            <div className="flex items-center gap-3 overflow-hidden">
-                                <div className="group relative flex aspect-square h-20 w-20 items-center justify-center rounded-md border cursor-pointer" onClick={() => handleOpenDoc(license.storageKey)}>
-                                    {/* File icon (default) */}
-                                    <FileTextIcon
-                                        strokeWidth={1.25}
-                                        className="absolute size-8 opacity-60 transition-opacity duration-200 group-hover:opacity-0"
-                                    />
-
-                                    {/* Eye icon (on hover) */}
-                                    <EyeIcon
-                                        strokeWidth={1.5}
-                                        className="absolute size-8 opacity-0 transition-opacity duration-200 group-hover:opacity-60"
-                                    />
-                                </div>
-
-                                <div className="flex min-w-0 flex-col gap-0.5">
-                                    <span className="flex items-center gap-2">
-                                        <p className="font-bold">CDL</p>
-                                        <p
-                                            className={cn(
-                                                "flex items-center gap-1",
-                                                statusColor[licenseStatus.status]
-                                            )}
-                                        >
-                                            {licenseStatus.status}
-                                            {licenseStatus.status === "Expired" && ` ${Math.abs(licenseStatus.daysLeft)} day${licenseStatus.daysLeft !== 1 ? "s" : ""} ago`}
-                                            {licenseStatus.status === "Expiring" && ` in ${licenseStatus.daysLeft} day` + (licenseStatus.daysLeft > 1 ? "s" : "")}
-                                            {licenseStatus.status === "Expiring" && <IconAlertTriangle className="size-4 mt-0.5" strokeWidth={2} />}
-                                            {licenseStatus.status === "Expired" && <OctagonAlertIcon className="size-4 mt-0.5" strokeWidth={3} />}
-                                            {licenseStatus.status === "Active" && <IconCheck className="size-4 mt-0.5" strokeWidth={3} />}
-                                            {licenseStatus.status === "Unknown" && <IconAlertTriangle className="size-4 mt-0.5" strokeWidth={3} />}
-                                        </p>
-                                    </span>
-                                    <p className="truncate text-muted-foreground">
-                                        {license.filename}
-                                    </p>
-
-
-
-                                </div>
-                            </div>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className='rounded-full mr-2'><EllipsisVerticalIcon /></Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent >
-                                    <DropdownMenuItem className="cursor-pointer" onClick={() => handleOpenDoc(license.storageKey)}>
-                                        <EyeIcon />
-                                        View License
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem className="cursor-pointer">
-                                        <PencilIcon />
-                                        Rename File
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem className="cursor-pointer">
-                                        <RefreshCwIcon />
-                                        Update License
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem className="cursor-pointer" variant="destructive" onClick={(e) => {
-                                        e.stopPropagation(); // Prevent opening PDF
-                                        handleDelete(license, driver.id); // Pass the document URL and truck ID
-                                    }}>
-                                        <TrashIcon />
-                                        Delete License
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
+                        <DocumentCard file={license} />
                     </div>
 
                 )}
             </CardContent>
+            {/* Rename Dialog */}
+            <Dialog open={!!renameFile} onOpenChange={(open) => !open && setRenameFile(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Rename Document</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-2">
+                        <Label htmlFor="rename">{renameFileOriginal}</Label>
+                        <InputGroup className="max-w-xs">
+                            <InputGroupInput
+                                id="rename"
+                                value={renameFile?.name.replace(/\.pdf$/i, "") || ""}
+                                onChange={(e) =>
+                                    setRenameFile((prev) =>
+                                        prev
+                                            ? { ...prev, name: e.target.value + ".pdf" }
+                                            : prev
+                                    )
+                                }
+                            />
+                            <InputGroupAddon align="inline-end">{renameFile?.name.match(/\.[^.]+$/)?.[0] || ""}</InputGroupAddon>
+                        </InputGroup>
+                    </div>
+                    <DialogFooter className="sm:justify-start gap-2">
+                        <DialogClose asChild>
+                            <Button variant="secondary">Cancel</Button>
+                        </DialogClose>
+                        <Button
+                            onClick={handleRename}
+                            disabled={
+                                !renameFile || // no file selected
+                                renameFile.name.replace(/\.pdf$/i, "") === renameFileOriginal.replace(/\.pdf$/i, "") || // no actual name change
+                                renameFile.name.replace(/\.pdf$/i, "").length < 2 // too short
+                            }
+                        >
+                            Save
+                        </Button>
+
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
             <Dialog open={!!selectedDoc} onOpenChange={(open) => !open && setSelectedDoc(null)}>
                 <DialogContent fullscreen>
                     <DialogHeader>
@@ -218,6 +260,41 @@ const LicenseCard = ({ driver, files }) => {
 
 
 
+const FilesCard = ({ driver, files, orgId }) => {
+    const filteredFiles = files?.filter((file) => file.category !== "CDL") || [];
+    return (
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Driver Documents</CardTitle>
+                <DialogDemo title="Add Document" multiple={true} perFile={false} category="MISC" entityType="drivers" entityId={driver._id} expires={false} />
+
+            </CardHeader>
+            <CardContent className="space-y-2">
+                {!filteredFiles.length ? (
+                    <p className="text-neutral-500 italic">
+                        No documents found for {driver.name}
+                    </p>
+                ) : (
+                    <div className="w-full grid gap-4 grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 px-4">
+                        {filteredFiles.map((file) => {
+                            const Icon = getFileIcon(file.mimeType);
+                            return (
+                                <DocumentCard
+                                    key={file._id}
+                                    file={file}
+                                    Icon={Icon}
+                                />
+                            )
+                        })}
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+};
+
+
+
 export default function TablePage({ params }) {
     // Unwrap the params Promise
     const { id } = React.use(params);
@@ -226,8 +303,9 @@ export default function TablePage({ params }) {
     const orgId = organization ? organization.id : "";
     const data = useQuery(api.getDoc.byId, { table: "drivers", id: id, orgId: orgId });
     const files = useQuery(api.files.byId, { entityType: "drivers", entityId: id, orgId: orgId }) || [];
-
     if (!data || data.length === 0) return <ProfileHeader skeleton={true} />
+
+
 
     return (
         <div>
@@ -242,8 +320,9 @@ export default function TablePage({ params }) {
                             { label: "Email", value: data.email },
                         ]}
                     />
-                    <LicenseCard driver={data} files={files} />
+                    <LicenseCard driver={data} files={files} orgId={orgId} />
                 </div>
+                <FilesCard driver={data} files={files} orgId={orgId} />
             </div>
         </div>
     )

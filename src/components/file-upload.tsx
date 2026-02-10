@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react"
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertCircleIcon,
   FileArchiveIcon,
@@ -13,6 +13,7 @@ import {
   ImageIcon,
   VideoIcon,
   XIcon,
+  ChevronDownIcon
 } from "lucide-react";
 
 import {
@@ -29,13 +30,24 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { format } from "date-fns"
-import { ChevronDownIcon } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
+
+type Category = {
+  value: string;
+  label: string;
+};
+export type UploadFile = {
+  id: string;
+  file: File | { name: string; size: number; type: string }; // allow FileMetadata
+  category?: Category;
+};
 
 /* ---------------- LOGIC HELPERS ---------------- */
 
 function isRealFile(value: unknown): value is File {
   return value instanceof File;
 }
+
 
 /* ---------------- ICON LOGIC (UNCHANGED) ---------------- */
 
@@ -86,6 +98,8 @@ export default function FileUpload({
   maxSizeMB = 10,
   multiple = true,
   expires = false,
+  perFile = false,
+  categories = [],
   onFilesChange,
   onExpireChange,
 }: {
@@ -93,7 +107,9 @@ export default function FileUpload({
   maxSizeMB?: number;
   multiple?: boolean;
   expires?: boolean;
-  onFilesChange?: (files: File[]) => void;
+  perFile?: boolean;
+  categories?: Category[];
+  onFilesChange?: (files: UploadFile[]) => void;
   onExpireChange?: (date?: Date) => void;
 }) {
   const maxSize = maxSizeMB * 1024 * 1024;
@@ -118,23 +134,28 @@ export default function FileUpload({
 
   const [open, setOpen] = React.useState(false)
   const [date, setDate] = React.useState<Date>()
+  const [fileCategories, setFileCategories] = useState<Record<string, Category>>({});
+
+  const categoryOptions = categories;
 
   /* 🔑 SYNC FILES TO PARENT (LOGIC ONLY) */
   useEffect(() => {
     if (!onFilesChange) return;
 
-    const realFiles = files
-      .map((f) => f.file)
-      .filter(isRealFile);
+    const filesWithCategory: UploadFile[] = files.map((f) => ({
+      id: f.id,
+      file: f.file,
+      category: perFile ? fileCategories[f.id] || categoryOptions[0] : undefined,
+    }));
 
-    onFilesChange(realFiles);
-  }, [files, onFilesChange]);
+    onFilesChange(filesWithCategory);
+  }, [files, fileCategories, perFile, onFilesChange]);
 
   /* 🔑 SYNC EXPIRE DATE TO PARENT (LOGIC ONLY) */
   useEffect(() => {
-  if (!onExpireChange) return;
-  onExpireChange(date);
-}, [date, onExpireChange]);
+    if (!onExpireChange) return;
+    onExpireChange(date);
+  }, [date, onExpireChange]);
 
 
   return (
@@ -192,42 +213,68 @@ export default function FileUpload({
       {files.length > 0 && (
         <>
           <div className="space-y-2">
-            {files.map((file) => (
-              <div
-                className="flex items-center justify-between gap-2 rounded-lg border bg-background p-2 pe-3"
-                key={file.id}
-              >
-                <div className="flex items-center gap-3 overflow-hidden">
-                  <div className="flex aspect-square size-10 shrink-0 items-center justify-center rounded border">
-                    {getFileIcon(file)}
-                  </div>
-                  <div className="flex min-w-0 flex-col gap-0.5">
-                    <p className="truncate font-medium text-[13px]">
-                      {file.file instanceof File
-                        ? file.file.name
-                        : file.file.name}
-                    </p>
-                    <p className="text-muted-foreground text-xs">
-                      {formatBytes(
-                        file.file instanceof File
-                          ? file.file.size
-                          : file.file.size,
-                      )}
-                    </p>
-                  </div>
-                </div>
-
-                <Button
-                  aria-label="Remove file"
-                  className="-me-2 size-8 text-muted-foreground/80 hover:bg-transparent hover:text-foreground"
-                  onClick={() => removeFile(file.id)}
-                  size="icon"
-                  variant="ghost"
+            {files.map((file) => {
+              const selected = fileCategories[file.id] || categoryOptions[0];
+              return (
+                <div
+                  className="flex items-center justify-between gap-2 rounded-lg border bg-background p-2 pe-3"
+                  key={file.id}
                 >
-                  <XIcon aria-hidden="true" className="size-4" />
-                </Button>
-              </div>
-            ))}
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <div className="flex aspect-square size-10 shrink-0 items-center justify-center rounded border">
+                      {getFileIcon(file)}
+                    </div>
+                    <div className="flex min-w-0 flex-col gap-0.5">
+                      <p className="truncate font-medium text-[13px]">
+                        {file.file instanceof File
+                          ? file.file.name
+                          : file.file.name}
+                      </p>
+                      <p className="text-muted-foreground text-xs">
+                        {formatBytes(
+                          file.file instanceof File
+                            ? file.file.size
+                            : file.file.size,
+                        )}
+                      </p>
+                    </div>
+                    {perFile && (
+                      <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="ml-2">{selected.label} <ChevronDownIcon className="size-4 ms-auto" /></Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        {categoryOptions.map((option) => (
+                          <DropdownMenuItem
+                            className="cursor-pointer pr-8"
+                            key={option.value}
+                            onClick={() =>
+                              setFileCategories((prev) => ({
+                                ...prev,
+                                [file.id]: option,
+                              }))
+                            }
+                          >
+                            {option.label}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    )}
+                  </div>
+
+                  <Button
+                    aria-label="Remove file"
+                    className="-me-2 size-8 text-muted-foreground/80 hover:bg-transparent hover:text-foreground"
+                    onClick={() => removeFile(file.id)}
+                    size="icon"
+                    variant="ghost"
+                  >
+                    <XIcon aria-hidden="true" className="size-4" />
+                  </Button>
+                </div>
+              )
+            })}
 
             {files.length > 1 && (
               <div>

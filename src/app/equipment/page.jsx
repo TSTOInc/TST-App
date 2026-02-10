@@ -2,7 +2,7 @@ import InfoGrid from "@/components/data/info-grid";
 
 const equipmentSchema = {
   title: "equipment_number",
-  description: ["equipment_type"],
+  description: ["equipment_length", "ft ", "equipment_type"],
   image: "image_url",
   status: "status",
 };

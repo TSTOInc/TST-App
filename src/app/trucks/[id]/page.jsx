@@ -52,6 +52,8 @@ import InfoCard from '@/components/data/info-card';
 import { useQuery, useMutation } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { useOrganization } from '@clerk/nextjs';
+import { DialogDemo } from '@/components/data/upload/upload-doc';
+import { DocumentCard } from '@/components/documents/document-card';
 
 
 const addOrdinalSuffix = (day) => {
@@ -281,196 +283,29 @@ const RepairsCard = ({ truck, repairsIntervalDays = 90 }) => {
     );
 };
 
-const DocumentsCard = ({ truck }) => {
-    const documents = truck?.docs ?? [];
-    const [selectedDoc, setSelectedDoc] = useState(null);
-    const [selectedFile, setSelectedFile] = useState(null);
-    const [uploading, setUploading] = useState(false);
-    const [addDialogOpen, setAddDialogOpen] = useState(false);
-    const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
+const DocumentsCard = ({ truck, documents }) => {
 
-    const handleUpload = async () => {
-        if (!selectedFile) {
-            toast.error("Please select a document first!");
-            return;
-        }
-
-        setUploading(true);
-        try {
-            const formData = new FormData();
-            formData.append("file", selectedFile);
-
-            const uploadRes = await fetch(
-                `api/upload/image/trucks/${truck.id}/docs`,
-                { method: "POST", body: formData }
-            );
-            if (!uploadRes.ok) throw new Error("Upload failed");
-            const { url: documentUrl } = await uploadRes.json();
-
-            const addRes = await fetch(
-                `api/add/trucks/${truck.id}/docs`,
-                { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ document_url: documentUrl }) }
-            );
-            if (!addRes.ok) throw new Error("Failed to save document to DB");
-
-            // ✅ Refresh documents immediately
-            //setTruckData(prev => ({ ...prev, docs: [...(prev.docs ?? []), documentUrl] }));
-
-            toast.success("Document uploaded and added successfully!");
-            setSelectedFile(null);
-            setAddDialogOpen(false);
-        } catch (error) {
-            toast.error(error.message || "Failed to upload document");
-        } finally {
-            setUploading(false);
-        }
-    };
-
-    const handleDelete = async (documentUrl, truckId) => {
-        try {
-            await toast.promise(
-                fetch(`/api/delete/trucks/${truckId}/docs`, {
-                    method: "DELETE",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ document_url: documentUrl }),
-                }).then(async (res) => {
-                    if (!res.ok) throw new Error("Failed to delete document");
-
-                    // Update local state
-                    setTruckData((prev) => ({
-                        ...prev,
-                        docs: prev.docs.filter((doc) => doc !== documentUrl),
-                    }));
-                }),
-                {
-                    loading: "Deleting document...",
-                    success: "Document deleted successfully!",
-                    error: (err) => err.message || "Failed to delete document",
-                }
-            );
-        } catch (error) {
-            console.error(error);
-        }
-    };
-
+    const documentsToShow = documents?.filter((file) => file.category === "MISC") || [];
 
 
     return (
         <Card className="gap-4">
             <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Truck Documents</CardTitle>
-                <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button variant="default">
-                            <IconPlus /> Add Document
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Add Document</DialogTitle>
-                        </DialogHeader>
-                        <div className="mt-4">
-                            <DocUpload onChange={(file) => setSelectedFile(file)} disabled={uploading} />
-                        </div>
-                        <div className="flex justify-end mt-4">
-                            <Button onClick={handleUpload} disabled={uploading || !selectedFile}>
-                                {uploading ? <><IconLoader2 className='animate-spin' />Uploading Document...</> : <><IconUpload /> Upload Document</>}
-                            </Button>
-                        </div>
-                    </DialogContent>
-                </Dialog>
+                <DialogDemo title="Add Document" multiple={true} category="MISC" entityType="trucks" entityId={truck._id} expires={false} />
             </CardHeader>
 
-            <CardContent className="w-full grid gap-4 grid-cols-1 sm:grid-cols-3 md:grid-cols-5 px-4">
-                {documents.length === 0 ? (
+            <CardContent className="w-full grid gap-4 grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 px-4">
+                {documentsToShow.length === 0 ? (
                     <p className="pt-2 pl-2 text-neutral-500 italic">
                         No documents found for {truck.truck_number}
                     </p>
                 ) : (
-                    documents.map((doc, idx) => (
-                        <Card
-                            key={doc.id || idx}
-                            className="cursor-pointer"
-                            onClick={() => setSelectedDoc(doc)}
-                        >
-                            <CardContent className="space-y-2 flex justify-center">
-                                <PDFPreview
-                                    fileUrl={doc}
-                                    style={{
-                                        border: "none",
-                                        pointerEvents: "none",
-                                        userSelect: "none",
-                                        display: "block",
-                                    }}
-                                />
-                            </CardContent>
-
-                            <CardHeader className="flex flex-row items-center justify-between">
-                                <CardTitle>
-                                    {doc ? decodeURIComponent(doc.split("/").pop()) : "Unnamed Document"}
-                                </CardTitle>
-
-                                <AlertDialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
-                                    <AlertDialogTrigger asChild>
-                                        <Button
-                                            variant="destructive"
-                                            onClick={(e) => e.stopPropagation()} // only if you need to prevent parent clicks
-                                        >
-                                            <IconTrash />
-                                        </Button>
-                                    </AlertDialogTrigger>
-
-                                    <AlertDialogContent
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Are you sure you want to delete{" "}
-                                                <strong>
-                                                    {doc
-                                                        ? decodeURIComponent(doc.split("/").pop())
-                                                        : "Unnamed Document"}
-                                                </strong>
-                                                ? This action cannot be undone.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
-                                                Cancel
-                                            </AlertDialogCancel>
-                                            <AlertDialogAction
-                                                className="bg-destructive text-white hover:bg-destructive/90"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDelete(doc, truck.id);
-                                                }}
-                                            >
-                                                <IconTrash className="mr-2 h-4 w-4" />
-                                                Delete
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-
-                                </AlertDialog>
-                            </CardHeader>
-                        </Card>
-
+                    documentsToShow.map((doc, idx) => (
+                        <DocumentCard key={doc.id || idx} file={doc} />
                     ))
                 )}
             </CardContent>
-
-
-            {/* Fullscreen PDF modal */}
-            <Dialog open={!!selectedDoc} onOpenChange={(open) => !open && setSelectedDoc(null)}>
-                <DialogContent fullscreen>
-                    <DialogHeader>
-                        <DialogTitle><span>{""}</span></DialogTitle>
-                    </DialogHeader>
-                    {selectedDoc && <embed src={selectedDoc} type="application/pdf" width="100%" height="100%" />}
-                </DialogContent>
-            </Dialog>
         </Card>
     )
 };
@@ -482,6 +317,9 @@ export default function TablePage({ params }) {
     const { organization } = useOrganization();
     const orgId = organization ? organization.id : "";
     const data = useQuery(api.trucks.byId, { id, orgId: orgId });
+    const documents = useQuery(api.files.byId, { entityId: id, entityType: "trucks", orgId: orgId }) || [];
+    const Registration = documents.find((doc) => doc.category === "REGISTRATION");
+    const IDCard = documents.find((doc) => doc.category === "ID_CARD");
 
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -520,7 +358,47 @@ export default function TablePage({ params }) {
                     </TabsContent>
                     <TabsContent value="inspections"><InspectionsCard truck={data} /></TabsContent>
                     <TabsContent value="repairs"><RepairsCard truck={data} /></TabsContent>
-                    <TabsContent value="documents"><DocumentsCard truck={data} /></TabsContent>
+                    <TabsContent value="documents" className="space-y-4">
+                        <div className="gap-4 grid grid-cols-1 md:grid-cols-2">
+                            <Card>
+                                <CardHeader className="flex flex-row items-center justify-between">
+                                    <CardTitle>Truck Registration</CardTitle>
+                                    {!Registration && (
+                                        <DialogDemo title="Add Registration" category="REGISTRATION" entityType="trucks" entityId={data._id} expires={true} />
+                                    )}
+                                </CardHeader>
+
+                                <CardContent>
+                                    {!Registration ? (
+                                        <p className="pt-2 pl-2 text-neutral-500 italic">
+                                            No Registration found for {data.truck_number}
+                                        </p>
+                                    ) : (
+                                        <DocumentCard file={Registration} />
+                                    )}
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardHeader className="flex flex-row items-center justify-between">
+                                    <CardTitle>Truck ID Card</CardTitle>
+                                    {!IDCard && (
+                                        <DialogDemo title="Add ID Card" category="ID_CARD" entityType="trucks" entityId={data._id} expires={true} />
+                                    )}
+                                </CardHeader>
+
+                                <CardContent>
+                                    {!IDCard ? (
+                                        <p className="pt-2 pl-2 text-neutral-500 italic">
+                                            No ID Card found for {data.truck_number}
+                                        </p>
+                                    ) : (
+                                        <DocumentCard file={IDCard} />
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </div>
+                        <DocumentsCard truck={data} documents={documents} />
+                    </TabsContent>
                 </Tabs>
             </div>
         </div>

@@ -10,6 +10,7 @@
 
 import type * as brokers from "../brokers.js";
 import type * as chats from "../chats.js";
+import type * as cleanup from "../cleanup.js";
 import type * as delete_ from "../delete.js";
 import type * as encryption from "../encryption.js";
 import type * as equipment from "../equipment.js";
@@ -34,6 +35,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   brokers: typeof brokers;
   chats: typeof chats;
+  cleanup: typeof cleanup;
   delete: typeof delete_;
   encryption: typeof encryption;
   equipment: typeof equipment;

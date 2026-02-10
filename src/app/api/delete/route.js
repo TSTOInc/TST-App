@@ -24,7 +24,7 @@ export async function POST(req) {
     const expiresAt =
         typeof expiresAtRaw === "string"
             ? new Date(expiresAtRaw).getTime()
-            : undefined;
+            : null;
 
     if (!file) {
         return NextResponse.json({ error: "No file provided" }, { status: 400 });
@@ -35,9 +35,25 @@ export async function POST(req) {
         return NextResponse.json({ error: "File too large" }, { status: 400 });
     }
 
-    // Create record in Convex
-    const fileId = await convex.mutation(api.files.createUpload, {
+    const pathname = `${category}/${crypto.randomUUID()}-${file.name}`;
+
+    // 🚀 Upload to Supabase Blob Storage
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+    const { data, error } = await supabase.storage
+        .from('TST')
+        .upload(pathname, file, {
+            cacheControl: '3600',
+            upsert: false
+        })
+    if (error) {
+        console.error("Supabase upload error:", error);
+        return NextResponse.json({ error: "Failed to upload file" }, { status: 500 });
+    }
+
+    // Save record in Convex
+    const fileId = await convex.mutation(api.files.create, {
         file: {
+            storageKey: data.path,
             filename: file.name,
             mimeType: file.type,
             size: file.size,
@@ -49,35 +65,8 @@ export async function POST(req) {
         },
     });
 
-    const pathname = `${category}/${crypto.randomUUID()}-${file.name}`;
-
-    try {
-        // 🚀 Upload to Supabase Blob Storage
-        const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
-        const { data, error } = await supabase.storage
-            .from('TST')
-            .upload(pathname, file, {
-                cacheControl: '3600',
-                upsert: false
-            })
-        if (error) {
-            throw error;
-        }
-
-        // Update Convex record with storage key and finalize
-        await convex.mutation(api.files.finalizeUpload, {
-            id: fileId,
-            storageKey: data.path,
-        });
-
-        return NextResponse.json({
-            id: fileId,
-            storageKey: data.path,
-        });
-
-    } catch (err) {
-        await convex.mutation(api.files.failedUpload, { id: fileId }); // cleanup Convex record on failure
-        await supabase.storage.from('TST').remove([pathname]);
-        throw err; 
-    }
+    return NextResponse.json({
+        id: fileId,
+        storageKey: data.path,
+    });
 }

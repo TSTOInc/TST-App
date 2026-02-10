@@ -14,6 +14,8 @@ import TruckRouteMap from "@/components/custom/TruckRouteMap"
 import InfoCard from '@/components/data/info-card'
 import LoadProgressCard from '@/components/layout/LoadProgressCard'
 import { IconFileDollar, IconUsersGroup } from "@tabler/icons-react";
+import { DialogDemo } from "@/components/data/upload/upload-doc";
+import { DocumentCard } from "@/components/documents/document-card";
 
 // ---------------------- HELPERS ----------------------
 const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -126,13 +128,55 @@ const RateCard = ({ rate, feePercent, invoicedAt, paymentTerms, paid_at }) => {
   );
 };
 
+const DocumentsCard = ({ load, files, orgId }) => {
+  const filteredFiles = files?.filter((file) => file.category !== "CDL") || [];
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Load Documents</CardTitle>
+        <DialogDemo title="Add Document" categories={
+          [
+            { value: "RATE_CONFIRMATION", label: "Rate Confirmation" },
+            { value: "BOL", label: "Bill of Lading" },
+            { value: "POD", label: "Proof of Delivery" },
+            { value: "INNOUT_TICKET", label: "In/Out Ticket" },
+            { value: "LUMPER", label: "Lumper Ticket" },
+            { value: "SCALE_TICKET", label: "Scale Ticket" },
+            { value: "TRAILER_INTERCHANGE", label: "Trailer Interchange" },
+            { value: "MISC", label: "Other" },
+          ]
+        } multiple={true} perFile={true} category="MISC" entityType="loads" entityId={load._id} expires={false} />
+
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {!filteredFiles.length ? (
+          <p className="text-neutral-500 italic">
+            No documents found for load <span className="font-bold">{load.load_number}</span> Invoice <span className="font-bold">{load.invoice_number}</span>. Click "Add Document" to upload files related to this load.
+          </p>
+        ) : (
+          <div className="w-full grid gap-4 grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 px-4">
+            {filteredFiles.map((file) => {
+              return (
+                <DocumentCard
+                  key={file._id}
+                  file={file}
+                />
+              )
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
 // ---------------------- MAIN PAGE ----------------------
 export default function HomePage({ params }) {
   const { id } = React.use(params);
   const { organization } = useOrganization();
   const orgId = organization?.id || "";
   const data = useQuery(api.loads.byId, { id, orgId });
-  console.log(data)
+  const files = useQuery(api.files.byId, { entityType: "loads", entityId: id, orgId: orgId }) || [];
 
   const sortedStops = useMemo(() => {
     if (!data?.stops) return [];
@@ -267,7 +311,7 @@ export default function HomePage({ params }) {
               </CardHeader>
               <CardContent>
                 {stopsWithCoords.length > 0 ? (
-                  <TruckRouteMap stops={stopsWithCoords} progress={(data.progress-1)/2} />
+                  <TruckRouteMap stops={stopsWithCoords} progress={(data.progress - 1) / 2} />
                 ) : (
                   <div className="aspect-video bg-muted rounded-lg flex flex-col items-center justify-center text-center space-y-2">
                     <MapPin className="h-12 w-12 text-muted-foreground" />
@@ -326,7 +370,7 @@ export default function HomePage({ params }) {
 
 
         <TabsContent value="documents" className="space-y-4">
-          Docs
+          <DocumentsCard load={data} files={files} orgId={orgId} />
         </TabsContent>
       </Tabs>
     </div>

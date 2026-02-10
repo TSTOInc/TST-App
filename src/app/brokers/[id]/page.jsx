@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { IconEye, IconLoader2, IconPlus, IconTrash } from '@tabler/icons-react'
+import { IconEye, IconLoader2, IconMapPin, IconPlus, IconTrash } from '@tabler/icons-react'
 import { toast } from "sonner"; // or "@/components/ui/sonner" if aliased
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -38,6 +38,10 @@ import { useQuery, useMutation } from "convex/react"
 import { api } from '@convex/_generated/api'
 import { useOrganization } from '@clerk/nextjs';
 import InfoCard from '@/components/data/info-card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { DialogDemo } from '@/components/data/upload/upload-doc'
+import { DocumentCard } from '@/components/documents/document-card'
+import { LoadCard } from '@/components/data/load/load-card'
 
 const AgentsCard = ({ broker, onAgentAdded }) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -180,13 +184,13 @@ const AgentsCard = ({ broker, onAgentAdded }) => {
   );
 };
 
-const LoadsCard = ({ broker }) => {
+const LoadsCard = ({ loads, broker }) => {
   const [showAll, setShowAll] = useState(false);
 
-  const loads = broker?.loads ?? [];
+  const t_loads = loads || [];
 
   // Limit to 3 unless showAll is true
-  const loadsToShow = showAll ? loads : loads.slice(0, 3);
+  const loadsToShow = showAll ? t_loads : t_loads.slice(0, 3);
   return (
     <Card>
       <CardHeader>
@@ -195,16 +199,11 @@ const LoadsCard = ({ broker }) => {
       <CardContent className="space-y-2">
         {loads.length === 0 ? (
           // No agents: show empty card content or a message if you want
-          <p className="text-neutral-500 italic">no agents found for {broker.name}</p>
+          <p className="text-neutral-500 italic">no loads found for {broker.name}</p>
         ) : (
           <>
-            {loadsToShow.map((agent, brokerIdx) => (
-              <Card className="py-2" key={agent.brokerId || brokerIdx}>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>{agent.name}</CardTitle>
-                  <Button variant="link">View</Button>
-                </CardHeader>
-              </Card>
+            {loadsToShow.map((load) => (
+              <LoadCard key={load._id} load={load} />
             ))}
 
             {!showAll && loads.length > 3 && (
@@ -437,7 +436,7 @@ const PaymentCard = ({ broker, orgId }) => {
   );
 };
 
-const NotesCard = ({ broker, updateNotes}) => {
+const NotesCard = ({ broker, updateNotes }) => {
   const [notes, setNotes] = useState("");
   const [originalNotes, setOriginalNotes] = useState("");
   const [loading, setLoading] = useState(false);
@@ -507,6 +506,41 @@ const NotesCard = ({ broker, updateNotes}) => {
   );
 };
 
+const DocumentsCard = ({ broker, files, orgId }) => {
+  const filteredFiles = files;
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Broker Documents</CardTitle>
+        <DialogDemo title="Add Document" multiple={true} perFile={true} categories={[
+          { value: "CARRIER_AGREEMENT", label: "Carrier Agreement" },
+          { value: "QUICKPAY_AGREEMENT", label: "Quickpay Agreement" },
+          { value: "MISC", label: "Other" },
+        ]} category="MISC" entityType="brokers" entityId={broker._id} expires={false} />
+
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {!filteredFiles.length ? (
+          <p className="text-neutral-500 italic">
+            No documents found for broker <span className="font-bold">{broker.name}</span>. Click "Add Document" to upload files related to this broker.
+          </p>
+        ) : (
+          <div className="w-full grid gap-4 grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 px-4">
+            {filteredFiles.map((file) => {
+              return (
+                <DocumentCard
+                  key={file._id}
+                  file={file}
+                />
+              )
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
 
 
 
@@ -517,6 +551,8 @@ export default function TablePage({ params }) {
   const { organization } = useOrganization();
   const orgId = organization ? organization.id : "";
   const data = useQuery(api.brokers.byId, { id: id, orgId: orgId });
+  const files = useQuery(api.files.byId, { entityId: id, entityType: "brokers", orgId: orgId }) || [];
+  const loads = useQuery(api.getTable.allWithIndex, { table: "loads", orgId: orgId, index: "by_brokerId", field: "broker_id", indexValue: id }) || [];
   const updateNotes = useMutation(api.brokers.updateNotes);
 
   if (!data || data.length === 0) return <ProfileHeader skeleton={true} />
@@ -524,26 +560,47 @@ export default function TablePage({ params }) {
   return (
     <div>
       <ProfileHeader data={data} table="brokers" image_url={data.image_url} name={data.name} description={"USDOT-" + data.usdot_number + " | " + data.docket_number} link={"/directory/" + data.usdot_number} status={data.status} />
-      <div className="p-4 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <InfoCard title="Broker Info" fields={
-            [
-              { label: "Address", value: data.address },
-              { label: "Email", value: data.email },
-              { label: "Phone", value: data.phone },
-              { label: "Website", type: "link", value: data.website },
-            ]
 
-          } />
-          <AgentsCard broker={data} />
-          <PaymentCard broker={data} orgId={orgId} />
-          <NotesCard broker={data} updateNotes={updateNotes} />
+      <div className='p-4'>
+        <Tabs defaultValue="info" className="w-full">
+          <TabsList className="w-full h-10">
+            <TabsTrigger value="info">Info</TabsTrigger>
+            <TabsTrigger value="agents">Documents</TabsTrigger>
+            <TabsTrigger value="loads">Loads</TabsTrigger>
+          </TabsList>
+          <TabsContent value="info" className="mt-2">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <InfoCard title="Broker Info" fields={
+                  [
+                    { label: "Address", value: data.address },
+                    { label: "Email", value: data.email },
+                    { label: "Phone", value: data.phone },
+                    { label: "Website", type: "link", value: data.website },
+                  ]
 
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-          <LoadsCard broker={data} />
-        </div>
+                } />
+                <AgentsCard broker={data} />
+                <PaymentCard broker={data} orgId={orgId} />
+                <NotesCard broker={data} updateNotes={updateNotes} />
+
+              </div>
+
+            </div>
+          </TabsContent>
+          <TabsContent value="agents" className="mt-2">
+            <DocumentsCard broker={data} files={files} orgId={orgId} />
+          </TabsContent>
+          <TabsContent value="loads" className="mt-2">
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+              <LoadsCard loads={loads} broker={data} />
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
+
+
+
 
 
     </div>

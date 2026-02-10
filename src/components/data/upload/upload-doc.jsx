@@ -16,7 +16,7 @@ import FileUpload from "@/components/file-upload";
 import { IconPlus } from "@tabler/icons-react";
 import { toast } from "sonner"
 
-export function DialogDemo({ title, maxFiles, maxSizeMB, entityType, entityId, category, expires = false, multiple = false, }) {
+export function DialogDemo({ title, maxFiles, maxSizeMB, entityType, entityId, category, expires = false, multiple = false, perFile = false, categories = [] }) {
     const [open, setOpen] = useState(false);
     const [files, setFiles] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -25,16 +25,20 @@ export function DialogDemo({ title, maxFiles, maxSizeMB, entityType, entityId, c
 
     async function handleUpload() {
         if (!files.length) return;
-
         setLoading(true);
 
         try {
             for (const file of files) {
                 const formData = new FormData();
-                formData.append("file", file);
-                formData.append("category", category);
+                formData.append("file", file.file);
                 formData.append("entityType", entityType);
                 formData.append("entityId", entityId);
+
+                if (perFile && file.category) {
+                    formData.append("category", file.category.value);
+                } else {
+                    formData.append("category", category);
+                }
 
                 if (expires && expiresAt) {
                     formData.append("expiresAt", expiresAt.toISOString());
@@ -51,7 +55,7 @@ export function DialogDemo({ title, maxFiles, maxSizeMB, entityType, entityId, c
                 }
             }
 
-            toast.success("Upload successful", { description: files.length > 1 ? `${files.length} files uploaded` : `${files[0].name} uploaded` });
+            toast.success("Upload successful");
             setFiles([]);
             setExpiresAt(null);
             setOpen(false); // ✅ close dialog only on success
@@ -85,6 +89,8 @@ export function DialogDemo({ title, maxFiles, maxSizeMB, entityType, entityId, c
                     maxSizeMB={maxSizeMB}
                     multiple={multiple}
                     expires={expires}
+                    perFile={perFile}
+                    categories={categories}
                     onFilesChange={setFiles}
                     onExpireChange={setExpiresAt}
                 />

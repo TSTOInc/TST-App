@@ -34,9 +34,8 @@ const statuses: ComboBoxOption[] = [
 
 const equipmentTypes: ComboBoxOption[] = [
   { value: "reefer", label: "Reefer" },
-  { value: "van", label: "Van" },
-  { value: "flatbed", label: "Flatbed" },
   { value: "dry_van", label: "Dry Van" },
+  { value: "flatbed", label: "Flatbed" },
   { value: "step_deck", label: "Step Deck" },
   { value: "double_drop", label: "Double Drop" },
   { value: "lowboy", label: "Lowboy" },
