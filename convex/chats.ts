@@ -187,8 +187,14 @@ export const byParticipantInOrg = query({
           (msg) => !msg.seenBy.includes(participantId)
         );
 
+        const participantRows = await ctx.db
+          .query("chatParticipants")
+          .withIndex("by_chatId", q => q.eq("chatId", chatId))
+          .collect();
+
         return {
           ...chat,
+          participants: participantRows.map(p => p.userId),
           unread: hasUnread,
         };
       })

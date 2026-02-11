@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Plus } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 
 export function NavMain({
   items,
@@ -25,6 +26,7 @@ export function NavMain({
     title: string
     url: string
     icon?: Icon
+    badge?: string
     isActive?: boolean
     items?: {
       title: string
@@ -94,6 +96,7 @@ export function NavMain({
                   <Link href={item.url}>
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>
+                    {item.badge && <Badge className="ml-2 text-xs">{item.badge}</Badge>}
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

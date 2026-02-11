@@ -102,16 +102,16 @@ export default function ChatsLayout({ children }: ChatsLayoutProps) {
   )
 
   const handleChat = async (otherUserId: Id<"users">) => {
-  if (!currentUserId || !orgId) return;
+    if (!currentUserId || !orgId) return;
 
-  const newChatId = await createChat({
-    type: "direct",
-    participants: [currentUserId, otherUserId],
-    orgId,
-  });
+    const newChatId = await createChat({
+      type: "direct",
+      participants: [currentUserId, otherUserId],
+      orgId,
+    });
 
-  router.push(`/chats/${newChatId}`);
-};
+    router.push(`/chats/${newChatId}`);
+  };
 
 
   return (
@@ -127,7 +127,7 @@ export default function ChatsLayout({ children }: ChatsLayoutProps) {
             <Button
               variant="outline"
               onClick={() =>
-                router.push("/account/organization/organization-members")
+                router.push("/organization/organization-members")
               }
             >
               Invite Users
@@ -135,9 +135,12 @@ export default function ChatsLayout({ children }: ChatsLayoutProps) {
           </div>
         ) : (
           users.map((u: any) => {
-            const existingChat = chatsQuery.find((chat: any) =>
-              chat.participants.includes(u._id)
+            const existingChat = chatsQuery.find(
+              (chat: any) =>
+                chat.type === "direct" &&
+                chat.participants.includes(u._id)
             )
+
 
             const handleClick = () =>
               existingChat

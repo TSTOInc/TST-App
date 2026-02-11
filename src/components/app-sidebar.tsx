@@ -89,6 +89,7 @@ const data = {
       title: "Chats",
       url: "/chats",
       icon: IconMessageCircle,
+      badge: "Alpha"
     },
     
   ],
