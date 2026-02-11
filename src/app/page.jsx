@@ -10,12 +10,12 @@ import { ChartAreaInteractive } from "@/components/chart-area-interactive";
 
 function getPeriodStats(loads, brokers, start, end) {
   const payedPeriodLoads = loads.filter((load) => {
-    const invoicedAt = load.invoiced_at ? new Date(load.invoiced_at) : null;
+    const invoicedAt = load.paid_at ? new Date(load.paid_at) : null;
     return invoicedAt && invoicedAt >= start && invoicedAt < end && load.paid_at;
   });
 
   const periodLoads = loads.filter((load) => {
-    const createdAt = load.created_at ? new Date(load.created_at) : null;
+    const createdAt = load._creationTime ? new Date(load._creationTime) : null;
     return createdAt && createdAt >= start && createdAt < end;
   });
 
@@ -25,7 +25,7 @@ function getPeriodStats(loads, brokers, start, end) {
   );
 
   const periodBrokers = brokers.filter((broker) => {
-    const createdAt = broker.created_at ? new Date(broker.created_at) : null;
+    const createdAt = broker._creationTime ? new Date(broker._creationTime) : null;
     return createdAt && createdAt >= start && createdAt < end;
   });
 
@@ -102,8 +102,9 @@ const Home = () => {
 
     // 🚚 Loads by created_at
     for (const load of loads) {
-      if (load.created_at) {
-        const key = new Date(load.created_at).toISOString().split("T")[0];
+      console.log(load)
+      if (load._creationTime) {
+        const key = new Date(load._creationTime).toISOString().split("T")[0];
         if (dailyLoadsMap[key] !== undefined) {
           dailyLoadsMap[key] += 1;
         }

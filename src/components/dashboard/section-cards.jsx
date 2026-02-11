@@ -40,7 +40,7 @@ export function SectionCards({ stats }) {
   const milesTrend = getTrend(currentMiles, previousMiles);
 
   return (
-<div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+<div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-3">
       
       {/* Revenue */}
       <Card className="@container/card hover:border-primary transition-colors">
@@ -98,7 +98,7 @@ export function SectionCards({ stats }) {
       </Card>
 
       {/* Brokers */}
-      <Card className="@container/card hover:border-primary transition-colors">
+      <Card className="@container/card hover:border-primary transition-colors @xl/main:col-span-2 @5xl/main:col-span-1">
         <CardHeader>
           <CardDescription>New Brokers</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
@@ -117,31 +117,6 @@ export function SectionCards({ stats }) {
             {brokersTrend.trend === "up"
               ? "More brokers onboarded"
               : "Fewer brokers onboarded"}
-          </div>
-          <div className="text-muted-foreground">
-            Compared to  previous 30 days
-          </div>
-        </CardFooter>
-      </Card>
-      <Card className="@container/card hover:border-primary transition-colors">
-        <CardHeader>
-          <CardDescription>Miles Moved</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {stats.last30Days.brokers}
-          </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              {milesTrend.trend === "up" ? <IconTrendingUp /> : <IconTrendingDown />}
-              {milesTrend.trend === "up" ? "+" : "-"}
-              {milesTrend.percent}%
-            </Badge>
-          </CardAction>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            {milesTrend.trend === "up"
-              ? "More miles driven"
-              : "Fewer miles driven"}
           </div>
           <div className="text-muted-foreground">
             Compared to  previous 30 days
