@@ -5,39 +5,63 @@ import { decrypt } from "./encryption";
 
 // Create a new task with the given text
 export const create = mutation({
-  args: { participants: v.array(v.string()), type: v.string(), orgId: v.string() },
-  handler: async (ctx, args) => {
-
+  args: {
+    participants: v.array(v.id("users")),
+    type: v.string(),
+    orgId: v.id("organizations"),
+  },
+  handler: async (ctx, { participants, type, orgId }) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
+    const chatId = await ctx.db.insert("chats", {
+      type,
+      org_id: orgId,
+    });
 
-    const newChatId = await ctx.db.insert("chats", { type: args.type, participantsIds: args.participants as Id<"users">[], org_id: args.orgId });
-    return newChatId;
+    for (const userId of participants) {
+      await ctx.db.insert("chatParticipants", {
+        chatId,
+        userId,
+      });
+    }
+
+    return chatId;
   },
 });
 
 
 
 
+
+
 export const get = query({
-  args: { id: v.string() },
-  handler: async (ctx, args) => {
+  args: { id: v.id("chats") },
+  handler: async (ctx, { id }) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
-    const chatDocId = ctx.db.normalizeId("chats", args.id);
-    if (!chatDocId) return null;
-
-    const chat = await ctx.db.get(chatDocId);
+    const chat = await ctx.db.get(id);
     if (!chat) return null;
 
+    // 1️⃣ Get participants from join table
+    const participantRows = await ctx.db
+      .query("chatParticipants")
+      .withIndex("by_chatId", (q) =>
+        q.eq("chatId", id)
+      )
+      .collect();
+
+    // 2️⃣ Fetch user info
     const participants = await Promise.all(
-      chat.participantsIds.map(async (participantId: Id<"users">) => {
-        const info = await getParticipantInfo(ctx, participantId);
+      participantRows.map(async (row) => {
+        const user = await ctx.db.get(row.userId);
         return {
-          participant_id: participantId,
-          ...info, // spreads firstName, lastName, username
+          participant_id: row.userId,
+          first_name: user?.first_name ?? null,
+          last_name: user?.last_name ?? null,
+          username: user?.username ?? null,
+          image_url: user?.image_url ?? null,
         };
       })
     );
@@ -45,6 +69,8 @@ export const get = query({
     return {
       _creationTime: chat._creationTime,
       _id: chat._id,
+      type: chat.type,
+      org_id: chat.org_id,
       participants,
     };
   },
@@ -54,59 +80,123 @@ export const get = query({
 
 
 
-export const byParticipant = query({
-  args: { participantId: v.string() },
-  handler: async (ctx, args) => {
 
+
+export const byParticipant = query({
+  args: {
+    participantId: v.id("users"),
+    orgId: v.id("organizations"),
+  },
+  handler: async (ctx, { participantId, orgId }) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
-    // Get all chats
-    const allChats = await ctx.db.query("chats").collect()
+    // 1️⃣ Get chatParticipant rows for this user
+    const memberships = await ctx.db
+      .query("chatParticipants")
+      .withIndex("by_userId", (q) =>
+        q.eq("userId", participantId)
+      )
+      .collect();
 
-    // Filter chats where the participant is included
-    const userChats = allChats.filter((chat) =>
-      chat.participantsIds.includes(args.participantId as Id<"users">)
-    )
+    if (memberships.length === 0) return [];
 
-    // Map each chat to include participant objects with names
-    const chatsWithParticipants = await Promise.all(
-      userChats.map(async (chat) => {
-        let lastMessage = null;
-        if (chat.lastMessageId) {
-          const lastMessageDocId = ctx.db.normalizeId("messages", chat.lastMessageId);
-          if (!lastMessageDocId) throw new Error("Invalid document ID");
-          lastMessage = await ctx.db.get(lastMessageDocId);
-        }
-        if (lastMessage) {
-          lastMessage = {
-            ...lastMessage,
-            text: lastMessage.text,
-          };
-        }
-        const participants = await Promise.all(
-          chat.participantsIds.map(async (id: Id<"users">) => {
-            const user = await ctx.db.get(id)
-            return {
-              id,
-              name: user?.first_name ?? "Unknown",
-              image_url: user?.image_url
-            }
-          })
-        )
+    // 2️⃣ Get chats
+    const chats = await Promise.all(
+      memberships.map((m) => ctx.db.get(m.chatId))
+    );
+
+    // 3️⃣ Filter by org
+    const orgChats = chats.filter(
+      (chat) => chat && chat.org_id === orgId
+    );
+
+    return orgChats;
+  },
+});
+
+
+
+export const findDirectChat = query({
+  args: {
+    userA: v.id("users"),
+    userB: v.id("users"),
+    orgId: v.id("organizations"),
+  },
+  handler: async (ctx, { userA, userB, orgId }) => {
+    const userAChats = await ctx.db
+      .query("chatParticipants")
+      .withIndex("by_userId", q => q.eq("userId", userA))
+      .collect();
+
+    for (const membership of userAChats) {
+      const chat = await ctx.db.get(membership.chatId);
+      if (!chat || chat.org_id !== orgId) continue;
+
+      const otherParticipants = await ctx.db
+        .query("chatParticipants")
+        .withIndex("by_chatId", q => q.eq("chatId", chat._id))
+        .collect();
+
+      const hasUserB = otherParticipants.some(p => p.userId === userB);
+
+      if (hasUserB && chat.type === "direct") {
+        return chat;
+      }
+    }
+
+    return null;
+  },
+});
+
+
+export const byParticipantInOrg = query({
+  args: {
+    participantId: v.id("users"),
+    orgId: v.id("organizations"),
+  },
+  handler: async (ctx, { participantId, orgId }) => {
+    const memberships = await ctx.db
+      .query("chatParticipants")
+      .withIndex("by_userId", (q) =>
+        q.eq("userId", participantId)
+      )
+      .collect();
+
+    const chatIds = memberships.map((m) => m.chatId);
+
+    if (chatIds.length === 0) return [];
+
+    const chats = await Promise.all(
+      chatIds.map(async (chatId) => {
+        const chat = await ctx.db.get(chatId);
+        if (!chat || chat.org_id !== orgId) return null;
+
+        // 🔥 Check if there are unread messages
+        const unreadMessages = await ctx.db
+          .query("messages")
+          .filter((q) =>
+            q.and(
+              q.eq(q.field("chatId"), chatId),
+              q.neq(q.field("senderId"), participantId)
+            )
+          )
+          .collect();
+
+        const hasUnread = unreadMessages.some(
+          (msg) => !msg.seenBy.includes(participantId)
+        );
 
         return {
           ...chat,
-          participants,
-          lastMessage,
-        }
+          unread: hasUnread,
+        };
       })
-    )
+    );
 
-    return chatsWithParticipants
+    return chats.filter(Boolean);
   },
-})
-
+});
 
 
 async function getParticipantInfo(

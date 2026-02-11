@@ -18,7 +18,7 @@ export default defineSchema({
     user_id: v.id("users"),
     org_id: v.id("organizations"),
     role: v.string(),
-  }).index("by_userId", ["user_id"]).index("by_orgId", ["org_id"]),
+  }).index("by_user_org", ["user_id", "org_id"]).index("by_userId", ["user_id"]).index("by_orgId", ["org_id"]),
 
 
   organizations: defineTable({
@@ -41,20 +41,20 @@ export default defineSchema({
 
 
   brokers: defineTable({
-      created_by: v.optional(v.id("users")),
-      org_id: v.string(),
-      address: v.string(),
-      address_2: v.union(v.null(), v.string()),
-      docket_number: v.string(),
-      email: v.union(v.null(), v.string()),
-      image_url: v.union(v.null(), v.string()),
-      name: v.string(),
-      notes: v.union(v.null(), v.string()),
-      phone: v.union(v.null(), v.string()),
-      status: v.string(),
-      usdot_number: v.string(),
-      website: v.union(v.null(), v.string()),
-    }).index("by_orgId", ["org_id"]),
+    created_by: v.optional(v.id("users")),
+    org_id: v.string(),
+    address: v.string(),
+    address_2: v.union(v.null(), v.string()),
+    docket_number: v.string(),
+    email: v.union(v.null(), v.string()),
+    image_url: v.union(v.null(), v.string()),
+    name: v.string(),
+    notes: v.union(v.null(), v.string()),
+    phone: v.union(v.null(), v.string()),
+    status: v.string(),
+    usdot_number: v.string(),
+    website: v.union(v.null(), v.string()),
+  }).index("by_orgId", ["org_id"]),
 
   brokers_agents: defineTable({
     created_by: v.optional(v.id("users")),
@@ -68,10 +68,18 @@ export default defineSchema({
 
   chats: defineTable({
     lastMessageId: v.optional(v.id("messages")),
-    participantsIds: v.array(v.id("users")),
     type: v.string(),
-    org_id: v.string(),
+    org_id: v.id("organizations"),
   }).index("by_orgId", ["org_id"]),
+
+  chatParticipants: defineTable({
+    chatId: v.id("chats"),
+    userId: v.id("users"),
+  }).index("by_userId", ["userId"])
+    .index("by_chatId", ["chatId"])
+    .index("by_user_chat", ["userId", "chatId"]),
+
+
 
   drivers: defineTable({
     created_by: v.optional(v.id("users")),

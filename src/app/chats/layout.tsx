@@ -1,11 +1,10 @@
 'use client'
 
 import React from 'react'
-import Link from 'next/link'
 import { useQuery, useMutation } from "convex/react"
 import { useRouter } from "next/navigation"
 import { api } from '@convex/_generated/api'
-import { useUser, useOrganization } from '@clerk/nextjs'
+import { useUser } from '@clerk/nextjs'
 import {
   Avatar,
   AvatarFallback,
@@ -15,7 +14,6 @@ import {
   Item,
   ItemActions,
   ItemContent,
-  ItemDescription,
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
@@ -48,46 +46,47 @@ function timeAgo(dateString: string | number | Date) {
   return "Just now"
 }
 
-export default function ChatsLayout({ selectedChatId, children }: ChatsLayoutProps) {
+export default function ChatsLayout({ children }: ChatsLayoutProps) {
   const router = useRouter()
   const { user } = useUser()
-  const { organization } = useOrganization();
-  const orgId = organization?.id || "";
-  const currentUserId = user?.id
 
-  // Queries
-  const currentUserQuery = useQuery(api.users.getUser, {
-    clerkId: currentUserId || "",
-  })
-  console.log("orgId", orgId)
-  const usersQuery = useQuery(api.users.getAll, { orgId: orgId } )
-  const currentUserIdFromDB = currentUserQuery?._id
-  const chatsQuery = useQuery(api.chats.byParticipant, {
-    participantId: currentUserIdFromDB || "",
-  })
+  const organization = useQuery(api.organizations.getCurrentOrganization)
+  const orgId = organization?._id
+  const clerkId = user?.id
+
+  const currentUser = useQuery(
+    api.users.getUserByClerkId,
+    clerkId ? { clerkId } : "skip"
+  )
+
+  const currentUserId = currentUser?._id
+
+  const usersQuery = useQuery(
+    api.users.getAllByOrganization,
+    orgId ? { orgId } : "skip"
+  )
+
+  const chatsQuery = useQuery(
+    api.chats.byParticipantInOrg, // <-- safer query
+    currentUserId && orgId
+      ? { participantId: currentUserId, orgId }
+      : "skip"
+  )
+
   const createChat = useMutation(api.chats.create)
 
-  // Loading skeletons
-  if (!currentUserQuery || !usersQuery || !chatsQuery) {
+  if (!currentUser || !usersQuery || !chatsQuery) {
     return (
       <div className="flex h-full">
         <div className="w-1/4 border-r overflow-y-auto">
           <h2 className="text-2xl font-bold p-4">Messages</h2>
           {Array.from({ length: 8 }).map((_, i) => (
-            <Item
-              key={i}
-              variant="outline"
-              className="w-full px-4 py-3 cursor-pointer hover:bg-muted/20 transition rounded-none border-none justify-center"
-            >
+            <Item key={i} variant="outline" className="w-full px-4 py-3 border-none">
               <ItemMedia>
                 <Skeleton className="h-12 w-12 rounded-full" />
               </ItemMedia>
               <ItemContent className="hidden md:block">
                 <Skeleton className="h-4 w-28 mb-2 rounded" />
-                <div className="flex items-center gap-2">
-                  <Skeleton className="h-4 w-20 rounded" />
-                  <Skeleton className="h-4 w-16 rounded" />
-                </div>
               </ItemContent>
             </Item>
           ))}
@@ -97,42 +96,47 @@ export default function ChatsLayout({ selectedChatId, children }: ChatsLayoutPro
     )
   }
 
-  const currentUser = currentUserQuery
-  const users = usersQuery.filter((u: any) => u.clerk_id !== currentUserId)
+  // ✅ Filter out current user using DB id
+  const users = usersQuery.filter(
+    (u: any) => u._id !== currentUserId
+  )
 
-  const handleChat = async (otherUserId: string) => {
-    try {
-      const newChatId = await createChat({
-        type: "direct",
-        participants: [currentUser._id, otherUserId],
-        orgId: orgId
-      })
-      router.push(`/chats/${newChatId}`)
-    } catch (err) {
-      console.error("Error starting chat:", err)
-    }
-  }
+  const handleChat = async (otherUserId: Id<"users">) => {
+  if (!currentUserId || !orgId) return;
+
+  const newChatId = await createChat({
+    type: "direct",
+    participants: [currentUserId, otherUserId],
+    orgId,
+  });
+
+  router.push(`/chats/${newChatId}`);
+};
+
 
   return (
     <div className="flex h-full">
-      {/* Left panel: chat list */}
       <div className="w-1/4 border-r overflow-y-auto flex flex-col">
         <h2 className="text-2xl font-bold p-4">Messages</h2>
 
-        {/* ✅ Empty state */}
         {users.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <p className="text-muted-foreground mb-3">
-              There are no users you can chat with in this organization.
+              There are no users in this organization.
             </p>
-            <Button variant="outline" onClick={() => router.push("/account/organization/organization-members")}>
+            <Button
+              variant="outline"
+              onClick={() =>
+                router.push("/account/organization/organization-members")
+              }
+            >
               Invite Users
             </Button>
           </div>
         ) : (
           users.map((u: any) => {
             const existingChat = chatsQuery.find((chat: any) =>
-              chat.participants.some((p: any) => p.id === u._id)
+              chat.participants.includes(u._id)
             )
 
             const handleClick = () =>
@@ -144,7 +148,7 @@ export default function ChatsLayout({ selectedChatId, children }: ChatsLayoutPro
               <Item
                 key={u._id}
                 variant="outline"
-                className="w-full px-4 py-3 cursor-pointer hover:bg-muted/20 transition rounded-none border-none justify-center"
+                className="w-full px-4 py-3 border-none cursor-pointer"
                 onClick={handleClick}
               >
                 <ItemMedia>
@@ -158,52 +162,15 @@ export default function ChatsLayout({ selectedChatId, children }: ChatsLayoutPro
                 </ItemMedia>
 
                 <ItemContent className="hidden md:block">
-                  <ItemTitle
-                    className={`flex items-center gap-2 ${
-                      existingChat?.lastMessage &&
-                      existingChat.lastMessage.senderId !== currentUserIdFromDB &&
-                      !existingChat.lastMessage.seenBy.includes(currentUserIdFromDB as Id<"users">)
-                        ? "font-bold"
-                        : "font-normal"
-                    }`}
-                  >
+                  <ItemTitle>
                     {u.first_name} {u.last_name}
                   </ItemTitle>
-
-                  <div
-                    className={`${
-                      existingChat?.lastMessage &&
-                      existingChat.lastMessage.senderId !== currentUserIdFromDB &&
-                      !existingChat.lastMessage.seenBy.includes(currentUserIdFromDB as Id<"users">)
-                        ? "font-semibold text-foreground"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    {existingChat?.lastMessage ? (
-                      <div className="flex items-center justify-start gap-1">
-                        <span className="truncate max-w-[150px] sm:max-w-[200px]">
-                          {existingChat.lastMessage.senderId === currentUserIdFromDB
-                            ? "You: "
-                            : ""}
-                          {existingChat.lastMessage.text}
-                        </span>
-                        <span className="font-bold">·</span>
-                        <span className="flex-shrink-0 text-muted-foreground text-xs ml-1">
-                          {timeAgo(existingChat.lastMessage._creationTime)}
-                        </span>
-                      </div>
-                    ) : (
-                      "No messages yet"
-                    )}
-                  </div>
                 </ItemContent>
 
                 <ItemActions>
-                  {existingChat?.lastMessage &&
-                    existingChat.lastMessage.senderId !== currentUserIdFromDB &&
-                    !existingChat.lastMessage.seenBy.includes(currentUserIdFromDB as Id<"users">) && (
-                      <span className="w-2 h-2 bg-blue-500 rounded-full inline-block" />
-                    )}
+                  {existingChat?.unread && (
+                    <span className="w-2 h-2 bg-blue-500 rounded-full inline-block" />
+                  )}
                 </ItemActions>
               </Item>
             )
@@ -211,7 +178,6 @@ export default function ChatsLayout({ selectedChatId, children }: ChatsLayoutPro
         )}
       </div>
 
-      {/* Right panel: chat content */}
       <div className="flex-1 overflow-y-auto">{children}</div>
     </div>
   )

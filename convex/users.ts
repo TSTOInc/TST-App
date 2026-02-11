@@ -1,4 +1,4 @@
-import { action, internalMutation } from "./_generated/server";
+import { action, internalMutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { createClerkClient } from "@clerk/backend";
 import { internal } from "./_generated/api";
@@ -6,6 +6,56 @@ import { internal } from "./_generated/api";
 const clerkClient = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY!,
 });
+
+
+// 🔥 PUBLIC QUERY 
+export const getAllByOrganization = query({
+  args: {
+    orgId: v.id("organizations"),
+  },
+  handler: async (ctx, { orgId }) => {
+    // 1️⃣ Get memberships for org
+    const memberships = await ctx.db
+      .query("memberships")
+      .withIndex("by_orgId", (q) =>
+        q.eq("org_id", orgId)
+      )
+      .collect();
+
+    if (memberships.length === 0) return [];
+
+    // 2️⃣ Fetch users
+    const users = await Promise.all(
+      memberships.map((m) =>
+        ctx.db.get(m.user_id)
+      )
+    );
+
+    // 3️⃣ Remove nulls (safety)
+    return users.filter(Boolean);
+  },
+});
+
+
+// 🔥 PUBLIC QUERY
+export const getUserByClerkId = query({
+  args: { clerkId: v.string() },
+  handler: async (ctx, { clerkId }) => {
+    return await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) =>
+        q.eq("clerk_id", clerkId)
+      )
+      .unique();
+  },
+});
+
+
+
+
+
+
+
 
 //
 // 🔥 PUBLIC ACTION (Called from webhook)
@@ -133,26 +183,23 @@ export const syncMembershipsInternal = internalMutation({
       // 2️⃣ Upsert Membership
       const existingMembership = await ctx.db
         .query("memberships")
-        .withIndex("by_userId", (q) =>
-          q.eq("user_id", userId)
+        .withIndex("by_user_org", (q) =>
+          q.eq("user_id", userId).eq("org_id", org._id)
         )
-        .collect();
+        .unique();
 
-      const alreadyExists = existingMembership.find(
-        (m) => m.org_id === org!._id
-      );
-
-      if (!alreadyExists) {
+      if (!existingMembership) {
         await ctx.db.insert("memberships", {
           user_id: userId,
           org_id: org._id,
           role: membership.role,
         });
       } else {
-        await ctx.db.patch(alreadyExists._id, {
+        await ctx.db.patch(existingMembership._id, {
           role: membership.role,
         });
       }
+
     }
   },
 });
