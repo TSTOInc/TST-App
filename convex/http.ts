@@ -4,7 +4,11 @@ import { internal } from "./_generated/api";
 import type { WebhookEvent } from "@clerk/backend";
 import { Webhook } from "svix";
 import { api } from "./_generated/api";
+import { createClerkClient } from "@clerk/backend";
 
+const clerkClient = createClerkClient({
+  secretKey: process.env.CLERK_SECRET_KEY!,
+});
 function ensureEnv(name: string): string {
   const val = process.env[name];
   if (!val) throw new Error(`Missing environment variable: ${name}`);
@@ -17,38 +21,83 @@ const handleClerkWebhook = httpAction(async (ctx, req) => {
   const event = await validateRequest(req);
   if (!event) return new Response("Invalid webhook", { status: 400 });
 
-  switch (event.type) {
-    case "user.created":
-    case "user.updated":
-      // Update or create user
-      await ctx.runAction(api.users.updateOrCreateUserAction, {
-        clerkUser: event.data,
-      });
-      break;
+  console.log("📩 Clerk Event:", event.type);
 
-    case "user.deleted":
-      // Delete user
-      if (event.data.id) {
-        await ctx.runMutation(internal.users.deleteUser, {
-          clerkId: event.data.id,
+  try {
+    switch (event.type) {
+      // 👤 USER EVENTS
+      case "user.created":
+      case "user.updated": {
+        // Update or create user
+        await ctx.runAction(api.users.syncUserFromClerk, {
+          clerkUser: event.data,
         });
+        break;
       }
-      break;
+      case "user.deleted": {
+        // Delete user
+        if (event.data.id) {
+          await ctx.runMutation(internal.users.deleteUserInternal, {
+            clerkId: event.data.id,
+          });
+        }
+        break;
+      }
+      // 🏢 ORGANIZATION EVENTS
+      case "organization.created":
+      case "organization.updated": {
+        await ctx.runMutation(internal.organizations.upsertOrganizationInternal, {
+          clerkOrg: event.data,
+        });
+        break;
+      }
 
-    default:
-      console.log("Ignored Clerk event:", event.type);
+      case "organization.deleted": {
+        if (event.data.id) {
+          await ctx.runMutation(internal.organizations.deleteOrganizationInternal, {
+            clerkOrgId: event.data.id,
+          });
+        }
+        break;
+      }
+      // 👥 MEMBERSHIP EVENTS
+      case "organizationMembership.created":
+      case "organizationMembership.updated":
+      case "organizationMembership.deleted": {
+        const userId = event.data.public_user_data?.user_id;
+        const fullUser = await clerkClient.users.getUser(userId!);
+        const safeUser = {
+          id: fullUser.id,
+          first_name: fullUser.firstName,
+          last_name: fullUser.lastName,
+          image_url: fullUser.imageUrl,
+          username: fullUser.username,
+          email_addresses: fullUser.emailAddresses.map((e) => ({
+            email_address: e.emailAddress,
+          })),
+        };
+
+        // safest approach: re-sync the user completely
+        await ctx.runAction(api.users.syncUserFromClerk, {
+          clerkUser: safeUser,
+        });
+        break;
+      }
+      default:
+        console.log("ℹ️ Ignored Clerk event:", event.type);
+    }
+
+    return new Response(null, { status: 200 });
+  } catch (error) {
+    console.error("❌ Webhook processing failed:", error);
+    return new Response("Server error", { status: 500 });
   }
 
-  return new Response(null, { status: 200 });
+
 });
 
-const http = httpRouter();
-http.route({
-  path: "/clerk-webhook",
-  method: "POST",
-  handler: handleClerkWebhook,
-});
 
+// 🛡️ Webhook Signature Validation
 async function validateRequest(req: Request): Promise<WebhookEvent | undefined> {
   try {
     const payload = await req.text();
@@ -70,5 +119,16 @@ async function validateRequest(req: Request): Promise<WebhookEvent | undefined> 
     return;
   }
 }
+
+
+// 🌐 Router
+const http = httpRouter();
+
+http.route({
+  path: "/clerk-webhook",
+  method: "POST",
+  handler: handleClerkWebhook,
+});
+
 
 export default http;

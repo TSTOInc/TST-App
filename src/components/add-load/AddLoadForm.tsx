@@ -12,9 +12,8 @@ import LoadDetailsStep from "./LoadDetailsStep"
 import PartiesStep from "./PartiesStep"
 import TagsStep from "./TagsStep"
 import { useRouter } from "next/navigation"
-import { useMutation } from "convex/react"
+import { useMutation, useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
-import { useOrganization } from "@clerk/nextjs"
 
 const stepLabels = ["Stops", "Load Details", "Parties"]
 
@@ -88,8 +87,8 @@ type FormData = z.infer<typeof formSchema>
 export default function AddLoadForm() {
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
-  const { organization } = useOrganization()
-  const orgId = organization ? organization.id : "";
+  const organization = useQuery(api.organizations.getCurrentOrganization)
+  const orgId = organization?._id ? organization._id : "";
   const createLoad = useMutation(api.loads.create)
 
   const {

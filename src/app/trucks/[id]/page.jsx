@@ -12,30 +12,7 @@ import { Input } from "@/components/ui/input"
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronsUpDown } from "lucide-react"
-import { IconTrash, IconLoader2, IconUpload, IconPlus } from '@tabler/icons-react'
-import PDFPreview from "@/components/custom/PDFPreview";
-import {
-    Dialog,
-    DialogContent,
-    DialogTrigger,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
-import DocUpload from "@/components/custom/DocUpload";
-import { se } from 'date-fns/locale/se';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { tr } from 'date-fns/locale/tr';
+import { ChevronsUpDown, PlusIcon } from "lucide-react"
 import {
     Sheet,
     SheetContent,
@@ -45,13 +22,9 @@ import {
     SheetTrigger,
 } from "@/components/ui/sheet"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-
-
 import InfoCard from '@/components/data/info-card';
-
 import { useQuery, useMutation } from "convex/react"
 import { api } from "@convex/_generated/api"
-import { useOrganization } from '@clerk/nextjs';
 import { DialogDemo } from '@/components/data/upload/upload-doc';
 import { DocumentCard } from '@/components/documents/document-card';
 
@@ -136,7 +109,7 @@ const InspectionsCard = ({ truck, inspectionIntervalDays = 90 }) => {
                     <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                         <SheetTrigger asChild>
                             <Button>
-                                <IconPlus /> Add Inspection
+                                <PlusIcon /> Add Inspection
                             </Button>
                         </SheetTrigger>
 
@@ -244,7 +217,7 @@ const RepairsCard = ({ truck, repairsIntervalDays = 90 }) => {
             <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Truck Repairs</CardTitle>
                 <Button>
-                    <IconPlus /> Add Repair
+                    <PlusIcon /> Add Repair
                 </Button>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -314,8 +287,8 @@ export default function TablePage({ params }) {
 
     const { id } = React.use(params);
 
-    const { organization } = useOrganization();
-    const orgId = organization ? organization.id : "";
+    const organization = useQuery(api.organizations.getCurrentOrganization)
+    const orgId = organization?._id ? organization._id : "";
     const data = useQuery(api.trucks.byId, { id, orgId: orgId });
     const documents = useQuery(api.files.byId, { entityId: id, entityType: "trucks", orgId: orgId }) || [];
     const Registration = documents.find((doc) => doc.category === "REGISTRATION");

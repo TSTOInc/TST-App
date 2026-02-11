@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/empty"
 import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
-import { useOrganization } from "@clerk/nextjs"
 export function formatRate(value) {
   const num = Number(value)
   if (isNaN(num)) return "0.00"
@@ -28,13 +27,10 @@ export function formatRate(value) {
 export default function TablePage() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const { organization } = useOrganization();
-const loadsUnsorted = useQuery(
-  api.getTable.all,
-  organization
-    ? { table: "loads", orgId: organization.id }
-    : "skip"
-)
+  const organization = useQuery(api.organizations.getCurrentOrganization)
+  const loadsUnsorted = useQuery(
+    api.getTable.all,
+    organization?._id ? { table: "loads", orgId: organization._id } : "skip")
   const loads = loadsUnsorted
     ? [...loadsUnsorted].sort((a, b) => {
       const aNum = Number(a.invoice_number) || 0;

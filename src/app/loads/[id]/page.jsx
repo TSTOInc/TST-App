@@ -8,7 +8,6 @@ import { FileText, DollarSign, Package, Building2, NotepadText, MapPin, ArrowUpF
 import { Separator } from "@/components/ui/separator"
 import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
-import { useOrganization } from '@clerk/nextjs'
 import TimelineVertical from "@/components/TimelineVertical"
 import TruckRouteMap from "@/components/custom/TruckRouteMap"
 import InfoCard from '@/components/data/info-card'
@@ -173,8 +172,8 @@ const DocumentsCard = ({ load, files, orgId }) => {
 // ---------------------- MAIN PAGE ----------------------
 export default function HomePage({ params }) {
   const { id } = React.use(params);
-  const { organization } = useOrganization();
-  const orgId = organization?.id || "";
+  const organization = useQuery(api.organizations.getCurrentOrganization)
+  const orgId = organization?._id ? organization._id : "";
   const data = useQuery(api.loads.byId, { id, orgId });
   const files = useQuery(api.files.byId, { entityType: "loads", entityId: id, orgId: orgId }) || [];
 

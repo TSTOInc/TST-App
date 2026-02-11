@@ -21,6 +21,7 @@ import type * as http from "../http.js";
 import type * as loads from "../loads.js";
 import type * as messages from "../messages.js";
 import type * as mutate from "../mutate.js";
+import type * as organizations from "../organizations.js";
 import type * as payment_terms from "../payment_terms.js";
 import type * as truck_inspections from "../truck_inspections.js";
 import type * as trucks from "../trucks.js";
@@ -46,6 +47,7 @@ declare const fullApi: ApiFromModules<{
   loads: typeof loads;
   messages: typeof messages;
   mutate: typeof mutate;
+  organizations: typeof organizations;
   payment_terms: typeof payment_terms;
   truck_inspections: typeof truck_inspections;
   trucks: typeof trucks;

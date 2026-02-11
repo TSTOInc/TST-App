@@ -147,7 +147,7 @@ export function  AppSidebar({organization, ...props }: AppSidebarProps) {
         <div className="hidden lg:block">
           <OrganizationSwitcher
           organizationProfileMode="navigation"
-          organizationProfileUrl="/account/organization"
+          organizationProfileUrl="/organization"
           appearance={{
             elements: {
               rootBox: "w-full z-50",

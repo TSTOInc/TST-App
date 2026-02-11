@@ -7,7 +7,7 @@ import DynamicMultiStepForm, { StepConfig } from "../../../components/forms/Dyna
 import { ComboBoxOption } from "@/components/custom/ComboBox";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
-import { useOrganization } from "@clerk/nextjs";
+import { useQuery } from "convex/react";
 import { useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { useRouter } from "next/navigation";
@@ -72,8 +72,8 @@ const exampleSchema = z.object({
 
 export default function ExampleUsage() {
 
-  const { organization } = useOrganization()
-  const orgId = organization ? organization.id : "";
+  const organization = useQuery(api.organizations.getCurrentOrganization)
+  const orgId = organization?._id ? organization._id : "";
   const createBroker = useMutation(api.brokers.create)
 
   function parseAddress(input: string) {

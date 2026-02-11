@@ -1,88 +1,63 @@
+import { Organization } from "@clerk/backend";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
   // Users table
   users: defineTable({
-    backup_code_enabled: v.boolean(),
-    banned: v.boolean(),
     clerk_id: v.string(),
-    create_organization_enabled: v.boolean(),
-    create_organizations_limit: v.optional(v.float64()),
-    created_at: v.float64(),
-    delete_self_enabled: v.boolean(),
-    email_addresses: v.array(
-      v.object({
-        created_at: v.float64(),
-        email_address: v.string(),
-        id: v.string(),
-        linked_to: v.array(v.any()),
-        matches_sso_connection: v.boolean(),
-        object: v.string(),
-        reserved: v.boolean(),
-        updated_at: v.float64(),
-        verification: v.object({
-          attempts: v.null(),
-          expire_at: v.null(),
-          object: v.string(),
-          status: v.string(),
-          strategy: v.string(),
-        }),
-      })
-    ),
-    enterprise_accounts: v.array(v.any()),
-    external_accounts: v.array(v.any()),
-    external_id: v.null(),
-    first_name: v.string(),
-    has_image: v.boolean(),
-    id: v.string(),
-    image_url: v.string(),
-    last_active_at: v.null(),
-    last_name: v.string(),
-    last_sign_in_at: v.null(),
-    legal_accepted_at: v.null(),
-    locale: v.null(),
-    locked: v.boolean(),
-    lockout_expires_in_seconds: v.null(),
-    mfa_disabled_at: v.null(),
-    mfa_enabled_at: v.null(),
-    object: v.string(),
-    passkeys: v.array(v.any()),
-    password_enabled: v.boolean(),
-    phone_numbers: v.array(v.any()),
-    primary_email_address_id: v.string(),
-    primary_phone_number_id: v.null(),
-    primary_web3_wallet_id: v.null(),
-    private_metadata: v.object({}),
-    profile_image_url: v.string(),
-    public_metadata: v.object({}),
-    saml_accounts: v.array(v.any()),
-    totp_enabled: v.boolean(),
-    two_factor_enabled: v.boolean(),
-    unsafe_metadata: v.object({}),
-    updated_at: v.float64(),
-    username: v.string(),
-    verification_attempts_remaining: v.float64(),
-    web3_wallets: v.array(v.any()),
-    organization_ids: v.optional(v.array(v.string())),
-  }).index("by_clerkId", ["clerk_id"]),
+    email: v.string(),
+    first_name: v.optional(v.string()),
+    last_name: v.optional(v.string()),
+    image_url: v.optional(v.string()),
+    username: v.optional(v.string()),
+  }).index("by_email", ["email"]).index("by_clerkId", ["clerk_id"]),
+
+  //
+  memberships: defineTable({
+    user_id: v.id("users"),
+    org_id: v.id("organizations"),
+    role: v.string(),
+  }).index("by_userId", ["user_id"]).index("by_orgId", ["org_id"]),
+
+
+  organizations: defineTable({
+    clerk_org_id: v.string(), // link to Clerk
+    name: v.string(),
+
+    // Carrier business info
+    usdot: v.optional(v.string()),
+    mc_number: v.optional(v.string()),
+    years_in_operation: v.optional(v.number()),
+    company_email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    address: v.optional(v.string()),
+
+    // SaaS logic
+    subscription_status: v.optional(v.string()),
+    plan: v.optional(v.string()),
+
+  }).index("by_clerkOrgId", ["clerk_org_id"]),
+
 
   brokers: defineTable({
-    org_id: v.string(),
-    address: v.string(),
-    address_2: v.union(v.null(), v.string()),
-    docket_number: v.string(),
-    email: v.union(v.null(), v.string()),
-    image_url: v.union(v.null(), v.string()),
-    name: v.string(),
-    notes: v.union(v.null(), v.string()),
-    phone: v.union(v.null(), v.string()),
-    status: v.string(),
-    usdot_number: v.string(),
-    website: v.union(v.null(), v.string()),
-  }).index("by_orgId", ["org_id"]),
+      created_by: v.optional(v.id("users")),
+      org_id: v.string(),
+      address: v.string(),
+      address_2: v.union(v.null(), v.string()),
+      docket_number: v.string(),
+      email: v.union(v.null(), v.string()),
+      image_url: v.union(v.null(), v.string()),
+      name: v.string(),
+      notes: v.union(v.null(), v.string()),
+      phone: v.union(v.null(), v.string()),
+      status: v.string(),
+      usdot_number: v.string(),
+      website: v.union(v.null(), v.string()),
+    }).index("by_orgId", ["org_id"]),
 
   brokers_agents: defineTable({
+    created_by: v.optional(v.id("users")),
     org_id: v.string(),
     broker_id: v.string(),
     email: v.string(),
@@ -99,6 +74,7 @@ export default defineSchema({
   }).index("by_orgId", ["org_id"]),
 
   drivers: defineTable({
+    created_by: v.optional(v.id("users")),
     org_id: v.string(),
     email: v.null(),
     image_url: v.string(),
@@ -110,6 +86,7 @@ export default defineSchema({
   }).index("by_orgId", ["org_id"]),
 
   equipment: defineTable({
+    created_by: v.optional(v.id("users")),
     org_id: v.string(),
     equipment_length: v.union(v.null(), v.string()),
     equipment_number: v.string(),
@@ -124,6 +101,7 @@ export default defineSchema({
   }).index("by_org", ["org_id"]),
 
   loads: defineTable({
+    created_by: v.optional(v.id("users")),
     org_id: v.string(),
     agent_id: v.optional(v.string()),
     broker_id: v.string(),
@@ -154,6 +132,7 @@ export default defineSchema({
   }),
 
   payment_terms: defineTable({
+    created_by: v.optional(v.id("users")),
     org_id: v.string(),
     broker_id: v.string(),
     days_to_pay: v.float64(),
@@ -164,6 +143,7 @@ export default defineSchema({
   }).index("by_orgId", ["org_id"]).index("by_brokerId", ["broker_id"]),
 
   stops: defineTable({
+    created_by: v.optional(v.id("users")),
     org_id: v.string(),
     appointment_time: v.union(v.null(), v.string()),
     load_id: v.string(),
@@ -175,6 +155,7 @@ export default defineSchema({
   }).index("by_orgId", ["org_id"]).index("by_loadId", ["load_id"]),
 
   truck_inspections: defineTable({
+    created_by: v.optional(v.id("users")),
     org_id: v.string(),
     inspection_date: v.string(),
     inspection_type: v.string(),
@@ -184,6 +165,7 @@ export default defineSchema({
   }).index("by_orgId", ["org_id"]),
 
   trucks: defineTable({
+    created_by: v.optional(v.id("users")),
     org_id: v.string(),
     color: v.null(),
     docs: v.array(v.string()),

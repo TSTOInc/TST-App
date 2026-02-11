@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { usePathname } from 'next/navigation';
-import { useOrganization  } from "@clerk/nextjs";
 
 import { SectionCards } from "@/components/dashboard/section-cards";
 import { ChartAreaInteractive } from "@/components/chart-area-interactive";
@@ -42,12 +41,12 @@ function getPeriodStats(loads, brokers, start, end) {
 }
 
 const Home = () => {
-  const { organization } = useOrganization();
+  const organization = useQuery(api.organizations.getCurrentOrganization)
   const pathname = usePathname() ?? "";
   const path = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
 
-  const loads = useQuery(api.getTable.all, organization ? { table: "loads", orgId: organization.id } : "skip");
-  const brokers = useQuery(api.getTable.all, organization ? { table: "brokers", orgId: organization.id } : "skip");
+  const loads = useQuery(api.getTable.all, organization?._id ? { table: "loads", orgId: organization._id } : "skip");
+  const brokers = useQuery(api.getTable.all, organization?._id ? { table: "brokers", orgId: organization._id } : "skip");
 
   const [stats, setStats] = useState({
     last30Days: { revenue: "$0", brokers: 0, loads: 0 },

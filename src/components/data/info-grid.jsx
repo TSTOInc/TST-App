@@ -17,7 +17,6 @@ import { SearchBar } from "@/components/search-bar"
 import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { usePathname } from 'next/navigation'
-import { useOrganization } from "@clerk/nextjs"
 
 
 const EQUIPMENT_TYPE_LABELS = {
@@ -92,12 +91,12 @@ export default function InfoGrid({
   onRetry,
 }) {
 
-  const { organization } = useOrganization();
+  const organization = useQuery(api.organizations.getCurrentOrganization)
   const pathname = usePathname() ?? "";
   const path = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
 
 
-  const queryData = useQuery(api.getTable.all, organization ? { table, orgId: organization.id } : "skip")
+  const queryData = useQuery(api.getTable.all, organization?._id ? { table, orgId: organization._id } : "skip")
 
   const [searchQuery, setSearchQuery] = useState("")
 

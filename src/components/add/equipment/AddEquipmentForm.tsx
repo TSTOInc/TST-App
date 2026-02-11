@@ -21,9 +21,8 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { useOrganization } from "@clerk/nextjs";
 
 
 const statuses: ComboBoxOption[] = [
@@ -72,8 +71,8 @@ type FormData = z.infer<typeof formSchema>;
 
 export default function AddEquipmentForm() {
   const router = useRouter();
-  const { organization } = useOrganization()
-  const orgId = organization ? organization.id : "";
+  const organization = useQuery(api.organizations.getCurrentOrganization)
+    const orgId = organization?._id ? organization._id : "";
   const createEquipment = useMutation(api.equipment.create);
 
 

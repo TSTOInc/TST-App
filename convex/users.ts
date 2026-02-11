@@ -1,146 +1,190 @@
-import { mutation, query, action } from "./_generated/server";
+import { action, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
-import { internalMutation } from "./_generated/server";
-import { createClerkClient } from '@clerk/backend'
+import { createClerkClient } from "@clerk/backend";
 import { internal } from "./_generated/api";
-function ensureEnv(name: string): string {
-  const val = process.env[name];
-  if (!val) throw new Error(`Missing environment variable: ${name}`);
-  return val;
-}
-// Create a new user (we are not using this so far, but could be useful, so for now its commented out)
-/*
-export const create = mutation({
-  args: { email: v.string(), subject: v.string() },
-  handler: async (ctx, args) => {
 
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-
-    return await ctx.db.insert("users", {
-      email: args.email,
-      clerk_id: args.subject, // store Clerk ID here
-    });
-  },
-});
-*/
-
-
-//Get all users from a organization
-export const getAll = query({
-  args: { orgId: v.string() },
-  handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-    const users = await ctx.db.query("users").collect();
-    const filtered = users.filter((u) =>
-      Array.isArray(u.organization_ids) && u.organization_ids.includes(args.orgId)
-    );
-
-    return filtered;
-  },
+const clerkClient = createClerkClient({
+  secretKey: process.env.CLERK_SECRET_KEY!,
 });
 
+//
+// 🔥 PUBLIC ACTION (Called from webhook)
+//
 
-// Get a user by Clerk ID
-export const getUser = query({
-  args: { clerkId: v.string() },
-  handler: async (ctx, { clerkId }) => {
-    return await ctx.db
-      .query("users")
-      .filter((q) => q.eq(q.field("clerk_id"), clerkId))
-      .first();
-  },
-});
-
-
-//THIS IS CALLED FROM THE WEBHOOK IN http.ts
-const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY! });
-
-// ✅ Action that runs in Node and can use fetch()
-export const updateOrCreateUserAction = action({
+export const syncUserFromClerk = action({
   args: { clerkUser: v.any() },
   handler: async (ctx, { clerkUser }) => {
-    // 0️⃣ Call internal mutation to store the data in Convex
-    console.log("🟢 Creating user on action", clerkUser.id);
-    await ctx.runMutation(internal.users.updateOrCreateUserInternal, {
+    const clerkUserId = clerkUser.id;
+
+    // 1️⃣ Upsert user first
+    const userId = await ctx.runMutation(
+      internal.users.upsertUserInternal,
+      {
         clerkUser,
-        organization_ids: [],
-      });
-    const userId = clerkUser.id;
-    try {
-       console.log("🟢 Getting orgs for user on action", clerkUser.id);
-      // 1️⃣ Fetch organization memberships from Clerk (external request allowed here)
-      const memberships = await clerkClient.users.getOrganizationMembershipList({
-        userId,
+      }
+    );
+
+    // 2️⃣ Fetch org memberships from Clerk
+    const memberships =
+      await clerkClient.users.getOrganizationMembershipList({
+        userId: clerkUserId,
         limit: 50,
       });
 
-      const orgIds = memberships.data.map(
-        (m) => m.organization.id || m.organization?.id
-      );
-      console.log("✅ Found orgs for user:", orgIds);
-      // 2️⃣ Call internal mutation to store the data in Convex
-      await ctx.runMutation(internal.users.updateOrCreateUserInternal, {
-        clerkUser,
-        organization_ids: orgIds,
-      });
-      return { success: true, orgIds };
-    }
-    catch (error) {
-      console.error("❌ Error in updateOrCreateUserAction:", error);
-    }
-    
+    // 3️⃣ Sync orgs + memberships
+    const sanitizedMemberships = memberships.data.map((m) => ({
+      clerk_org_id: m.organization.id,
+      organization_name: m.organization.name,
+      role: m.role,
+    }));
 
-    return { success: false};
+    await ctx.runMutation(
+      internal.users.syncMembershipsInternal,
+      {
+        userId,
+        memberships: sanitizedMemberships,
+      }
+    );
+
+    return { success: true };
   },
 });
 
+//
+// 🔒 INTERNAL: UPSERT USER
+//
 
+export const upsertUserInternal = internalMutation({
+  args: { clerkUser: v.any() },
+  handler: async (ctx, { clerkUser }) => {
+    const clerkId = clerkUser.id;
 
-// Update or create a user
-export const updateOrCreateUserInternal = internalMutation({
-  args: { clerkUser: v.any(), organization_ids: v.array(v.string()) },
-  handler: async (ctx, { clerkUser, organization_ids }) => {
-    const userId = clerkUser.id;
+    const email =
+      clerkUser.email_addresses?.[0]?.email_address;
 
-    const userData = {
-      ...clerkUser,
-      clerk_id: userId,
-      organization_ids,
+    const userData: any = {
+      clerk_id: clerkId,
     };
+
+    if (email) userData.email = email;
+    if (clerkUser.first_name) userData.first_name = clerkUser.first_name;
+    if (clerkUser.last_name) userData.last_name = clerkUser.last_name;
+    if (clerkUser.image_url) userData.image_url = clerkUser.image_url;
+    if (clerkUser.username) userData.username = clerkUser.username;
+
 
     const existing = await ctx.db
       .query("users")
-      .filter((q) => q.eq(q.field("clerk_id"), userId))
-      .first();
+      .withIndex("by_clerkId", (q) =>
+        q.eq("clerk_id", clerkId)
+      )
+      .unique();
 
     if (existing) {
-      console.log("🟡 Updating existing user:", userId);
       await ctx.db.patch(existing._id, userData);
-    } else {
-      console.log("🟢 Creating new user:", userId);
-      await ctx.db.insert("users", userData);
+      return existing._id;
+    }
+
+    return await ctx.db.insert("users", userData);
+  },
+});
+
+//
+// 🔒 INTERNAL: SYNC MEMBERSHIPS + ORGANIZATIONS
+//
+
+export const syncMembershipsInternal = internalMutation({
+  args: {
+    userId: v.id("users"),
+    memberships: v.array(
+      v.object({
+        clerk_org_id: v.string(),
+        organization_name: v.string(),
+        role: v.string(),
+      })
+    ),
+
+  },
+  handler: async (ctx, { userId, memberships }) => {
+    for (const membership of memberships) {
+      const clerkOrgId = membership.clerk_org_id;
+
+
+
+      // 1️⃣ Upsert Organization
+      let org = await ctx.db
+        .query("organizations")
+        .withIndex("by_clerkOrgId", (q) =>
+          q.eq("clerk_org_id", clerkOrgId)
+        )
+        .unique();
+
+      if (!org) {
+        const orgId = await ctx.db.insert("organizations", {
+          clerk_org_id: clerkOrgId,
+          name: membership.organization_name,
+        });
+
+        org = await ctx.db.get(orgId);
+      }
+
+      if (!org) continue;
+
+      // 2️⃣ Upsert Membership
+      const existingMembership = await ctx.db
+        .query("memberships")
+        .withIndex("by_userId", (q) =>
+          q.eq("user_id", userId)
+        )
+        .collect();
+
+      const alreadyExists = existingMembership.find(
+        (m) => m.org_id === org!._id
+      );
+
+      if (!alreadyExists) {
+        await ctx.db.insert("memberships", {
+          user_id: userId,
+          org_id: org._id,
+          role: membership.role,
+        });
+      } else {
+        await ctx.db.patch(alreadyExists._id, {
+          role: membership.role,
+        });
+      }
     }
   },
 });
 
+//
+// 🔒 DELETE USER (Webhook: user.deleted)
+//
 
-//THIS IS CALLED FROM THE WEBHOOK IN http.ts
-
-// Delete a user by Clerk ID
-export const deleteUser = internalMutation({
+export const deleteUserInternal = internalMutation({
   args: { clerkId: v.string() },
   handler: async (ctx, { clerkId }) => {
     const user = await ctx.db
       .query("users")
-      .filter((q) => q.eq(q.field("clerk_id"), clerkId))
-      .first();
+      .withIndex("by_clerkId", (q) =>
+        q.eq("clerk_id", clerkId)
+      )
+      .unique();
 
     if (!user) return;
 
-    return await ctx.db.delete(user._id);
+    // delete memberships first
+    const memberships = await ctx.db
+      .query("memberships")
+      .withIndex("by_userId", (q) =>
+        q.eq("user_id", user._id)
+      )
+      .collect();
+
+    for (const m of memberships) {
+      await ctx.db.delete(m._id);
+    }
+
+    await ctx.db.delete(user._id);
   },
 });

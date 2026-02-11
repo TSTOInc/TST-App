@@ -20,7 +20,6 @@ import {
 import InfoCard from '@/components/data/info-card'
 import { useQuery, useMutation } from "convex/react"
 import { api } from "@convex/_generated/api";
-import { useOrganization } from '@clerk/nextjs';
 import { DialogDemo } from "@/components/data/upload/upload-doc";
 import { EllipsisVerticalIcon, EyeIcon, FileTextIcon, OctagonAlertIcon, PencilIcon, RefreshCwIcon, TrashIcon, FileIcon, FileImageIcon, FileVideoIcon, DownloadIcon } from 'lucide-react'
 import {
@@ -299,8 +298,8 @@ export default function TablePage({ params }) {
     // Unwrap the params Promise
     const { id } = React.use(params);
 
-    const { organization } = useOrganization();
-    const orgId = organization ? organization.id : "";
+    const organization = useQuery(api.organizations.getCurrentOrganization)
+    const orgId = organization?._id ? organization._id : "";
     const data = useQuery(api.getDoc.byId, { table: "drivers", id: id, orgId: orgId });
     const files = useQuery(api.files.byId, { entityType: "drivers", entityId: id, orgId: orgId }) || [];
     if (!data || data.length === 0) return <ProfileHeader skeleton={true} />

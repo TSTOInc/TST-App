@@ -36,7 +36,6 @@ import {
 
 import { useQuery, useMutation } from "convex/react"
 import { api } from '@convex/_generated/api'
-import { useOrganization } from '@clerk/nextjs';
 import InfoCard from '@/components/data/info-card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DialogDemo } from '@/components/data/upload/upload-doc'
@@ -548,8 +547,8 @@ export default function TablePage({ params }) {
   // Unwrap the params Promise
   const { id } = React.use(params);
 
-  const { organization } = useOrganization();
-  const orgId = organization ? organization.id : "";
+  const organization = useQuery(api.organizations.getCurrentOrganization)
+  const orgId = organization?._id ? organization._id : "";
   const data = useQuery(api.brokers.byId, { id: id, orgId: orgId });
   const files = useQuery(api.files.byId, { entityId: id, entityType: "brokers", orgId: orgId }) || [];
   const loads = useQuery(api.getTable.allWithIndex, { table: "loads", orgId: orgId, index: "by_brokerId", field: "broker_id", indexValue: id }) || [];

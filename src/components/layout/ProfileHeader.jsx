@@ -32,8 +32,7 @@ import {
 import FieldRenderer from "@/components/custom/FieldRenderer";
 import LinkButton from "@/components/link"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useOrganization } from '@clerk/nextjs'
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 
 
@@ -96,8 +95,8 @@ export default function ProfileHeader({
         );
     }
 
-    const { organization } = useOrganization();
-    const orgID = organization ? organization.id : "";
+    const organization = useQuery(api.organizations.getCurrentOrganization)
+    const orgId = organization?._id ? organization._id : "";
     const deleteDoc = useMutation(api.delete.byId);
 
     const router = useRouter();

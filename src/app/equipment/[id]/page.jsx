@@ -4,7 +4,6 @@ import ProfileHeader from '@/components/layout/ProfileHeader'
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { useOrganization } from '@clerk/nextjs';
 import InfoCard from '@/components/data/info-card';
 import { DocumentCard } from '@/components/documents/document-card';
 import { DialogDemo } from '@/components/data/upload/upload-doc';
@@ -61,8 +60,8 @@ const ContactCard = ({ carrier }) => (
 export default function TablePage({ params }) {
     const { id } = React.use(params);
 
-    const { organization } = useOrganization();
-    const orgId = organization ? organization.id : "";
+    const organization = useQuery(api.organizations.getCurrentOrganization)
+    const orgId = organization?._id ? organization._id : "";
     const data = useQuery(api.getDoc.byId, { table: "equipment", id: id, orgId: orgId });
     const documents = useQuery(api.files.byId, { entityType: "equipment", entityId: id, orgId: orgId }) || [];
     const registration = documents.find((doc) => doc.category === "REGISTRATION");

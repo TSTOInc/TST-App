@@ -45,59 +45,59 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ClerkProvider appearance={{ baseTheme: shadcn }}>
-           <ConvexClientProvider>
-<ThemeProvider
-            attribute="class"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <SignedIn>
-              <SidebarProvider
+          <ConvexClientProvider>
+            <ThemeProvider
+              attribute="class"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <SignedIn>
+                <SidebarProvider
 
-                style={
-                  {
-                    "--sidebar-width": "calc(var(--spacing) * 72)",
-                    "--header-height": "calc(var(--spacing) * 14)",
-                  } as React.CSSProperties
-                }
-              >
-                <AppSidebar
-                  variant="inset"
-                  user={user}
-                  organization={{
-                    id: "organization.id",
-                    name: "organization.display_name || organization.name",
-                  }}
-                />
-                <SidebarInset>
-                  <SiteHeader />
-                  {children}
-                  <Toaster richColors position="top-center" />
-                </SidebarInset>
-              </SidebarProvider>
-            </SignedIn>
-            <SignedOut>
-              <div className="relative h-screen">
-                <div className="absolute top-0 left-0 w-full flex flex-row items-center p-4 bg-card shadow">
-                  <div className="flex-1 text-left"></div>
-                  <div className="flex-1 text-center">
-                    <h1 className="font-semibold">TST Pro</h1>
+                  style={
+                    {
+                      "--sidebar-width": "calc(var(--spacing) * 72)",
+                      "--header-height": "calc(var(--spacing) * 14)",
+                    } as React.CSSProperties
+                  }
+                >
+                  <AppSidebar
+                    variant="inset"
+                    user={user}
+                    organization={{
+                      id: "organization.id",
+                      name: "organization.display_name || organization.name",
+                    }}
+                  />
+                  <SidebarInset>
+                    <SiteHeader />
+                    {children}
+                    <Toaster richColors position="top-center" />
+                  </SidebarInset>
+                </SidebarProvider>
+              </SignedIn>
+              <SignedOut>
+                <div className="relative h-screen">
+                  <div className="absolute top-0 left-0 w-full flex flex-row items-center p-4 bg-card shadow">
+                    <div className="flex-1 text-left"></div>
+                    <div className="flex-1 text-center">
+                      <h1 className="font-semibold">Velt</h1>
+                    </div>
+                    <div className="flex-1 text-right">
+                      <ThemeToggle />
+                    </div>
                   </div>
-                  <div className="flex-1 text-right">
-                    <ThemeToggle />
+
+                  <div className="h-screen flex items-center justify-center">
+                    {children}
                   </div>
                 </div>
+                <Toaster richColors position="top-center" />
+              </SignedOut>
 
-                <div className="h-screen flex items-center justify-center">
-                  {children}
-                </div>
-              </div>
-              <Toaster richColors position="top-center" />
-            </SignedOut>
+            </ThemeProvider>
+          </ConvexClientProvider>
 
-          </ThemeProvider>
-           </ConvexClientProvider>
-          
         </ClerkProvider>
 
       </body>

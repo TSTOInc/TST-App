@@ -28,7 +28,6 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { createClient } from '@supabase/supabase-js'
-import { useOrganization } from "@clerk/nextjs";
 import { cn } from "@/lib/utils"
 import { IconAlertTriangle, IconCheck } from "@tabler/icons-react"
 import { Field, FieldLabel } from "@/components/ui/field"
@@ -108,8 +107,8 @@ const statusColor = {
 export function DocumentCard({ file }) {
 
 
-    const { organization } = useOrganization()
-    const orgId = organization ? organization.id : "";
+    const organization = useQuery(api.organizations.getCurrentOrganization)
+    const orgId = organization?._id ? organization._id : "";
 
     const Icon = getFileIcon(file.mimeType);
 
