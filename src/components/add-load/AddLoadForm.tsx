@@ -176,15 +176,29 @@ export default function AddLoadForm() {
     try {
       const cleanData = {
         ...data,
-        stops: data.stops.map((s) => ({
-          ...s,
-          appointmentTime: s.appointmentTime
-            ? s.appointmentTime.toISOString()
-            : undefined,
-          windowStart: s.windowStart ? s.windowStart.toISOString() : undefined,
-          windowEnd: s.windowEnd ? s.windowEnd.toISOString() : undefined,
-        })),
+        stops: data.stops.map((s) => {
+          if (s.timeType === "appointment") {
+            return {
+              type: s.type,
+              location: s.location,
+              timeType: s.timeType,
+              appointmentTime: s.appointmentTime?.toISOString(),
+              windowStart: undefined,
+              windowEnd: undefined,
+            }
+          }
+
+          return {
+            type: s.type,
+            location: s.location,
+            timeType: s.timeType,
+            appointmentTime: undefined,
+            windowStart: s.windowStart?.toISOString(),
+            windowEnd: s.windowEnd?.toISOString(),
+          }
+        }),
       }
+
 
       const promise = createLoad({ data: cleanData }) // ✅ no Dates
 
