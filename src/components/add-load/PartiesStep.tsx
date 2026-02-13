@@ -73,7 +73,7 @@ export default function PartiesStep({ control, errors }: PartiesStepProps) {
     name: "parties.broker",
   })
 
-  const brokerValue = selectedBroker?.trim() !== "" ? selectedBroker : null
+  const brokerValue = selectedBroker?.trim() !== "" ? selectedBroker : undefined
 
   const filteredPaymentTerms = brokerValue
     ? paymentTerms.filter((pt) => pt.broker_id === brokerValue)

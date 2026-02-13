@@ -62,7 +62,7 @@ export default function AddTrucksForm() {
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      picture: null,
+      picture: undefined,
       truck_number: "",
       truck_alias: "",
       vin: "",
@@ -333,7 +333,7 @@ export default function AddTrucksForm() {
             <Button
               onClick={() => {
                 setOpenDialog(false);
-                handleSubmit((data) => submitForm({ ...data, picture: null }))();
+                handleSubmit((data) => submitForm({ ...data, picture: undefined }))();
               }}
               disabled={isDisabled}
             >

@@ -57,7 +57,7 @@ export default function AddEquipmentForm() {
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      picture: null,
+      picture: undefined,
       name: "",
       license_number: "",
       phone: "",
@@ -300,7 +300,7 @@ export default function AddEquipmentForm() {
             <Button
               onClick={() => {
                 setOpenDialog(false);
-                handleSubmit((data) => submitForm({ ...data, picture: null }))();
+                handleSubmit((data) => submitForm({ ...data, picture: undefined }))();
               }}
               disabled={isDisabled}
             >

@@ -180,9 +180,9 @@ export default function AddLoadForm() {
           ...s,
           appointmentTime: s.appointmentTime
             ? s.appointmentTime.toISOString()
-            : null,
-          windowStart: s.windowStart ? s.windowStart.toISOString() : null,
-          windowEnd: s.windowEnd ? s.windowEnd.toISOString() : null,
+            : undefined,
+          windowStart: s.windowStart ? s.windowStart.toISOString() : undefined,
+          windowEnd: s.windowEnd ? s.windowEnd.toISOString() : undefined,
         })),
       }
 
