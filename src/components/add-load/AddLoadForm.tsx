@@ -124,7 +124,7 @@ export default function AddLoadForm() {
         equipmentType: "reefer",
         lengthFt: "",
         rate: "",
-        instructions: "",
+        instructions: undefined,
       },
       parties: {
         broker: "",

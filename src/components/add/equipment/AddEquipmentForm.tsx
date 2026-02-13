@@ -85,7 +85,7 @@ export default function AddEquipmentForm() {
     defaultValues: {
       picture: undefined,
       equipment_number: "",
-      equipment_length: "",
+      equipment_length: undefined,
       equipment_type: equipmentTypes[0].value,
       status: statuses[0].value,
     },
@@ -140,7 +140,7 @@ export default function AddEquipmentForm() {
   const submitForm = async (data: FormData) => {
     setSubmitting(true);
     try {
-      let imageUrl = "";
+      let imageUrl = undefined;
       if (data.picture) {
         imageUrl = await uploadImage(data.picture);
       }

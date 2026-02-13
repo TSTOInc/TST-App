@@ -64,15 +64,15 @@ export default function AddTrucksForm() {
     defaultValues: {
       picture: undefined,
       truck_number: "",
-      truck_alias: "",
+      truck_alias: undefined,
       vin: "",
       make: "",
       model: "",
       year: undefined,
-      transponder_id: "",
+      transponder_id: undefined,
       status: statuses[0].value,
-      color: "",
-      driver_id: "",
+      color: undefined,
+      driver_id: undefined,
     },
   });
 
@@ -132,7 +132,7 @@ export default function AddTrucksForm() {
   const submitForm = async (data: FormData) => {
     setSubmitting(true);
     try {
-      let imageUrl = "";
+      let imageUrl = undefined;
       if (data.picture) {
         imageUrl = await uploadImage(data.picture);
       }
@@ -148,7 +148,7 @@ export default function AddTrucksForm() {
         driver_id: data.driver_id ? (data.driver_id as Id<"drivers">) : undefined,
         status: data.status,
         color: data.color || undefined,
-        image_url: imageUrl || "",
+        image_url: imageUrl || undefined,
       };
 
 

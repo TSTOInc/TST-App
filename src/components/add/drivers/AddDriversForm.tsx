@@ -61,7 +61,7 @@ export default function AddEquipmentForm() {
       name: "",
       license_number: "",
       phone: "",
-      email: "",
+      email: undefined,
       status: statuses[0].value,
     },
   });
