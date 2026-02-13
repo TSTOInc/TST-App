@@ -106,10 +106,10 @@ export default function ExampleUsage() {
       state: parsed?.state || searchParams.get("state") || "",
       zip: parsed?.zip || searchParams.get("zip") || "",
       status: searchParams.get("status") || "active",
-      phone: searchParams.get("phone") || "",
-      email: searchParams.get("email") || "",
-      website: searchParams.get("website") || "",
-      notes: searchParams.get("notes") || "",
+      phone: searchParams.get("phone") || undefined,
+      email: searchParams.get("email") || undefined,
+      website: searchParams.get("website") || undefined,
+      notes: searchParams.get("notes") || undefined,
     });
   }, [searchParams]);
   async function uploadFile(file: File): Promise<string> {
