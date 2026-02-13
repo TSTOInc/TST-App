@@ -178,7 +178,7 @@ export const clearPaidAt = mutation({
     if (!load) throw new Error("Load not found");
 
     await ctx.db.patch(loadId, {
-      paid_at: null,
+      paid_at: undefined,
     });
 
     await logAudit(ctx, {
@@ -190,15 +190,15 @@ export const clearPaidAt = mutation({
       before: load,
       after: {
         ...load,
-        paid_at: null,
+        paid_at: undefined,
       },
     });
 
-    return { updated: true, paid_at: null };
+    return { updated: true, paid_at: undefined };
   },
 })
 
-async function getNextInvoiceNumber(ctx: MutationCtx, orgId: string) {
+async function getNextInvoiceNumber(ctx: MutationCtx, orgId: Id<"organizations">) {
   const existing = await ctx.db
     .query("counters")
     .withIndex("by_org", (q) => q.eq("org_id", orgId)).unique();
@@ -251,13 +251,13 @@ export const create = mutation({
       commodity: data.loadDetails?.commodity || "",
       length_ft: Number(data.loadDetails?.lengthFt || 0),
       rate: Number(data.loadDetails?.rate || 0),
-      instructions: data.loadDetails?.instructions || null,
+      instructions: data.loadDetails?.instructions || undefined,
       load_status: "new",
       docs: [],
       invoice_number: invoice_number,
       invoiced_at: undefined,
       progress: 0,
-      paid_at: null,
+      paid_at: undefined,
       agent_id: data.parties?.agent || "",
     }
 
@@ -269,6 +269,7 @@ export const create = mutation({
     // ✅ Now insert stops separately
     for (const stop of data.stops || []) {
       const stopId = await ctx.db.insert("stops", {
+        created_by: user._id, 
         org_id: org._id,
         load_id: loadId,
         type: stop.type,
@@ -276,13 +277,13 @@ export const create = mutation({
         time_type: stop.timeType,
         appointment_time: stop.appointmentTime
           ? new Date(stop.appointmentTime).toISOString()
-          : null,
+          : undefined,
         window_start: stop.windowStart
           ? new Date(stop.windowStart).toISOString()
-          : null,
+          : undefined,
         window_end: stop.windowEnd
           ? new Date(stop.windowEnd).toISOString()
-          : null,
+          : undefined,
       })
 
       if (!stopId) throw new Error("Failed to create stop");

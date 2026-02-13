@@ -9,9 +9,9 @@ import { logAudit } from "./lib/audit";
 export const create = mutation({
     args: {
         payment_term: v.object({
-            broker_id: v.string(),
+            broker_id: v.id("brokers"),
             days_to_pay: v.float64(),
-            email: v.union(v.null(), v.string()),
+            email: v.optional(v.string()),
             fee_percent: v.number(),
             is_quickpay: v.boolean(),
             name: v.string(),
@@ -27,6 +27,7 @@ export const create = mutation({
 
         const newPaymentTermId = await ctx.db.insert("payment_terms",
             {
+                created_by: user._id,
                 org_id: org._id,
                 broker_id: args.payment_term.broker_id,
                 days_to_pay: args.payment_term.days_to_pay,

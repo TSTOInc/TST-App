@@ -7,10 +7,10 @@ import { logAudit } from "./lib/audit";
 export const create = mutation({
     args: {
         equipment: v.object({
-            equipment_length: v.union(v.null(), v.string()),
+            equipment_length: v.optional(v.string()),
             equipment_number: v.string(),
             equipment_type: v.string(),
-            image_url: v.union(v.null(), v.string()),
+            image_url: v.optional(v.string()),
             status: v.string(),
         })
     },

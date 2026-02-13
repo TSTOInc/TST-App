@@ -7,12 +7,12 @@ import { requireUserWithOrg } from "./lib/auth";
 export const create = mutation({
     args: {
         truck_inspections: v.object({
-            org_id: v.string(),
+            org_id: v.id("organizations"),
             inspection_date: v.string(),
             inspection_type: v.string(),
-            notes: v.null(),
+            notes: v.optional(v.string()),
             result: v.string(),
-            truck_id: v.string(),
+            truck_id: v.id("trucks"),
         })
     },
     handler: async (ctx, args) => {
@@ -25,6 +25,7 @@ export const create = mutation({
 
         const newTruck_InspectionId = await ctx.db.insert("truck_inspections",
             {
+                created_by: user._id,
                 org_id: args.truck_inspections.org_id,
                 inspection_date: args.truck_inspections.inspection_date,
                 inspection_type: args.truck_inspections.inspection_type,

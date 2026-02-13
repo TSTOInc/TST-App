@@ -32,7 +32,7 @@ export const byId = query({
 export const create = mutation({
     args: {
         agent: v.object({
-            broker_id: v.string(),
+            broker_id: v.id("brokers"),
             email: v.optional(v.string()),
             name: v.string(),
             phone: v.optional(v.string()),
