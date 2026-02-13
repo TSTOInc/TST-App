@@ -22,6 +22,8 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import DocUpload from "@/components/custom/DocUpload";
+import { api } from "@convex/_generated/api";
+import { useMutation } from "convex/react";
 
 const stepLabels = ["Info", "License", "Picture"]; // swapped order
 const statuses: ComboBoxOption[] = [
@@ -44,6 +46,7 @@ type FormData = z.infer<typeof formSchema>;
 
 export default function AddEquipmentForm() {
   const router = useRouter();
+  const createDriver = useMutation(api.drivers.create);
 
   const {
     handleSubmit,
@@ -127,28 +130,30 @@ export default function AddEquipmentForm() {
       }
 
       const payload = {
-        license_url: licenseUrl,
+        email: data.email || undefined,
+        image_url: imageUrl || undefined,
+        license_number: data.license_number,
         name: data.name,
         phone: data.phone,
-        email: data.email,
-        license_number: data.license_number || null,
-        image_url: imageUrl,
         status: data.status,
       };
 
       console.log("Submitting payload:", JSON.stringify(payload));
-      const response = await fetch(`/api/add/drivers`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const promise = createDriver({ driver: payload });
 
-      if (!response.ok) throw new Error(await response.text());
-      router.back();
-      toast.success("Driver added successfully!");
+      toast.promise(promise, {
+        loading: "Adding Driver...",
+        success: "✅ Driver added successfully!",
+        error: (err: any) => `❌ ${err.message || "Failed to add Driver"}`,
+      });;
+
+      const newDriverId = await promise;
+
+      if (newDriverId) {
+        router.push(`/drivers/${newDriverId}`);
+      }
     } catch (err: any) {
       console.error(err);
-      toast.error(`Failed to submit form: ${err.message}`);
     } finally {
       setSubmitting(false);
       setOpenDialog(false);

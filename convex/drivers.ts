@@ -6,11 +6,13 @@ import { logAudit } from "./lib/audit";
 
 export const create = mutation({
     args: {
-        equipment: v.object({
-            equipment_length: v.union(v.null(), v.string()),
-            equipment_number: v.string(),
-            equipment_type: v.string(),
-            image_url: v.union(v.null(), v.string()),
+        driver: v.object({
+            email: v.optional(v.string()),
+            image_url: v.optional(v.string()),
+            license_number: v.optional(v.string()),
+            license_url: v.optional(v.string()),
+            name: v.string(),
+            phone: v.string(),
             status: v.string(),
         })
     },
@@ -21,26 +23,23 @@ export const create = mutation({
 
         const { user, org } = await requireUserWithOrg(ctx);
 
-        const newEquipmentId = await ctx.db.insert("equipment", {
+        const newDriverId = await ctx.db.insert("drivers", {
             org_id: org._id,
             created_by: user._id,
-            ...args.equipment,
+            ...args.driver,
         });
 
-        if (!newEquipmentId) throw new Error("Failed to create equipment");
-
         await logAudit(ctx, {
-            table: "equipment",
-            recordId: newEquipmentId,
+            table: "drivers",
+            recordId: newDriverId,
             action: "create",
             userId: user._id,
             org_id: org._id,
-            after: args.equipment,
+            after: args.driver,
         });
 
-        if (!newEquipmentId) throw new Error("Failed to log the creation of the equipment");
 
-        return newEquipmentId;
+        return newDriverId;
 
     },
 });

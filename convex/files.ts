@@ -2,13 +2,15 @@ import { mutation, query, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { api } from "./_generated/api";
+import { requireUserWithOrg } from "./lib/auth";
+import { logAudit } from "./lib/audit";
 
 
 
 
 
 const ONE_HOUR = 60 * 60 * 1000;
-const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+const ONE_DAY = 24 * ONE_HOUR;
 
 
 
@@ -43,16 +45,14 @@ export const createUpload = mutation({
             mimeType: v.string(),
             size: v.number(),
             expiresAt: v.optional(v.number()),
-            org_id: v.string(),
         })
     },
     handler: async (ctx, args) => {
 
         const identity = await ctx.auth.getUserIdentity();
-        if (!identity) throw new Error("Not authenticated");
+        if (!identity?.subject) throw new Error("Not authenticated");
 
-        //get the user
-        const user = await ctx.db.query("users").withIndex("by_clerkId", (q) => q.eq("clerk_id", identity.subject)).unique();
+        const { user, org } = await requireUserWithOrg(ctx);
 
         if (!user) throw new Error("User not found");
 
@@ -68,7 +68,7 @@ export const createUpload = mutation({
                     storageKey: "",
                     uploadedBy: user._id,
                     expiresAt: args.file.expiresAt,
-                    org_id: args.file.org_id,
+                    org_id: org._id,
                     status: "uploading"
                 });
             return newfileId;
@@ -89,22 +89,39 @@ export const finalizeUpload = mutation({
     handler: async (ctx, args) => {
 
         const identity = await ctx.auth.getUserIdentity();
-        if (!identity) throw new Error("Not authenticated");
+        if (!identity?.subject) throw new Error("Not authenticated");
 
-        //get the user
-        const user = await ctx.db.query("users").withIndex("by_clerkId", (q) => q.eq("clerk_id", identity.subject)).unique();
+        const { user, org } = await requireUserWithOrg(ctx);
 
         if (!user) throw new Error("User not found");
 
         try {
+            const file = await ctx.db.get(args.id);
+            if (!file) throw new Error("Load not found")
+
             await ctx.db.patch(args.id, {
                 storageKey: args.storageKey,
                 status: "ready"
             });
+
+
+            await logAudit(ctx, {
+                table: "files",
+                recordId: args.id,
+                action: "update",
+                userId: user._id,
+                org_id: org._id,
+                before: file,
+                after: {
+                    ...file,
+                    storageKey: args.storageKey,
+                    status: "ready"
+                },
+            });
         }
         catch (e) {
             console.log(e);
-            return null;
+            throw new Error("Failed to finalize upload");
         }
 
     },
@@ -120,12 +137,16 @@ export const failedUpload = mutation({
 });
 
 export const byId = query({
-    args: { entityType: v.union(v.literal("drivers"), v.literal("loads"), v.literal("brokers"), v.literal("trucks"), v.literal("equipment")), entityId: v.string(), orgId: v.string(), status: v.optional(v.union(v.literal("uploading"), v.literal("ready"), v.literal("failed"), v.literal("deleted"))) },
+    args: { entityType: v.union(v.literal("drivers"), v.literal("loads"), v.literal("brokers"), v.literal("trucks"), v.literal("equipment")), entityId: v.string(), status: v.optional(v.union(v.literal("uploading"), v.literal("ready"), v.literal("failed"), v.literal("deleted"))) },
     handler: async (ctx, args) => {
 
         //Check if user is authenticated
         const identity = await ctx.auth.getUserIdentity();
-        if (!identity) throw new Error("Not authenticated");
+        if (!identity?.subject) throw new Error("Not authenticated");
+
+        const { user, org } = await requireUserWithOrg(ctx);
+
+
 
         return await ctx.db
             .query("files")
@@ -133,7 +154,7 @@ export const byId = query({
                 q
                     .eq("entityType", args.entityType)
                     .eq("entityId", args.entityId)
-                    .eq("org_id", args.orgId)
+                    .eq("org_id", org._id)
                     .eq("status", args.status ?? "ready")
             )
             .collect();
@@ -141,11 +162,17 @@ export const byId = query({
 });
 
 export const deleteFile = mutation({
-    args: { id: v.id("files"), orgId: v.string() },
-    handler: async (ctx, { id, orgId }) => {
+    args: { id: v.id("files") },
+    handler: async (ctx, { id }) => {
+
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity?.subject) throw new Error("Not authenticated");
+
+        const { user, org } = await requireUserWithOrg(ctx);
+
         const file = await ctx.db.get(id);
         if (!file) throw new Error("File not found");
-        if (file.org_id !== orgId) throw new Error("Unauthorized to delete this file");
+        if (file.org_id !== org._id) throw new Error("Unauthorized to delete this file");
         if (file.storageKey) {
             await ctx.db.patch(id, { status: "deleted" }); // mark as deleted
         }
@@ -161,12 +188,15 @@ export const renameFile = mutation({
     handler: async (ctx, args) => {
 
         const identity = await ctx.auth.getUserIdentity();
-        if (!identity) throw new Error("Not authenticated");
+        if (!identity?.subject) throw new Error("Not authenticated");
 
-        //get the user
-        const user = await ctx.db.query("users").withIndex("by_clerkId", (q) => q.eq("clerk_id", identity.subject)).unique();
+        const { user, org } = await requireUserWithOrg(ctx);
 
         if (!user) throw new Error("User not found");
+
+        const file = await ctx.db.get(args.id);
+        if (!file) throw new Error("File not found");
+        if (file.org_id !== org._id) throw new Error("Unauthorized to rename this file");
 
         try {
             await ctx.db.patch(args.id, {
@@ -174,8 +204,7 @@ export const renameFile = mutation({
             });
         }
         catch (e) {
-            console.log(e);
-            return null;
+            throw new Error("Failed to rename file");
         }
 
     },
@@ -189,12 +218,15 @@ export const changeExpiration = mutation({
     handler: async (ctx, args) => {
 
         const identity = await ctx.auth.getUserIdentity();
-        if (!identity) throw new Error("Not authenticated");
+        if (!identity?.subject) throw new Error("Not authenticated");
 
-        //get the user
-        const user = await ctx.db.query("users").withIndex("by_clerkId", (q) => q.eq("clerk_id", identity.subject)).unique();
+        const { user, org } = await requireUserWithOrg(ctx);
 
         if (!user) throw new Error("User not found");
+
+        const file = await ctx.db.get(args.id);
+        if (!file) throw new Error("File not found");
+        if (file.org_id !== org._id) throw new Error("Unauthorized to rename this file");
 
         try {
             await ctx.db.patch(args.id, {
@@ -202,8 +234,7 @@ export const changeExpiration = mutation({
             });
         }
         catch (e) {
-            console.log(e);
-            return null;
+            throw new Error("Failed to change expiration");
         }
 
     },
@@ -216,7 +247,7 @@ export const cleanupStaleUploadsInternal = internalMutation({
         console.log("Cleaning up stale uploads...");
         const now = Date.now();
         const cutoff = now - ONE_HOUR;
-        const cutoff_thirty = now - THIRTY_DAYS;
+        const cutoff_thirty = now - ONE_DAY;
 
 
         // Files stuck uploading for more than 1 hour

@@ -18,6 +18,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import Link from "next/link"
 
 export function TeamSwitcher({
   organizations,
@@ -53,19 +54,19 @@ export function TeamSwitcher({
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg p-0"
             align="start"
             side={isMobile ? "bottom" : "right"}
             sideOffset={4}
           >
-            <DropdownMenuLabel className="text-muted-foreground text-xs">
+            <DropdownMenuLabel className="text-muted-foreground text-xs p-2">
               Teams
             </DropdownMenuLabel>
             {organizations.map((organization, index) => (
               <DropdownMenuItem
                 key={organization.name}
                 onClick={() => setActiveTeam(organization)}
-                className="gap-2 p-2"
+                className="gap-2 p-3"
               >
                 <div className="flex size-6 items-center justify-center rounded-md border ">
                   <img src={organization.logo} alt={organization.name} />
@@ -75,11 +76,17 @@ export function TeamSwitcher({
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2 p-2">
-              <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
-                <Settings className="size-4" />
-              </div>
-              <div className="text-muted-foreground font-medium">Manage</div>
+            <DropdownMenuItem className="gap-2 p-0 " >
+              <Link
+                href="/organization"
+                className="flex items-center space-x-3 p-2 w-full h-full hover:bg-sidebar-accent"
+              >
+                <div className="flex items-center justify-center w-6 h-6 rounded-md border">
+                  <Settings className="w-4 h-4" />
+                </div>
+                <div className="text-muted-foreground font-medium">Manage</div>
+              </Link>
+
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

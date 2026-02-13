@@ -41,8 +41,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DialogDemo } from '@/components/data/upload/upload-doc'
 import { DocumentCard } from '@/components/documents/document-card'
 import { LoadCard } from '@/components/data/load/load-card'
+import { Item, ItemActions, ItemContent, ItemHeader, ItemMedia, ItemTitle } from '@/components/ui/item'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { EyeIcon } from 'lucide-react'
 
-const AgentsCard = ({ broker, onAgentAdded }) => {
+const AgentsCard = ({ broker, agents }) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [agent_name, setAgentName] = useState("")
   const [email, setEmail] = useState("")
@@ -51,9 +54,11 @@ const AgentsCard = ({ broker, onAgentAdded }) => {
 
   const [open, setOpen] = useState(false) // controls sheet
 
-  const agents = broker?.broker_agents ?? [];
+  const t_agents = agents ?? [];
   // Limit to 3 unless showAll is true
-  const agentsToShow = agents.slice(0, 2);
+  const agentsToShow = t_agents.slice(0, 2);
+
+  const addBrokerAgent = useMutation(api.broker_agents.create)
 
   async function handleAddAgent() {
     if (!agent_name) return toast.error("Agent name is required")
@@ -64,31 +69,27 @@ const AgentsCard = ({ broker, onAgentAdded }) => {
       email,
       phone,
       position,
-      broker_id: broker.id,
+      broker_id: broker._id,
     }
-    console.log(payload)
 
-    const promise = fetch(`/api/add/brokers/agents`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    }).then(async (res) => {
-      if (!res.ok) throw new Error("Failed to add term")
-      return res.json()
-    })
+    
 
-    toast.promise(promise, {
-      loading: "Adding Agent...",
-      success: "Agent added successfully!",
-      error: "Failed to add Agent",
-    })
 
     try {
-      await promise
-      setOpen(false) // 👈 close the sheet
-      onAgentAdded?.();
+      const promise = addBrokerAgent({ agent: payload })
+
+      await toast.promise(promise, {
+        loading: "Adding Broker Agent...",
+        success: "✅ Broker Agent added successfully!",
+        error: (err) => `❌ ${err.message || "Failed to add Broker Agent"}`,
+      })
+
+      const newBrokersAgentsId = await promise;
+
+      if (newBrokersAgentsId) {
+        setOpen(false) // 👈 close the sheet
+      }
+
     } finally {
       setIsSubmitting(false)
     }
@@ -161,12 +162,28 @@ const AgentsCard = ({ broker, onAgentAdded }) => {
         ) : (
           <>
             {agentsToShow.map((agent, brokerIdx) => (
-              <Card className="py-2" key={agent.brokerId || brokerIdx}>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>{agent.name}</CardTitle>
-                  <Link href={`/brokers/${broker.id}/agents/${agent.id}`} className='p-2 hover:bg-muted rounded-md'><IconEye className='w-5 h-5 ' /></Link>
-                </CardHeader>
-              </Card>
+              <Item variant='outline' key={agent.brokerId || brokerIdx}>
+                <ItemMedia>
+                  <Avatar className="size-10 bg-muted">
+                    <AvatarFallback>{agent.name}</AvatarFallback>
+                  </Avatar>
+                </ItemMedia>
+                <ItemContent className="flex flex-row items-center justify-between">
+                  <ItemTitle>{agent.name}</ItemTitle>
+                  <ItemActions>
+                    <Link href={`/brokers/agents/${agent._id}`}>
+                      <Button
+                        variant="ghost"
+                        className="rounded-full"
+                      >
+                        <EyeIcon />
+                        View
+                      </Button>
+                    </Link>
+                  </ItemActions>
+
+                </ItemContent>
+              </Item>
             ))}
 
             {agents.length > 2 && (
@@ -217,7 +234,7 @@ const LoadsCard = ({ loads, broker }) => {
   );
 };
 
-const PaymentCard = ({ broker, orgId }) => {
+const PaymentCard = ({ broker }) => {
   const [showAll, setShowAll] = useState(false);
   const [selected, setSelected] = useState("standard");
   const [days, setDays] = useState("3");
@@ -245,7 +262,6 @@ const PaymentCard = ({ broker, orgId }) => {
       is_quickpay: selected === "quickpay",
       email: email,
       broker_id: broker._id,
-      org_id: orgId
     };
     console.log(payload);
 
@@ -266,11 +282,11 @@ const PaymentCard = ({ broker, orgId }) => {
     }
   }
 
-  async function handleDeleteTerm(termId, org_id) {
+  async function handleDeleteTerm(termId) {
     try {
       await toast.promise(
         console.log("Deleting term", termId),
-        deletePaymentTerm({ table: "payment_terms", id: termId, orgId: org_id }),
+        deletePaymentTerm({ table: "payment_terms", id: termId }),
         {
           loading: "Deleting payment term...",
           success: "Payment term deleted successfully!",
@@ -412,7 +428,7 @@ const PaymentCard = ({ broker, orgId }) => {
                     )}
                   </div>
 
-                  <Button variant="destructive" size="icon" onClick={() => handleDeleteTerm(agent._id, orgId)}>
+                  <Button variant="destructive" size="icon" onClick={() => handleDeleteTerm(agent._id)}>
                     <IconTrash />
                   </Button>
                 </CardHeader>
@@ -505,7 +521,7 @@ const NotesCard = ({ broker, updateNotes }) => {
   );
 };
 
-const DocumentsCard = ({ broker, files, orgId }) => {
+const DocumentsCard = ({ broker, files }) => {
   const filteredFiles = files;
   return (
     <Card>
@@ -547,11 +563,10 @@ export default function TablePage({ params }) {
   // Unwrap the params Promise
   const { id } = React.use(params);
 
-  const organization = useQuery(api.organizations.getCurrentOrganization)
-  const orgId = organization?._id ? organization._id : "";
-  const data = useQuery(api.brokers.byId, { id: id, orgId: orgId });
-  const files = useQuery(api.files.byId, { entityId: id, entityType: "brokers", orgId: orgId }) || [];
-  const loads = useQuery(api.getTable.allWithIndex, { table: "loads", orgId: orgId, index: "by_brokerId", field: "broker_id", indexValue: id }) || [];
+  const data = useQuery(api.brokers.byId, { id: id });
+  const agents = useQuery(api.getTable.allWithIndex, { table: "brokers_agents", index: "by_brokerId", field: "broker_id", indexValue: id }) || [];
+  const files = useQuery(api.files.byId, { entityId: id, entityType: "brokers" }) || [];
+  const loads = useQuery(api.getTable.allWithIndex, { table: "loads", index: "by_brokerId", field: "broker_id", indexValue: id }) || [];
   const updateNotes = useMutation(api.brokers.updateNotes);
 
   if (!data || data.length === 0) return <ProfileHeader skeleton={true} />
@@ -579,8 +594,8 @@ export default function TablePage({ params }) {
                   ]
 
                 } />
-                <AgentsCard broker={data} />
-                <PaymentCard broker={data} orgId={orgId} />
+                <AgentsCard broker={data} agents={agents} />
+                <PaymentCard broker={data} />
                 <NotesCard broker={data} updateNotes={updateNotes} />
 
               </div>
@@ -588,7 +603,7 @@ export default function TablePage({ params }) {
             </div>
           </TabsContent>
           <TabsContent value="agents" className="mt-2">
-            <DocumentsCard broker={data} files={files} orgId={orgId} />
+            <DocumentsCard broker={data} files={files} />
           </TabsContent>
           <TabsContent value="loads" className="mt-2">
             <div className="grid grid-cols-1 md:grid-cols-1 gap-4">

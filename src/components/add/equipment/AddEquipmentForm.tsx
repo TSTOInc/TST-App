@@ -21,7 +21,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 
 
@@ -71,8 +71,6 @@ type FormData = z.infer<typeof formSchema>;
 
 export default function AddEquipmentForm() {
   const router = useRouter();
-  const organization = useQuery(api.organizations.getCurrentOrganization)
-    const orgId = organization?._id ? organization._id : "";
   const createEquipment = useMutation(api.equipment.create);
 
 
@@ -148,27 +146,28 @@ export default function AddEquipmentForm() {
       }
 
       const payload = {
-        org_id: orgId,
         equipment_number: data.equipment_number,
         equipment_length: data.equipment_length || null,
         equipment_type: data.equipment_type,
         status: data.status,
         image_url: imageUrl,
       };
+      const promise = createEquipment({ equipment: payload });
 
-      await toast.promise(
-        createEquipment({ equipment: payload }), // ✅ convex mutation
-        {
-          loading: "Adding equipment...",
-          success: "✅ Equipment added successfully!",
-          error: (err: any) => `❌ ${err.message || "Failed to add equipment"}`,
-        }
-      );
+      toast.promise(promise, {
+        loading: "Adding equipment...",
+        success: "✅ Equipment added successfully!",
+        error: (err: any) => `❌ ${err.message || "Failed to add equipment"}`,
+      });;
 
-      router.back();
+      const newEquipmentId = await promise;
+
+      if (newEquipmentId) {
+        router.push(`/equipment/${newEquipmentId}`);
+      }
+
     } catch (err: any) {
       console.error(err);
-      toast.error(`Failed to submit form: ${err.message}`);
     } finally {
       setSubmitting(false);
       setOpenDialog(false);

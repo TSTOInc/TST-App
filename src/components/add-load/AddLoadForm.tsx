@@ -86,10 +86,8 @@ type FormData = z.infer<typeof formSchema>
 
 export default function AddLoadForm() {
   const router = useRouter()
-  const [submitting, setSubmitting] = useState(false)
-  const organization = useQuery(api.organizations.getCurrentOrganization)
-  const orgId = organization?._id ? organization._id : "";
   const createLoad = useMutation(api.loads.create)
+  const [submitting, setSubmitting] = useState(false)
 
   const {
     control,
@@ -175,29 +173,36 @@ export default function AddLoadForm() {
   }
 
   const onSubmit = async (data: FormData) => {
-    const cleanData = {
-      ...data,
-      stops: data.stops.map((s) => ({
-        ...s,
-        appointmentTime: s.appointmentTime
-          ? s.appointmentTime.toISOString()
-          : null,
-        windowStart: s.windowStart ? s.windowStart.toISOString() : null,
-        windowEnd: s.windowEnd ? s.windowEnd.toISOString() : null,
-      })),
-    }
-    console.log(cleanData)
-    await toast.promise(
-      async () => {
-        await createLoad({ org_id: orgId, data: cleanData }) // ✅ no Dates
-        router.push("/loads")
-      },
-      {
-        loading: "Creating load...",
-        success: "✅ Load created successfully",
-        error: "❌ Failed to create load",
+    try {
+      const cleanData = {
+        ...data,
+        stops: data.stops.map((s) => ({
+          ...s,
+          appointmentTime: s.appointmentTime
+            ? s.appointmentTime.toISOString()
+            : null,
+          windowStart: s.windowStart ? s.windowStart.toISOString() : null,
+          windowEnd: s.windowEnd ? s.windowEnd.toISOString() : null,
+        })),
       }
-    )
+
+      const promise = createLoad({ data: cleanData }) // ✅ no Dates
+
+      toast.promise(promise, {
+        loading: "Adding Load...",
+        success: "✅ Load added successfully!",
+        error: (err: any) => `❌ ${err.message || "Failed to add load"}`,
+      });;
+
+      const newLoadId = await promise;
+
+      if (newLoadId) {
+        router.push(`/loads/${newLoadId}`);
+      }
+    }
+    catch (err) {
+      console.log(err)
+    }
   }
 
 
@@ -231,7 +236,7 @@ export default function AddLoadForm() {
           <LoadDetailsStep control={control} errors={errors} />
         )}
         {currentStep === 3 && (
-          <PartiesStep control={control} errors={errors} orgId={orgId} />
+          <PartiesStep control={control} errors={errors} />
         )}
       </div>
 

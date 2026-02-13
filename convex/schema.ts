@@ -60,11 +60,11 @@ export default defineSchema({
     created_by: v.optional(v.id("users")),
     org_id: v.string(),
     broker_id: v.string(),
-    email: v.string(),
+    email: v.optional(v.string()),
     name: v.string(),
-    phone: v.string(),
-    position: v.null(),
-  }).index("by_orgId", ["org_id"]),
+    phone: v.optional(v.string()),
+    position: v.optional(v.string()),
+  }).index("by_orgId", ["org_id"]).index("by_brokerId", ["broker_id"]),
 
   chats: defineTable({
     lastMessageId: v.optional(v.id("messages")),
@@ -83,14 +83,14 @@ export default defineSchema({
 
   drivers: defineTable({
     created_by: v.optional(v.id("users")),
-    org_id: v.string(),
-    email: v.null(),
-    image_url: v.string(),
-    license_number: v.string(),
-    license_url: v.union(v.null(), v.string()),
+    org_id: v.id("organizations"),
+    email: v.optional(v.string()),
+    image_url: v.optional(v.string()),
+    license_number: v.optional(v.string()),
     name: v.string(),
     phone: v.string(),
     status: v.string(),
+    userId: v.optional(v.id("users")),
   }).index("by_orgId", ["org_id"]),
 
   equipment: defineTable({
@@ -174,19 +174,18 @@ export default defineSchema({
 
   trucks: defineTable({
     created_by: v.optional(v.id("users")),
-    org_id: v.string(),
-    color: v.null(),
-    docs: v.array(v.string()),
-    driver_id: v.null(),
+    org_id: v.id("organizations"),
+    color: v.optional(v.string()),
+    driver_id: v.optional(v.id("drivers")),
     image_url: v.string(),
-    make: v.string(),
-    model: v.string(),
+    make: v.optional(v.string()),
+    model: v.optional(v.string()),
     status: v.string(),
-    transponder_id: v.null(),
-    truck_alias: v.union(v.null(), v.string()),
+    transponder_id: v.optional(v.string()),
+    truck_alias: v.optional(v.string()),
     truck_number: v.string(),
-    vin: v.string(),
-    year: v.union(v.null(), v.float64()),
+    vin: v.optional(v.string()),
+    year: v.optional(v.float64()),
   }).index("by_orgId", ["org_id"]),
 
   files: defineTable({
@@ -232,6 +231,36 @@ export default defineSchema({
 
 
   }).index("by_status", ["status"]).index("by_orgId", ["org_id", "status"]).index("by_entity", ["entityType", "entityId", "org_id", "status"]),
+
+
+  audit_logs: defineTable({
+    table: v.string(),            // "loads", "invoices", etc.
+    record_id: v.string(),        // generic id (toString())
+    action: v.union(
+      v.literal("create"),
+      v.literal("update"),
+      v.literal("delete")
+    ),
+    performed_by: v.string(),     // Clerk userId
+    org_id: v.optional(v.string()),
+
+    before: v.optional(v.any()),
+    after: v.optional(v.any()),
+
+    changed_fields: v.optional(v.array(v.string())),
+    comment: v.optional(v.string()),
+
+    created_at: v.number(),
+  })
+    .index("by_record_org", ["table", "record_id", "org_id"])
+    .index("by_orgId", ["org_id"]),
+
+
+
+
+
+
+
 });
 
 

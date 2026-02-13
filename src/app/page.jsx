@@ -41,12 +41,11 @@ function getPeriodStats(loads, brokers, start, end) {
 }
 
 const Home = () => {
-  const organization = useQuery(api.organizations.getCurrentOrganization)
   const pathname = usePathname() ?? "";
   const path = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
 
-  const loads = useQuery(api.getTable.all, organization?._id ? { table: "loads", orgId: organization._id } : "skip");
-  const brokers = useQuery(api.getTable.all, organization?._id ? { table: "brokers", orgId: organization._id } : "skip");
+  const loads = useQuery(api.getTable.all, { table: "loads"});
+  const brokers = useQuery(api.getTable.all,{ table: "brokers"});
 
   const [stats, setStats] = useState({
     last30Days: { revenue: "$0", brokers: 0, loads: 0 },

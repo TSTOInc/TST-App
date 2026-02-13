@@ -34,7 +34,7 @@ import LinkButton from "@/components/link"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
-
+import { AuditLogItem } from "@/components/data/log/log-item";
 
 export default function ProfileHeader({
     skeleton = false,
@@ -95,12 +95,12 @@ export default function ProfileHeader({
         );
     }
 
-    const organization = useQuery(api.organizations.getCurrentOrganization)
-    const orgId = organization?._id ? organization._id : "";
     const deleteDoc = useMutation(api.delete.byId);
+    const logs = useQuery(api.logs.byId, { table: table, id: data._id });
 
     const router = useRouter();
     const [open, setOpen] = useState(false);
+
 
     /** 🔥 Delete logic */
     const handleDelete = async () => {
@@ -110,7 +110,7 @@ export default function ProfileHeader({
         }
 
         try {
-            await toast.promise(deleteDoc({ id: data._id, table: table, orgId: orgID }),
+            await toast.promise(deleteDoc({ id: data._id, table: table }),
                 {
                     loading: "Deleting...",
                     success: "Deleted successfully!",
@@ -118,7 +118,7 @@ export default function ProfileHeader({
                 }
             );
 
-            router.push(`/${table}`);
+            router.back();
         } catch (err) {
             console.error(err);
         }
@@ -202,7 +202,7 @@ export default function ProfileHeader({
                                 </DialogTrigger>
 
                                 <DialogContent className="max-h-[80vh] flex flex-col">
-                                    <DialogHeader className="shrink-0 sticky top-0 bg-background pb-2">
+                                    <DialogHeader className="shrink-0 sticky top-0 pb-2">
                                         <DialogTitle>Edit {table}</DialogTitle>
                                     </DialogHeader>
 
@@ -259,6 +259,50 @@ export default function ProfileHeader({
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
+                            <Dialog>
+                                <DialogTrigger asChild>
+                                    <Button variant="outline">
+                                        Logs
+                                    </Button>
+                                </DialogTrigger>
+
+                                <DialogContent className="">
+                                    <DialogHeader className="shrink-0 sticky top-0 pb-2">
+                                        <DialogTitle>{table} logs</DialogTitle>
+                                    </DialogHeader>
+
+                                    <div className="overflow-y-auto pr-2 flex-1 space-y-4">
+                                        {logs
+                                            ?.slice()
+                                            .sort((a, b) => b._creationTime - a._creationTime)
+                                            .map((log) => (
+                                                <AuditLogItem key={log._id} log={log} />
+                                            ))}
+                                        {logs?.length === 0 &&
+                                            <div className="border rounded-xl transition-colors">
+                                                {/* Header */}
+                                                <div
+                                                    className={`flex p-4 items-start justify-between cursor-pointer hover:bg-muted/40 rounded-xl`}
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <Avatar className="bg-muted">
+                                                        </Avatar>
+                                                        <div>
+                                                            <p className="font-medium">
+                                                                No logs found for {name}
+                                                            </p>
+                                                            <p className="text-sm text-muted-foreground">
+                                                                Please contact support for this issue.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+
+                                    </div>
+                                </DialogContent>
+                            </Dialog>
                         </div>
                     </div>
                 </div>

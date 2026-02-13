@@ -2,21 +2,23 @@ import { Id } from "./_generated/dataModel";
 import { mutation, query, QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { decrypt } from "./encryption";
+import { requireUserWithOrg } from "./lib/auth";
 
 // Create a new task with the given text
 export const create = mutation({
   args: {
     participants: v.array(v.id("users")),
     type: v.string(),
-    orgId: v.id("organizations"),
   },
-  handler: async (ctx, { participants, type, orgId }) => {
+  handler: async (ctx, { participants, type }) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    if (!identity?.subject) throw new Error("Not authenticated");
+
+    const { user, org } = await requireUserWithOrg(ctx);
 
     const chatId = await ctx.db.insert("chats", {
       type,
-      org_id: orgId,
+      org_id: org._id,
     });
 
     for (const userId of participants) {
@@ -83,19 +85,17 @@ export const get = query({
 
 
 export const byParticipant = query({
-  args: {
-    participantId: v.id("users"),
-    orgId: v.id("organizations"),
-  },
-  handler: async (ctx, { participantId, orgId }) => {
+  handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    if (!identity?.subject) throw new Error("Not authenticated");
+
+    const { user, org } = await requireUserWithOrg(ctx);
 
     // 1️⃣ Get chatParticipant rows for this user
     const memberships = await ctx.db
       .query("chatParticipants")
       .withIndex("by_userId", (q) =>
-        q.eq("userId", participantId)
+        q.eq("userId", user._id)
       )
       .collect();
 
@@ -108,7 +108,7 @@ export const byParticipant = query({
 
     // 3️⃣ Filter by org
     const orgChats = chats.filter(
-      (chat) => chat && chat.org_id === orgId
+      (chat) => chat && chat.org_id === org._id
     );
 
     return orgChats;
@@ -121,9 +121,14 @@ export const findDirectChat = query({
   args: {
     userA: v.id("users"),
     userB: v.id("users"),
-    orgId: v.id("organizations"),
   },
-  handler: async (ctx, { userA, userB, orgId }) => {
+  handler: async (ctx, { userA, userB }) => {
+
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.subject) throw new Error("Not authenticated");
+
+    const { user, org } = await requireUserWithOrg(ctx);
+
     const userAChats = await ctx.db
       .query("chatParticipants")
       .withIndex("by_userId", q => q.eq("userId", userA))
@@ -131,7 +136,7 @@ export const findDirectChat = query({
 
     for (const membership of userAChats) {
       const chat = await ctx.db.get(membership.chatId);
-      if (!chat || chat.org_id !== orgId) continue;
+      if (!chat || chat.org_id !== org._id) continue;
 
       const otherParticipants = await ctx.db
         .query("chatParticipants")
@@ -151,15 +156,17 @@ export const findDirectChat = query({
 
 
 export const byParticipantInOrg = query({
-  args: {
-    participantId: v.id("users"),
-    orgId: v.id("organizations"),
-  },
-  handler: async (ctx, { participantId, orgId }) => {
+  handler: async (ctx) => {
+
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.subject) throw new Error("Not authenticated");
+
+    const { user, org } = await requireUserWithOrg(ctx);
+
     const memberships = await ctx.db
       .query("chatParticipants")
       .withIndex("by_userId", (q) =>
-        q.eq("userId", participantId)
+        q.eq("userId", user._id)
       )
       .collect();
 
@@ -170,7 +177,7 @@ export const byParticipantInOrg = query({
     const chats = await Promise.all(
       chatIds.map(async (chatId) => {
         const chat = await ctx.db.get(chatId);
-        if (!chat || chat.org_id !== orgId) return null;
+        if (!chat || chat.org_id !== org._id) return null;
 
         // 🔥 Check if there are unread messages
         const unreadMessages = await ctx.db
@@ -178,13 +185,13 @@ export const byParticipantInOrg = query({
           .filter((q) =>
             q.and(
               q.eq(q.field("chatId"), chatId),
-              q.neq(q.field("senderId"), participantId)
+              q.neq(q.field("senderId"), user._id)
             )
           )
           .collect();
 
         const hasUnread = unreadMessages.some(
-          (msg) => !msg.seenBy.includes(participantId)
+          (msg) => !msg.seenBy.includes(user._id)
         );
 
         const participantRows = await ctx.db

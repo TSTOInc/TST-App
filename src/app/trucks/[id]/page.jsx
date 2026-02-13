@@ -287,10 +287,8 @@ export default function TablePage({ params }) {
 
     const { id } = React.use(params);
 
-    const organization = useQuery(api.organizations.getCurrentOrganization)
-    const orgId = organization?._id ? organization._id : "";
-    const data = useQuery(api.trucks.byId, { id, orgId: orgId });
-    const documents = useQuery(api.files.byId, { entityId: id, entityType: "trucks", orgId: orgId }) || [];
+    const data = useQuery(api.trucks.byId, { id });
+    const documents = useQuery(api.files.byId, { entityId: id, entityType: "trucks" }) || [];
     const Registration = documents.find((doc) => doc.category === "REGISTRATION");
     const IDCard = documents.find((doc) => doc.category === "ID_CARD");
 

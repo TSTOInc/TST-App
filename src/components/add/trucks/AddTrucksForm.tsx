@@ -21,6 +21,10 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { useMutation } from "convex/react";
+import { api } from "@convex/_generated/api";
+import { Id } from "@convex/_generated/dataModel";
+
 
 const stepLabels = ["Truck Info", "Vehicle Info", "Picture"];
 const statuses: ComboBoxOption[] = [
@@ -32,11 +36,11 @@ const statuses: ComboBoxOption[] = [
 const formSchema = z.object({
   picture: z.any().optional(),
   truck_number: z.string().min(1, "Truck number required"),
-  truck_alias: z.string(),
+  truck_alias: z.string().optional(),
   vin: z.string().optional(),
   make: z.string().optional(),
   model: z.string().optional(),
-  year: z.string(),
+  year: z.number().optional(),
   transponder_id: z.string().optional(),
   status: z.string().min(1, "Status required"),
   color: z.string().optional(),
@@ -47,6 +51,7 @@ type FormData = z.infer<typeof formSchema>;
 
 export default function AddTrucksForm() {
   const router = useRouter();
+  const createTruck = useMutation(api.trucks.create);
 
   const {
     handleSubmit,
@@ -63,7 +68,7 @@ export default function AddTrucksForm() {
       vin: "",
       make: "",
       model: "",
-      year: "",
+      year: undefined,
       transponder_id: "",
       status: statuses[0].value,
       color: "",
@@ -133,33 +138,35 @@ export default function AddTrucksForm() {
       }
 
       const payload = {
-        image_url: imageUrl,
         truck_number: data.truck_number,
-        truck_alias: data.truck_alias || null,
-        vin: data.vin || null,
-        make: data.make || null,
-        model: data.model || null,
-        year: data.year || null,
-        transponder_id: data.transponder_id || null,
-        driver_id: data.driver_id || null,
+        truck_alias: data.truck_alias || undefined,
+        vin: data.vin || undefined,
+        make: data.make || undefined,
+        model: data.model || undefined,
+        year: data.year ?? undefined,
+        transponder_id: data.transponder_id || undefined,
+        driver_id: data.driver_id ? (data.driver_id as Id<"drivers">) : undefined,
         status: data.status,
-        color: data.color || null,
+        color: data.color || undefined,
+        image_url: imageUrl || "",
       };
 
-      console.log("Submitting payload:", JSON.stringify(payload));
 
-      const response = await fetch(`/api/add/trucks`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      const promise = createTruck({ truck: payload });
+
+      toast.promise(promise, {
+        loading: "Adding truck...",
+        success: "✅ Truck added successfully!",
+        error: (err: any) => `❌ ${err.message || "Failed to add truck"}`,
       });
 
-      if (!response.ok) throw new Error(await response.text());
-      router.back();
-      toast.success("Truck added successfully!");
+      const newTruckId = await promise;
+
+      if (newTruckId) {
+        router.push(`/trucks/${newTruckId}`);
+      }
     } catch (err: any) {
       console.error(err);
-      toast.error(`Failed to submit form: ${err.message}`);
     } finally {
       setSubmitting(false);
       setOpenDialog(false);

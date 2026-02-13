@@ -84,6 +84,7 @@ const data = {
       title: "Directory",
       url: "/directory",
       icon: IconSearch,
+      badge: "Alpha"
     },
     {
       title: "Chats",

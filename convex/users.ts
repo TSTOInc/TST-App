@@ -2,6 +2,8 @@ import { action, internalMutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { createClerkClient } from "@clerk/backend";
 import { internal } from "./_generated/api";
+import { getAuth } from "@clerk/nextjs/server";
+import { requireUserWithOrg } from "./lib/auth";
 
 const clerkClient = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY!,
@@ -10,15 +12,19 @@ const clerkClient = createClerkClient({
 
 // 🔥 PUBLIC QUERY 
 export const getAllByOrganization = query({
-  args: {
-    orgId: v.id("organizations"),
-  },
-  handler: async (ctx, { orgId }) => {
+  handler: async (ctx) => {
+
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.subject) throw new Error("Not authenticated");
+
+    const { user, org } = await requireUserWithOrg(ctx);
+
+
     // 1️⃣ Get memberships for org
     const memberships = await ctx.db
       .query("memberships")
       .withIndex("by_orgId", (q) =>
-        q.eq("org_id", orgId)
+        q.eq("org_id", org._id)
       )
       .collect();
 
@@ -49,9 +55,6 @@ export const getUserByClerkId = query({
       .unique();
   },
 });
-
-
-
 
 
 

@@ -81,7 +81,7 @@ export function NavMain({
                 </Link>
               ) : (
                 <div className="flex items-center gap-2 w-full h-full cursor-not-allowed opacity-50">
-                  <IconCirclePlusFilled />
+                  <Plus />
                   <span>Add {displayName ?? ""}</span>
                 </div>
               )}

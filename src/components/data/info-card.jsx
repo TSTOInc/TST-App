@@ -16,14 +16,35 @@ function formatTimestamp(ms) {
 }
 
 const Field = ({ label, value, type, inline, href, blank, external }) => {
-  const link = href || value // allow href override
+  const link = href ?? value; // safer than ||
+
+  const isEmpty = value === null || value === undefined;
+
+  let displayValue = "N/A";
+
+  if (!isEmpty) {
+    if (type === "date") {
+      displayValue = formatTimestamp(value);
+    } else if (type === "phone") {
+      displayValue = formatPhoneNumber(value);
+    } else {
+      displayValue = String(value);
+    }
+  }
+
   const content = (
     <div className="flex items-center gap-1">
-      <p>{type === "date" ? formatTimestamp(value): type === "phone" ? formatPhoneNumber(value) : value || "N/A"}</p>
-      {type !== "link" && value && <Copy value={value} />}
-      {type === "link" && link && <LinkButton href={link} blank={blank} external={external} />}
+      <p>{displayValue}</p>
+
+      {/* Only show copy if we have real value */}
+      {!isEmpty && type !== "link" && <Copy value={value} />}
+
+      {/* Only show link button if we have a valid link */}
+      {type === "link" && link && (
+        <LinkButton href={link} blank={blank} external={external} />
+      )}
     </div>
-  )
+  );
 
   return inline ? (
     <div className="flex items-center gap-2 mb-4">
@@ -35,8 +56,9 @@ const Field = ({ label, value, type, inline, href, blank, external }) => {
       <p className="text-muted-foreground mb-0.5">{label}</p>
       {content}
     </div>
-  )
-}
+  );
+};
+
 
 export default function InfoCard({ CardIcon, title, fields, inline = true }) {
   return (
@@ -57,7 +79,7 @@ export default function InfoCard({ CardIcon, title, fields, inline = true }) {
               type={field.type || "text"}
               href={field.href} // new override option
               blank={field.blank ?? true}
-              external={field.external ?? true} 
+              external={field.external ?? true}
               inline={inline}
             />
           ))}

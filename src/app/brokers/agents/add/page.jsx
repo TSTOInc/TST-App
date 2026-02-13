@@ -4,6 +4,9 @@ import React, { useState, useEffect } from "react";
 import * as z from "zod";
 import { toast } from "sonner";
 import DynamicMultiStepForm, { StepConfig } from "@/components/forms/DynamicMultiStepForm";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@convex/_generated/api";
+import { useRouter } from "next/navigation";
 
 // Validation schema
 const exampleSchema = z.object({
@@ -15,56 +18,35 @@ const exampleSchema = z.object({
 });
 
 const Page = () => {
-  const [brokers, setBrokers] = useState([]);
-  const [loadingBrokers, setLoadingBrokers] = useState(false);
-
-  // Fetch brokers list on mount
-  useEffect(() => {
-    const fetchBrokers = async () => {
-      setLoadingBrokers(true);
-      try {
-        const res = await fetch(`/api/get/brokers`);
-        if (!res.ok) throw new Error("Failed to load brokers");
-
-        const data = await res.json();
-
-        // Adapt your backend response here:
-        const options = data.map((broker) => ({
-          value: broker.id?.toString() || broker.name,
-          label: broker.name,
-        }));
-
-        setBrokers(options);
-      } catch (err) {
-        toast.error(err.message || "Error loading brokers");
-      } finally {
-        setLoadingBrokers(false);
-      }
-    };
-
-    fetchBrokers();
-  }, []);
+  const router = useRouter();
+  const brokersData = useQuery(api.getTable.all, { table: "brokers" });
+  const createBrokerAgent = useMutation(api.broker_agents.create);
+  const brokers = brokersData?.map((broker) => ({
+    value: broker._id,
+    label: broker.name,
+    description: `${broker.address || ""}${broker.address_2 ? ", " + broker.address_2 : ""}`,
+  })) ?? [];
+  const loadingBrokers = brokersData === undefined;
 
   const handleSubmitApi = async (data) => {
     console.log(data);
     try {
-      await toast.promise(
-        fetch(`/api/add/brokers/agents`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        }).then(async (res) => {
-          if (!res.ok) throw new Error("Failed to submit");
-          return res.json();
-        }),
-        {
-          loading: "Submitting...",
-          success: "Submitted successfully!",
-          error: (err) => err?.message || "Submission failed",
-        }
-      );
+
+      const promise = createBrokerAgent({ agent: data });
+      await toast.promise(promise, {
+        loading: "Adding Broker Agent...",
+        success: "✅ Broker Agent added successfully!",
+        error: (err) => `❌ ${err.message || "Failed to add Broker Agent"}`,
+      })
+
+      const newBrokersAgentsId = await promise;
+
+      if (newBrokersAgentsId) {
+        router.push(`/brokers/agents/${newBrokersAgentsId}`);
+      }
+
     } catch (err) {
-      toast.error(err.message || "Something went wrong");
+      console.error(err);
     }
   };
 
@@ -91,7 +73,7 @@ const Page = () => {
   return (
     <div className="p-6">
       <DynamicMultiStepForm
-      showProgressBar={false}
+        showProgressBar={false}
         steps={stepConfig}
         schema={exampleSchema}
         onSubmit={handleSubmitApi}

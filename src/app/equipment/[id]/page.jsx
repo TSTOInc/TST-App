@@ -59,11 +59,9 @@ const ContactCard = ({ carrier }) => (
 
 export default function TablePage({ params }) {
     const { id } = React.use(params);
-
-    const organization = useQuery(api.organizations.getCurrentOrganization)
-    const orgId = organization?._id ? organization._id : "";
-    const data = useQuery(api.getDoc.byId, { table: "equipment", id: id, orgId: orgId });
-    const documents = useQuery(api.files.byId, { entityType: "equipment", entityId: id, orgId: orgId }) || [];
+    
+    const data = useQuery(api.getDoc.byId, { table: "equipment", id: id});
+    const documents = useQuery(api.files.byId, { entityType: "equipment", entityId: id }) || [];
     const registration = documents.find((doc) => doc.category === "REGISTRATION");
     const documentsToShow = documents?.filter((file) => file.category === "MISC") || [];
 

@@ -1,19 +1,24 @@
 import { query, mutation, QueryCtx, MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
+import { requireUserWithOrg } from "./lib/auth";
+import { logAudit } from "./lib/audit";
 
 export const byId = query({
-  args: { id: v.string(), orgId: v.string() },
+  args: { id: v.string() },
   handler: async (ctx, args) => {
+
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    if (!identity?.subject) throw new Error("Not authenticated");
+
+    const { user, org } = await requireUserWithOrg(ctx);
 
     const docId = ctx.db.normalizeId("loads", args.id);
     if (!docId) throw new Error("Invalid document ID");
 
     const record = await ctx.db.get(docId);
     if (!record) return null;
-    if (record.org_id !== args.orgId) return null;
+    if (record.org_id !== org._id) return null;
     let stops, payment_terms, broker, truck, equipment, broker_Agent
     stops = await getStops(ctx, record._id);
     payment_terms = await ctx.db.get(record.payment_terms_id as Id<"payment_terms">);
@@ -56,8 +61,10 @@ export const updateProgress = mutation({
     load_status: v.string(),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) throw new Error("Not authenticated")
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.subject) throw new Error("Not authenticated");
+
+    const { user, org } = await requireUserWithOrg(ctx);
 
     const { loadId, progress, load_status } = args
     const load = await ctx.db.get(loadId)
@@ -70,6 +77,20 @@ export const updateProgress = mutation({
       load_status,
     })
 
+    await logAudit(ctx, {
+      table: "loads",
+      recordId: loadId,
+      action: "update",
+      userId: user._id,
+      org_id: org._id,
+      before: load,
+      after: {
+        ...load,
+        progress: safeProgress,
+        load_status,
+      },
+    })
+
     return { updated: true, progress: safeProgress, load_status }
   },
 })
@@ -79,8 +100,10 @@ export const setInvoicedAt = mutation({
     invoiced_at: v.string(),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) throw new Error("Not authenticated")
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.subject) throw new Error("Not authenticated");
+
+    const { user, org } = await requireUserWithOrg(ctx);
 
     const { loadId, invoiced_at } = args
     const load = await ctx.db.get(loadId)
@@ -88,6 +111,19 @@ export const setInvoicedAt = mutation({
 
     await ctx.db.patch(loadId, {
       invoiced_at,
+    })
+
+    await logAudit(ctx, {
+      table: "loads",
+      recordId: loadId,
+      action: "update",
+      userId: user._id,
+      org_id: org._id,
+      before: load,
+      after: {
+        ...load,
+        invoiced_at,
+      },
     })
 
     return { updated: true, invoiced_at }
@@ -99,8 +135,10 @@ export const setPaidAt = mutation({
     paid_at: v.string(),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) throw new Error("Not authenticated")
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.subject) throw new Error("Not authenticated");
+
+    const { user, org } = await requireUserWithOrg(ctx);
 
     const { loadId, paid_at } = args
     const load = await ctx.db.get(loadId)
@@ -108,6 +146,19 @@ export const setPaidAt = mutation({
 
     await ctx.db.patch(loadId, {
       paid_at,
+    })
+
+    await logAudit(ctx, {
+      table: "loads",
+      recordId: loadId,
+      action: "update",
+      userId: user._id,
+      org_id: org._id,
+      before: load,
+      after: {
+        ...load,
+        paid_at,
+      },
     })
 
     return { updated: true, paid_at }
@@ -119,13 +170,28 @@ export const clearPaidAt = mutation({
   },
   handler: async (ctx, { loadId }) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    if (!identity?.subject) throw new Error("Not authenticated");
+
+    const { user, org } = await requireUserWithOrg(ctx);
 
     const load = await ctx.db.get(loadId);
     if (!load) throw new Error("Load not found");
 
     await ctx.db.patch(loadId, {
       paid_at: null,
+    });
+
+    await logAudit(ctx, {
+      table: "loads",
+      recordId: loadId,
+      action: "update",
+      userId: user._id,
+      org_id: org._id,
+      before: load,
+      after: {
+        ...load,
+        paid_at: null,
+      },
     });
 
     return { updated: true, paid_at: null };
@@ -161,18 +227,20 @@ async function getNextInvoiceNumber(ctx: MutationCtx, orgId: string) {
 
 export const create = mutation({
   args: {
-    org_id: v.string(),
     data: v.any(),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) throw new Error("Not authenticated")
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.subject) throw new Error("Not authenticated");
 
-    const { data, org_id } = args
-    const invoice_number = await getNextInvoiceNumber(ctx, org_id);
+    const { user, org } = await requireUserWithOrg(ctx);
+
+    const { data } = args
+    const invoice_number = await getNextInvoiceNumber(ctx, org._id);
     // Prepare load data (exclude stops)
     const payload = {
-      org_id,
+      org_id: org._id,
+      created_by: user._id,
       broker_id: data.parties?.broker || "",
       equipment_id: data.parties?.trailer || "",
       truck_id: data.parties?.truck || "",
@@ -196,10 +264,12 @@ export const create = mutation({
     // ✅ Insert the load (no stops here)
     const loadId = await ctx.db.insert("loads", payload)
 
+    if (!loadId) throw new Error("Failed to create load");
+
     // ✅ Now insert stops separately
     for (const stop of data.stops || []) {
-      await ctx.db.insert("stops", {
-        org_id,
+      const stopId = await ctx.db.insert("stops", {
+        org_id: org._id,
         load_id: loadId,
         type: stop.type,
         location: stop.location,
@@ -214,7 +284,18 @@ export const create = mutation({
           ? new Date(stop.windowEnd).toISOString()
           : null,
       })
+
+      if (!stopId) throw new Error("Failed to create stop");
     }
+
+    await logAudit(ctx, {
+      table: "loads",
+      recordId: loadId,
+      action: "create",
+      userId: user._id,
+      org_id: org._id,
+      after: payload,
+    })
 
     return loadId
   },

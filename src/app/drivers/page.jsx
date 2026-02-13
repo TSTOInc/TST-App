@@ -2,7 +2,7 @@ import InfoGrid from "@/components/data/info-grid";
 
 const driverSchema = {
   title: "name", // simple key
-  description: ["License-", "license_number", " • ", "phone"], // multiple fields combined
+  description: ["License-", "license_number"], // multiple fields combined
   image: "image_url", // single key
   status: "status",
 };

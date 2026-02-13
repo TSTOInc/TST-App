@@ -106,10 +106,6 @@ const statusColor = {
 };
 export function DocumentCard({ file }) {
 
-
-    const organization = useQuery(api.organizations.getCurrentOrganization)
-    const orgId = organization?._id ? organization._id : "";
-
     const Icon = getFileIcon(file.mimeType);
 
     const [deleteFile, setDeleteFile] = useState(null);
@@ -187,9 +183,9 @@ export function DocumentCard({ file }) {
     };
 
 
-    const handleDelete = async (documentId, orgId) => {
+    const handleDelete = async (documentId) => {
         try {
-            await deleteFileMutation({ id: documentId, orgId: orgId });
+            await deleteFileMutation({ id: documentId });
             toast.success("Document deleted successfully!");
         } catch (error) {
             console.error(error);
@@ -363,7 +359,7 @@ export function DocumentCard({ file }) {
                         </AlertDialogCancel>
                         <Button
                             variant="destructive"
-                            onClick={() => handleDelete(deleteFile._id, orgId)}
+                            onClick={() => handleDelete(deleteFile._id)}
                         >
                             Delete
                         </Button>

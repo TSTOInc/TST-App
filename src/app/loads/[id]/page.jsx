@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
-import { FileText, DollarSign, Package, Building2, NotepadText, MapPin, ArrowUpFromLine, ArrowDownToLine, FileSearch, FileTextIcon, Unplug, } from "lucide-react"
+import { FileText, DollarSign, Package, Building2, NotepadText, MapPin, ArrowUpFromLine, ArrowDownToLine, FileSearch, FileTextIcon, Unplug, ActivityIcon, } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
@@ -15,6 +15,7 @@ import LoadProgressCard from '@/components/layout/LoadProgressCard'
 import { IconFileDollar, IconUsersGroup } from "@tabler/icons-react";
 import { DialogDemo } from "@/components/data/upload/upload-doc";
 import { DocumentCard } from "@/components/documents/document-card";
+import { AuditLogItem } from "@/components/data/log/log-item";
 
 // ---------------------- HELPERS ----------------------
 const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -127,7 +128,7 @@ const RateCard = ({ rate, feePercent, invoicedAt, paymentTerms, paid_at }) => {
   );
 };
 
-const DocumentsCard = ({ load, files, orgId }) => {
+const DocumentsCard = ({ load, files }) => {
   const filteredFiles = files?.filter((file) => file.category !== "CDL") || [];
   return (
     <Card>
@@ -172,10 +173,9 @@ const DocumentsCard = ({ load, files, orgId }) => {
 // ---------------------- MAIN PAGE ----------------------
 export default function HomePage({ params }) {
   const { id } = React.use(params);
-  const organization = useQuery(api.organizations.getCurrentOrganization)
-  const orgId = organization?._id ? organization._id : "";
-  const data = useQuery(api.loads.byId, { id, orgId });
-  const files = useQuery(api.files.byId, { entityType: "loads", entityId: id, orgId: orgId }) || [];
+  const data = useQuery(api.loads.byId, { id });
+  const files = useQuery(api.files.byId, { entityType: "loads", entityId: id }) || [];
+  const logs = useQuery(api.logs.byId, { table: "loads", id: id });
 
   const sortedStops = useMemo(() => {
     if (!data?.stops) return [];
@@ -258,6 +258,7 @@ export default function HomePage({ params }) {
           <TabsTrigger value="parties"><Unplug className="h-4 w-4" />Parties</TabsTrigger>
           <TabsTrigger value="documents"><FileTextIcon className="h-4 w-4" />Documents</TabsTrigger>
           <TabsTrigger value="timeline"><IconFileDollar className="h-4 w-4" />Invoice</TabsTrigger>
+          <TabsTrigger value="logs"><ActivityIcon className="h-4 w-4" />Logs</TabsTrigger>
         </TabsList>
 
         <TabsContent value="details" className="space-y-4">
@@ -360,16 +361,19 @@ export default function HomePage({ params }) {
           </div>
         </TabsContent>
 
-
-
-
-
-
-
-
-
         <TabsContent value="documents" className="space-y-4">
-          <DocumentsCard load={data} files={files} orgId={orgId} />
+          <DocumentsCard load={data} files={files}/>
+        </TabsContent>
+
+        <TabsContent value="logs" className="space-y-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Load Logs</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {logs.map((log, i) => <AuditLogItem key={i} log={log} />)}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

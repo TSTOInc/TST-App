@@ -3,7 +3,7 @@ import { v } from "convex/values";
 
 
 // 🏢 Get Current Organization
-export const getCurrentOrganization = query({
+export const getCurrentOrganizationDeprecated = query({
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) return null;

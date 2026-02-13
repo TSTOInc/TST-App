@@ -1,19 +1,23 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
+import { requireUserWithOrg } from "./lib/auth";
+import { logAudit } from "./lib/audit";
 
 export const byId = query({
-    args: { id: v.string(), orgId: v.string() },
+    args: { id: v.string() },
     handler: async (ctx, args) => {
         const identity = await ctx.auth.getUserIdentity();
-        if (!identity) throw new Error("Not authenticated");
+        if (!identity?.subject) throw new Error("Not authenticated");
+
+        const { user, org } = await requireUserWithOrg(ctx);
 
         const docId = ctx.db.normalizeId("brokers", args.id);
         if (!docId) throw new Error("Invalid document ID");
 
         const record = await ctx.db.get(docId);
         if (!record) return null;
-        if (record.org_id !== args.orgId) return null;
+        if (record.org_id !== org._id) return null;
         const payment_terms = await ctx.db.query("payment_terms").withIndex("by_brokerId", (q) => q.eq("broker_id", record._id)).collect();
 
         return {
@@ -57,7 +61,6 @@ export const updateNotes = mutation({
 export const create = mutation({
     args: {
         broker: v.object({
-            org_id: v.string(),
             address: v.string(),
             address_2: v.union(v.null(), v.string()),
             docket_number: v.string(),
@@ -74,31 +77,27 @@ export const create = mutation({
     handler: async (ctx, args) => {
 
         const identity = await ctx.auth.getUserIdentity();
-        if (!identity) throw new Error("Not authenticated");
+        if (!identity?.subject) throw new Error("Not authenticated");
 
+        const { user, org } = await requireUserWithOrg(ctx);
 
-        try {
-            const newBrokerId = await ctx.db.insert("brokers",
-                {
-                    org_id: args.broker.org_id,
-                    address: args.broker.address,
-                    address_2: args.broker.address_2,
-                    docket_number: args.broker.docket_number,
-                    email: args.broker.email,
-                    image_url: args.broker.image_url,
-                    name: args.broker.name,
-                    notes: args.broker.notes,
-                    phone: args.broker.phone,
-                    status: args.broker.status,
-                    usdot_number: args.broker.usdot_number,
-                    website: args.broker.website
-                });
-            return newBrokerId;
-        }
-        catch (e) {
-            console.log(e);
-            return null;
-        }
+        const newBrokerId = await ctx.db.insert("brokers",
+            {
+                org_id: org._id,
+                created_by: user._id,
+                ...args.broker,
+            });
+
+        await logAudit(ctx, {
+            table: "brokers",
+            recordId: newBrokerId,
+            action: "create",
+            userId: user._id,
+            org_id: org._id,
+            after: args.broker,
+        });
+
+        return newBrokerId;
 
     },
 });

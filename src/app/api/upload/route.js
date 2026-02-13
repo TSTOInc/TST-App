@@ -9,7 +9,7 @@ import { createClient } from '@supabase/supabase-js'
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 
 export async function POST(req) {
-    const { isAuthenticated, getToken, orgId } = await auth()
+    const { isAuthenticated, getToken } = await auth()
     if (!isAuthenticated) {
         return new Response('Unauthorized', { status: 401 })
     }
@@ -45,7 +45,6 @@ export async function POST(req) {
             entityType: entityType,
             entityId: entityId,
             expiresAt: expiresAt,
-            org_id: orgId,
         },
     });
 

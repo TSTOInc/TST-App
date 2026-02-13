@@ -71,9 +71,7 @@ const exampleSchema = z.object({
 
 
 export default function ExampleUsage() {
-
-  const organization = useQuery(api.organizations.getCurrentOrganization)
-  const orgId = organization?._id ? organization._id : "";
+  const router = useRouter();
   const createBroker = useMutation(api.brokers.create)
 
   function parseAddress(input: string) {
@@ -146,19 +144,24 @@ export default function ExampleUsage() {
         image_url: "",
         address_2,
         notes: "",
-        org_id: orgId,
       }
 
-      await toast.promise(
-        createBroker({ broker: payload }), // no need for fetch — Convex handles it
-        {
-          loading: "Submitting...",
-          success: "Submitted successfully!",
-          error: (err: any) => err?.message || "Submission failed",
-        }
-      )
+      const promise = createBroker({ broker: payload });
+      await toast.promise(promise, {
+        loading: "Adding Broker...",
+        success: "✅ Broker added successfully!",
+        error: (err: any) => `❌ ${err.message || "Failed to add Broker"}`,
+      })
+
+      const newBrokerId = await promise;
+
+      if (newBrokerId) {
+        router.push(`/brokers/${newBrokerId}`);
+      }
+
+
     } catch (err: any) {
-      toast.error(err.message || "Something went wrong");
+      console.error(err);
     }
   };
 

@@ -18,16 +18,15 @@ interface Option {
 interface PartiesStepProps {
   control: any
   errors: any
-  orgId: string
 }
 
-export default function PartiesStep({ control, errors, orgId }: PartiesStepProps) {
+export default function PartiesStep({ control, errors }: PartiesStepProps) {
   // Query all lookup data
-  const brokersData = useQuery(api.getTable.all, { table: "brokers", orgId })
-  const paymentTermsData = useQuery(api.getTable.all, { table: "payment_terms", orgId })
-  const driversData = useQuery(api.getTable.all, { table: "drivers", orgId })
-  const trucksData = useQuery(api.getTable.all, { table: "trucks", orgId })
-  const trailersData = useQuery(api.getTable.all, { table: "equipment", orgId })
+  const brokersData = useQuery(api.getTable.all, { table: "brokers" })
+  const paymentTermsData = useQuery(api.getTable.all, { table: "payment_terms" })
+  const driversData = useQuery(api.getTable.all, { table: "drivers" })
+  const trucksData = useQuery(api.getTable.all, { table: "trucks" })
+  const trailersData = useQuery(api.getTable.all, { table: "equipment" })
 
   // Transform data for each select
   const brokers: Option[] =

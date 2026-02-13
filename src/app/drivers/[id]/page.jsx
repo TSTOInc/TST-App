@@ -80,7 +80,7 @@ const getLicenseStatus = (expiresAt) => {
     return { status: "Active", daysLeft };
 };
 
-const LicenseCard = ({ driver, files, orgId }) => {
+const LicenseCard = ({ driver, files }) => {
     const license = files?.find((file) => file.category === "CDL");
     const [selectedDoc, setSelectedDoc] = useState(null);
     const [renameFileOriginal, setRenameFileOriginal] = useState(null);
@@ -174,7 +174,7 @@ const LicenseCard = ({ driver, files, orgId }) => {
     };
     const handleDelete = async (documentId) => {
         try {
-            await deleteFileMutation({ id: documentId, orgId: orgId });
+            await deleteFileMutation({ id: documentId });
             toast.success("License deleted successfully!");
         } catch (error) {
             console.error(error);
@@ -298,10 +298,10 @@ export default function TablePage({ params }) {
     // Unwrap the params Promise
     const { id } = React.use(params);
 
-    const organization = useQuery(api.organizations.getCurrentOrganization)
-    const orgId = organization?._id ? organization._id : "";
-    const data = useQuery(api.getDoc.byId, { table: "drivers", id: id, orgId: orgId });
-    const files = useQuery(api.files.byId, { entityType: "drivers", entityId: id, orgId: orgId }) || [];
+    const organization = useQuery(api.organizations.getCurrentOrganizationDeprecated)
+
+    const data = useQuery(api.getDoc.byId, { table: "drivers", id: id });
+    const files = useQuery(api.files.byId, { entityType: "drivers", entityId: id }) || [];
     if (!data || data.length === 0) return <ProfileHeader skeleton={true} />
 
 
@@ -319,9 +319,9 @@ export default function TablePage({ params }) {
                             { label: "Email", value: data.email },
                         ]}
                     />
-                    <LicenseCard driver={data} files={files} orgId={orgId} />
+                    <LicenseCard driver={data} files={files} />
                 </div>
-                <FilesCard driver={data} files={files} orgId={orgId} />
+                <FilesCard driver={data} files={files}/>
             </div>
         </div>
     )

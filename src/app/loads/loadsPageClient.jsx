@@ -27,10 +27,7 @@ export function formatRate(value) {
 export default function TablePage() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const organization = useQuery(api.organizations.getCurrentOrganization)
-  const loadsUnsorted = useQuery(
-    api.getTable.all,
-    organization?._id ? { table: "loads", orgId: organization._id } : "skip")
+  const loadsUnsorted = useQuery(api.getTable.all,{ table: "loads"})
   const loads = loadsUnsorted
     ? [...loadsUnsorted].sort((a, b) => {
       const aNum = Number(a.invoice_number) || 0;

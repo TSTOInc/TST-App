@@ -49,9 +49,6 @@ function timeAgo(dateString: string | number | Date) {
 export default function ChatsLayout({ children }: ChatsLayoutProps) {
   const router = useRouter()
   const { user } = useUser()
-
-  const organization = useQuery(api.organizations.getCurrentOrganization)
-  const orgId = organization?._id
   const clerkId = user?.id
 
   const currentUser = useQuery(
@@ -61,17 +58,9 @@ export default function ChatsLayout({ children }: ChatsLayoutProps) {
 
   const currentUserId = currentUser?._id
 
-  const usersQuery = useQuery(
-    api.users.getAllByOrganization,
-    orgId ? { orgId } : "skip"
-  )
+  const usersQuery = useQuery(api.users.getAllByOrganization)
 
-  const chatsQuery = useQuery(
-    api.chats.byParticipantInOrg, // <-- safer query
-    currentUserId && orgId
-      ? { participantId: currentUserId, orgId }
-      : "skip"
-  )
+  const chatsQuery = useQuery(api.chats.byParticipantInOrg)
 
   const createChat = useMutation(api.chats.create)
 
@@ -102,12 +91,11 @@ export default function ChatsLayout({ children }: ChatsLayoutProps) {
   )
 
   const handleChat = async (otherUserId: Id<"users">) => {
-    if (!currentUserId || !orgId) return;
+    if (!currentUserId) return;
 
     const newChatId = await createChat({
       type: "direct",
-      participants: [currentUserId, otherUserId],
-      orgId,
+      participants: [currentUserId, otherUserId]
     });
 
     router.push(`/chats/${newChatId}`);
