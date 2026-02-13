@@ -253,7 +253,6 @@ export const create = mutation({
       rate: Number(data.loadDetails?.rate || 0),
       instructions: data.loadDetails?.instructions || undefined,
       load_status: "new",
-      docs: [],
       invoice_number: invoice_number,
       invoiced_at: undefined,
       progress: 0,
