@@ -258,7 +258,7 @@ export const create = mutation({
       invoiced_at: undefined,
       progress: 0,
       paid_at: undefined,
-      agent_id: data.parties?.agent || "",
+      agent_id: data.parties?.agent || undefined,
     }
 
     // ✅ Insert the load (no stops here)
