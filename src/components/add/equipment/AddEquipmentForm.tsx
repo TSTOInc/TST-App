@@ -147,7 +147,7 @@ export default function AddEquipmentForm() {
 
       const payload = {
         equipment_number: data.equipment_number,
-        equipment_length: data.equipment_length || null,
+        equipment_length: data.equipment_length || undefined,
         equipment_type: data.equipment_type,
         status: data.status,
         image_url: imageUrl,
