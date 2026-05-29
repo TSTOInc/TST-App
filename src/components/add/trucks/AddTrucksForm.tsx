@@ -40,7 +40,7 @@ const formSchema = z.object({
   vin: z.string().optional(),
   make: z.string().optional(),
   model: z.string().optional(),
-  year: z.number().optional(),
+  year: z.coerce.number().optional(),
   transponder_id: z.string().optional(),
   status: z.string().min(1, "Status required"),
   color: z.string().optional(),

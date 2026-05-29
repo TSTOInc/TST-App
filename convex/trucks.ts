@@ -38,7 +38,7 @@ export const create = mutation({
         truck: v.object({
             color: v.optional(v.string()),
             driver_id: v.optional(v.id("drivers")),
-            image_url: v.string(),
+            image_url: v.optional(v.string()),
             make: v.optional(v.string()),
             model: v.optional(v.string()),
             status: v.string(),
