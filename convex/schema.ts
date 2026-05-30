@@ -24,7 +24,7 @@ export default defineSchema({
   organizations: defineTable({
     clerk_org_id: v.string(), // link to Clerk
     name: v.string(),
-    image_url: v.string(),
+    image_url: v.optional(v.string()),
 
     // Carrier business info
     usdot: v.optional(v.string()),
