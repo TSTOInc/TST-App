@@ -38,7 +38,7 @@ const formSchema = z.object({
   name: z.string().min(1, "Name required"),
   license_number: z.string(),
   phone: z.string().min(1, "Phone number required"),
-  email: z.string(),
+  email: z.string().email("Invalid email format").optional().or(z.literal("")),
   status: z.string().min(1, "Status required"),
 });
 

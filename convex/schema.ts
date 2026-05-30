@@ -24,14 +24,23 @@ export default defineSchema({
   organizations: defineTable({
     clerk_org_id: v.string(), // link to Clerk
     name: v.string(),
+    image_url: v.string(),
 
     // Carrier business info
     usdot: v.optional(v.string()),
-    mc_number: v.optional(v.string()),
+    docket_number: v.optional(v.string()),
     years_in_operation: v.optional(v.number()),
+    ein: v.optional(v.float64()),
+
+    address: v.optional(v.string()),
+    city: v.optional(v.string()),
+    state: v.optional(v.string()),
+    zip: v.optional(v.string()),
+
+    //Contact
     company_email: v.optional(v.string()),
     phone: v.optional(v.string()),
-    address: v.optional(v.string()),
+
 
     // SaaS logic
     subscription_status: v.optional(v.string()),
@@ -54,6 +63,7 @@ export default defineSchema({
     status: v.string(),
     usdot_number: v.string(),
     website: v.optional(v.string()),
+    deletedAt: v.optional(v.float64())
   }).index("by_orgId", ["org_id"]),
 
   brokers_agents: defineTable({

@@ -266,11 +266,23 @@ export default function AddTrucksForm() {
               {errors.model && <p className="text-red-500">{errors.model.message}</p>}
 
               <Label>Year</Label>
-              <Controller
-                name="year"
-                control={control}
-                render={({ field }) => <Input {...field} placeholder="Enter year" />}
-              />
+<Controller
+  name="year"
+  control={control}
+  render={({ field }) => (
+    <Input 
+      {...field} 
+      type="number" // Changes the keyboard layout/arrows for users
+      placeholder="Enter year" 
+      value={field.value ?? ""} // Prevents uncontrolled input errors
+      onChange={(e) => {
+        const val = e.target.value;
+        // If empty, pass undefined, otherwise parse it as an integer
+        field.onChange(val === "" ? undefined : parseInt(val, 10));
+      }}
+    />
+  )}
+/>
               {errors.year && <p className="text-red-500">{errors.year.message}</p>}
             </div>
           )}
