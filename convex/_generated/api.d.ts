@@ -26,6 +26,7 @@ import type * as lib_auth from "../lib/auth.js";
 import type * as loads from "../loads.js";
 import type * as logs from "../logs.js";
 import type * as messages from "../messages.js";
+import type * as migrations from "../migrations.js";
 import type * as mutate from "../mutate.js";
 import type * as organizations from "../organizations.js";
 import type * as payment_terms from "../payment_terms.js";
@@ -58,6 +59,7 @@ declare const fullApi: ApiFromModules<{
   loads: typeof loads;
   logs: typeof logs;
   messages: typeof messages;
+  migrations: typeof migrations;
   mutate: typeof mutate;
   organizations: typeof organizations;
   payment_terms: typeof payment_terms;
