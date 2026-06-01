@@ -52,8 +52,13 @@ export default defineSchema({
   brokers: defineTable({
     created_by: v.id("users"),
     org_id: v.id("organizations"),
+
     address: v.string(),
     address_2: v.optional(v.string()),
+    city: v.optional(v.string()),
+    state: v.optional(v.string()),
+    zip: v.optional(v.string()),
+    
     docket_number: v.string(),
     email: v.optional(v.string()),
     image_url: v.optional(v.string()),
@@ -196,6 +201,17 @@ export default defineSchema({
     vin: v.optional(v.string()),
     year: v.optional(v.float64()),
   }).index("by_orgId", ["org_id"]),
+
+  truck_plates: defineTable({
+    truck_id: v.id("trucks"),       
+    org_id: v.id("organizations"),
+    country: v.string(),            // e.g., "US", "MX"
+    state: v.string(),              // e.g., "CA", "BC"
+    number: v.string(),             // e.g., "ASD12D"
+    status: v.string(),             // e.g., "current", "expired", "replaced"
+  })
+    .index("by_truckId", ["truck_id"])
+    .index("by_plate_search", ["number", "state"]), // Perfect for rapid lookups
 
   files: defineTable({
     storageKey: v.string(), // blob key / object key
