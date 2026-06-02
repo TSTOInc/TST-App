@@ -123,14 +123,16 @@ function DialogFooter({
         className
       )}
       {...props}
-    />
-  )
-  {children}
-  {showCloseButton && (
-    <DialogPrimitive.Close asChild>
-      <Button variant="outline">Close</Button>
-    </DialogPrimitive.Close>
-  )}
+    >
+      {/* Children and buttons go inside the div wrapper */}
+      {children}
+      {showCloseButton && (
+        <DialogPrimitive.Close asChild>
+          <Button variant="outline">Close</Button>
+        </DialogPrimitive.Close>
+      )}
+    </div>
+  );
 }
 
 function DialogTitle({
