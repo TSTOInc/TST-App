@@ -33,7 +33,7 @@ export default function PartiesStep({ control, errors }: PartiesStepProps) {
     brokersData?.map((b: any) => ({
       value: String(b._id),
       label: b.name,
-      description: `${b.address || ""}${b.address_2 ? ", " + b.address_2 : ""}`,
+      description: `${b.address || ""}${b.city ? ", " + b.city : ""}${b.state ? ", " + b.state : ""}${b.zip ? " " + b.zip : ""}`,
     })) ?? []
 
   const paymentTerms: Option[] =

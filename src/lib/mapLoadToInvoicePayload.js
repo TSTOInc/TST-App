@@ -12,8 +12,8 @@ export default function mapLoadToInvoicePayload(load) {
         },
         broker: {
             name: load.broker?.name || "N/A",
-            address: load.broker?.address_1 || "",
-            address2: load.broker?.address_2 || "",
+            address: load.broker?.address || "",
+            address2: load.broker?.city + ", " + load.broker?.state + " " + load.broker?.zip || "",
             phone: load.broker?.phone || "",
             email: load.broker?.email || "",
         },

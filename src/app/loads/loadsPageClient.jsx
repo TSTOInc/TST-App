@@ -19,6 +19,12 @@ import {
 } from "@/components/ui/empty"
 import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
+import { useAuth } from '@clerk/nextjs'
+
+
+
+
+
 export function formatRate(value) {
   const num = Number(value)
   if (isNaN(num)) return "0.00"
@@ -27,7 +33,16 @@ export function formatRate(value) {
 export default function TablePage() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const loadsUnsorted = useQuery(api.getTable.all,{ table: "loads"})
+
+
+  //Check auth status
+  const { has } = useAuth();
+
+
+
+  const loadsUnsorted = useQuery(api.getTable.all, has ? { table: "loads"} : "skip");
+
+  
   const loads = loadsUnsorted
     ? [...loadsUnsorted].sort((a, b) => {
       const aNum = Number(a.invoice_number) || 0;

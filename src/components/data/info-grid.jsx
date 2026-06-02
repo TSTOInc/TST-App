@@ -17,6 +17,8 @@ import { SearchBar } from "@/components/search-bar"
 import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { usePathname } from 'next/navigation'
+import { useAuth } from '@clerk/nextjs'
+import { PlusIcon } from "lucide-react"
 
 
 const EQUIPMENT_TYPE_LABELS = {
@@ -95,7 +97,10 @@ export default function InfoGrid({
   const path = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
 
 
-  const queryData = useQuery(api.getTable.all, { table })
+  //Check auth status
+  const { has } = useAuth();
+
+  const queryData = useQuery(api.getTable.all, has ? { table } : "skip");
 
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -216,6 +221,17 @@ export default function InfoGrid({
               website={item.website}
             />
           ))}
+
+
+          <Link href={`${path}/add`}>
+            <div className="group flex h-full min-h-[220px] cursor-pointer items-center justify-center rounded-xl hover:border-foreground/50 border-2 border-dashed hover:bg-muted/30 transition-colors">
+              <span className="group-hover:text-foreground text-muted-foreground flex items-center gap-2">
+                <PlusIcon className="w-4 h-4" />
+                Add {table.replace(/_/g, " ").replace(/s/g, "")}
+              </span>
+            </div>  
+          </Link>
+
         </div>
       )}
     </div>

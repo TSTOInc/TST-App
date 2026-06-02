@@ -571,6 +571,8 @@ export default function TablePage({ params }) {
 
   if (!data || data.length === 0) return <ProfileHeader skeleton={true} />
 
+  const fullAddress = data.address + ", " + data.city + ", " + data.state + " " + data.zip;
+
   return (
     <div>
       <ProfileHeader data={data} table="brokers" image_url={data.image_url} name={data.name} description={"USDOT-" + data.usdot_number + " | " + data.docket_number} link={"/directory/" + data.usdot_number} status={data.status} />
@@ -587,7 +589,7 @@ export default function TablePage({ params }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <InfoCard title="Broker Info" fields={
                   [
-                    { label: "Address", value: data.address },
+                    { label: "Address", value: fullAddress },
                     { label: "Email", value: data.email },
                     { label: "Phone", value: data.phone },
                     { label: "Website", type: "link", value: data.website },

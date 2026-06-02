@@ -68,7 +68,7 @@ const constructInvoicePayload = (data) => {
         broker: {
             name: data.broker_name || defaultInvoice.broker.name,
             address: data.broker_address_1 || defaultInvoice.broker.address,
-            address2: data.broker_address_2 || defaultInvoice.broker.address2,
+            address2: data.broker_city + ", " + data.broker_state + " " + data.broker_zip || defaultInvoice.broker.address2,
         },
         adjustments: {
             quickpayFeePercent: data.quickpay_fee_percent ?? defaultInvoice.adjustments.quickpayFeePercent,

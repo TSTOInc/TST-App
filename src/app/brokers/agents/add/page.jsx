@@ -24,7 +24,7 @@ const Page = () => {
   const brokers = brokersData?.map((broker) => ({
     value: broker._id,
     label: broker.name,
-    description: `${broker.address || ""}${broker.address_2 ? ", " + broker.address_2 : ""}`,
+    description: `${broker.address || ""}${broker.city ? ", " + broker.city : ""}${broker.state ? ", " + broker.state : ""}${broker.zip ? " " + broker.zip : ""}`,
   })) ?? [];
   const loadingBrokers = brokersData === undefined;
 

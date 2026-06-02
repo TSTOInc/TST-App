@@ -331,7 +331,7 @@ export default function HomePage({ params }) {
               inline={false}
               fields={[
                 { label: "Name", value: data.broker.name, type: "link", href: `/brokers/${data.broker._id}`, external: false },
-                { label: "Address", value: data.broker.address + ", " + data.broker.address_2 },
+                { label: "Address", value: data.broker.address + ", " + data.broker.city + ", " + data.broker.state + " " + data.broker.zip },
                 { label: "Agent", value: data?.broker_agent?.name || "No Agent" },
               ]}
             />

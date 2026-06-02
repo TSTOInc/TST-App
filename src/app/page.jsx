@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { usePathname } from 'next/navigation';
-
+import { useAuth } from '@clerk/nextjs'
 import { SectionCards } from "@/components/dashboard/section-cards";
 import { ChartAreaInteractive } from "@/components/chart-area-interactive";
 
@@ -44,8 +44,11 @@ const Home = () => {
   const pathname = usePathname() ?? "";
   const path = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
 
-  const loads = useQuery(api.getTable.all, { table: "loads"});
-  const brokers = useQuery(api.getTable.all,{ table: "brokers"});
+  //Check auth status
+  const { has } = useAuth();
+
+  const loads = useQuery(api.getTable.all, has ? { table: "loads"} : "skip");
+  const brokers = useQuery(api.getTable.all, has ? { table: "brokers"} : "skip");
 
   const [stats, setStats] = useState({
     last30Days: { revenue: "$0", brokers: 0, loads: 0 },

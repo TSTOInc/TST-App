@@ -136,15 +136,17 @@ export default function ExampleUsage() {
       // Upload the picture first
       //pictureUrl = await uploadFile(data.picture);
       //}
-      const address_2 = `${data.city || ""}, ${data.state || ""} ${data.zip || ""}`.trim();
-      const { city, state, zip, picture, ...rest } = data
-      // Prepare payload without the file
+      const { city, state, zip, picture, ...rest } = data;
+
+      // 2. Build the payload sending the clean, separate fields straight to Convex
       const payload = {
         ...rest,
+        city: city?.trim() || "",
+        state: state?.toUpperCase().trim() || "",
+        zip: zip?.trim() || "",
         image_url: "",
-        address_2,
         notes: "",
-      }
+      };
 
       const promise = createBroker({ broker: payload });
       await toast.promise(promise, {

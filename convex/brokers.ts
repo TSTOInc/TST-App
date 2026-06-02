@@ -62,7 +62,9 @@ export const create = mutation({
     args: {
         broker: v.object({
             address: v.string(),
-            address_2: v.optional(v.string()),
+            city: v.optional(v.string()),
+            state: v.optional(v.string()),
+            zip: v.optional(v.string()),
             docket_number: v.string(),
             email: v.optional(v.string()),
             image_url: v.optional(v.string()),
