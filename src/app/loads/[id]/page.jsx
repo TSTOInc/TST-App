@@ -16,6 +16,7 @@ import { IconFileDollar, IconUsersGroup } from "@tabler/icons-react";
 import { DialogDemo } from "@/components/data/upload/upload-doc";
 import { DocumentCard } from "@/components/documents/document-card";
 import { AuditLogItem } from "@/components/data/log/log-item";
+import { cn } from "@/lib/utils";
 
 // ---------------------- HELPERS ----------------------
 const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -49,18 +50,41 @@ const formatTimeRange = (start, end) => {
     : `${startDateStr}, ${startTime} - ${endDateStr}, ${endTime}`;
 };
 
-const formatDueDate = (invoiceDateStr, daysToPay, paid_at) => {
-  if (!invoiceDateStr || typeof daysToPay !== "number") return "";
+const getDueDateStatus = (invoiceDateStr, daysToPay, paid_at) => {
+  // Default fallback if incomplete data
+  if (!invoiceDateStr || typeof daysToPay !== "number") {
+    return { text: "IN PROGRESS", color: "text-muted-foreground" };
+  }
+
   const invoiceDate = new Date(invoiceDateStr);
-  if (isNaN(invoiceDate)) return "";
+  if (isNaN(invoiceDate)) return { text: "", color: "text-muted-foreground" };
+
   const dueDate = new Date(invoiceDate);
   dueDate.setDate(invoiceDate.getDate() + daysToPay);
 
-  const diffDays = Math.ceil((dueDate.setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / (1000 * 60 * 60 * 24));
-  if (paid_at !== null) return "PAID";
-  if (diffDays === 0) return "DUE TODAY";
-  if (diffDays < 0) return `OVERDUE BY ${Math.abs(diffDays)} DAY${Math.abs(diffDays) !== 1 ? "S" : ""}`;
-  return `DUE IN ${diffDays} DAY${diffDays !== 1 ? "S" : ""}`;
+  const diffDays = Math.ceil(
+    (dueDate.setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / (1000 * 60 * 60 * 24)
+  );
+
+  // 1. Paid status (Green)
+  if (paid_at !== undefined && paid_at !== null) {
+    return { text: "PAID", color: "text-green-500" };
+  }
+
+  // 2. Overdue status (Red)
+  if (diffDays < 0) {
+    const daysStr = Math.abs(diffDays) !== 1 ? "S" : "";
+    return { text: `OVERDUE BY ${Math.abs(diffDays)} DAY${daysStr}`, color: "text-rose-500 font-semibold animate-pulse" };
+  }
+
+  // 3. Due Today status (Orange/Yellow)
+  if (diffDays === 0) {
+    return { text: "DUE TODAY", color: "text-amber-500 font-medium" };
+  }
+
+  // 4. Upcoming status (Standard Blue or Muted)
+  const daysStr = diffDays !== 1 ? "S" : "";
+  return { text: `DUE IN ${diffDays} DAY${daysStr}`, color: "text-blue-400" };
 };
 
 const geocodeAddress = async (address) => {
@@ -90,7 +114,7 @@ const ComplexCard = ({ title, icon: Icon, value }) => (
 const RateCard = ({ rate, feePercent, invoicedAt, paymentTerms, paid_at }) => {
   const netRate = useMemo(() => rate - rate * (feePercent / 100), [rate, feePercent]);
   return (
-    <Card className="md:col-span-2">
+    <Card className="xl:col-span-2">
       <CardHeader className="flex justify-between pb-2">
         <CardTitle className="text-sm font-medium">Rate</CardTitle>
         <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -98,9 +122,15 @@ const RateCard = ({ rate, feePercent, invoicedAt, paymentTerms, paid_at }) => {
       <CardContent className="space-y-3">
         <div className="flex justify-between items-center">
           <span className="text-2xl font-bold text-green-500">{currencyFormatter.format(netRate)}</span>
-          <span className="text-xl font-medium text-blue-400">
-            {formatDueDate(invoicedAt, paymentTerms.days_to_pay, paid_at)}
-          </span>
+          {(() => {
+            const status = getDueDateStatus(invoicedAt, paymentTerms?.days_to_pay, paid_at);
+
+            return (
+              <span className={cn("text-xl font-medium", status.color)}>
+                {status.text}
+              </span>
+            );
+          })()}
         </div>
         <div className="space-y-2">
           <div className="flex justify-between items-center">
@@ -238,8 +268,8 @@ export default function HomePage({ params }) {
 
   return (
     <div className="flex-1 space-y-4 p-4 pt-6">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-1">
           <ComplexCard title="Load Number" icon={FileText} value={`#${data.load_number}`} />
           <ComplexCard title="Invoice Number" icon={DollarSign} value={`#${data.invoice_number}`} />
         </div>
@@ -362,7 +392,7 @@ export default function HomePage({ params }) {
         </TabsContent>
 
         <TabsContent value="documents" className="space-y-4">
-          <DocumentsCard load={data} files={files}/>
+          <DocumentsCard load={data} files={files} />
         </TabsContent>
 
         <TabsContent value="logs" className="space-y-4">

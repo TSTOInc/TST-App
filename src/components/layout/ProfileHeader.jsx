@@ -248,11 +248,7 @@ export default function ProfileHeader({
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                                         <AlertDialogAction asChild>
-                                            <Button
-                                                variant="destructive"
-                                                className="text-white"
-                                                onClick={handleDelete}
-                                            >
+                                            <Button variant="destructive" onClick={handleDelete}>
                                                 <IconTrash /> Delete
                                             </Button>
                                         </AlertDialogAction>

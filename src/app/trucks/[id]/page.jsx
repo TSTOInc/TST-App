@@ -310,7 +310,7 @@ export default function TablePage({ params }) {
             <ProfileHeader data={data} table="trucks" image_url={data.image_url} name={data.truck_number} alias={data.truck_alias} description={`Year: ${data.year ?? "N/A"}`} status={data.status} color={data.color} />
             <div className="p-4">
                 <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                    <TabsList className="w-full h-10">
+                    <TabsList className="w-full ">
                         <TabsTrigger value="info"><span className="md:p-4 lg:p-6 xl:p-8">Truck Info</span></TabsTrigger>
                         <TabsTrigger value="inspections"><span className="md:p-4 lg:p-6 xl:p-8">Inspections</span></TabsTrigger>
                         <TabsTrigger value="repairs"><span className="md:p-4 lg:p-6 xl:p-8">Repairs</span></TabsTrigger>

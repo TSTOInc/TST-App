@@ -43,7 +43,7 @@ export function SectionCards({ stats }) {
 <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-3">
       
       {/* Revenue */}
-      <Card className="@container/card hover:border-primary transition-colors">
+      <Card className="@container/card hover:ring-primary transition-colors">
         <CardHeader>
           <CardDescription>Total Revenue</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
@@ -73,7 +73,7 @@ export function SectionCards({ stats }) {
       </Card>
 
       {/* Loads */}
-      <Card className="@container/card hover:border-primary transition-colors">
+      <Card className="@container/card hover:ring-primary transition-colors">
         <CardHeader>
           <CardDescription>Total Loads</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
@@ -98,7 +98,7 @@ export function SectionCards({ stats }) {
       </Card>
 
       {/* Brokers */}
-      <Card className="@container/card hover:border-primary transition-colors @xl/main:col-span-2 @5xl/main:col-span-1">
+      <Card className="@container/card hover:ring-primary transition-colors @xl/main:col-span-2 @5xl/main:col-span-1">
         <CardHeader>
           <CardDescription>New Brokers</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">

@@ -1,10 +1,11 @@
 "use client"
 
 import * as React from "react"
-import * as DialogPrimitive from "@radix-ui/react-dialog"
+import { Dialog as DialogPrimitive } from "radix-ui"
 import { XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 
 function Dialog({
   ...props
@@ -38,12 +39,19 @@ function DialogOverlay({
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
       className={cn(
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-background/10 backdrop-blur-xs",
+        // Blends your background opacity style configurations into Shadcn's modern duration setups
+        "fixed inset-0 isolate z-50 bg-black/50 backdrop-blur-md duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
         className
       )}
       {...props}
     />
   )
+}
+
+interface DialogContentProps
+  extends React.ComponentProps<typeof DialogPrimitive.Content> {
+  showCloseButton?: boolean
+  fullscreen?: boolean
 }
 
 function DialogContent({
@@ -52,32 +60,34 @@ function DialogContent({
   showCloseButton = true,
   fullscreen = false,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content> & {
-  showCloseButton?: boolean;
-  fullscreen?: boolean;
-}) {
+}: DialogContentProps) {
   return (
-    <DialogPortal data-slot="dialog-portal">
+    <DialogPortal>
       <DialogOverlay />
       <DialogPrimitive.Content
+        data-slot="dialog-content"
+        {...(fullscreen && { "data-fullscreen": true })}
         className={cn(
-          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 z-50 fixed",
+          "fixed z-50 gap-6 text-sm text-popover-foreground duration-100 outline-none data-open:animate-in bg-popover/50 data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           fullscreen
-            ? "bg-background/40 backdrop-blur-lg focus:outline-none inset-0 m-auto w-[calc(100%-6rem)] lg:w-[65%] h-[calc(100%-4rem)] gap-4 rounded-lg border border-foreground/10 p-4 shadow-lg"
-            : "bg-background/40 backdrop-blur-lg top-[50%] left-[50%] w-[calc(100%-6rem)]  sm:w-auto  max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border border-foreground/10 p-6 shadow-xl duration-200 grid",
+            ? "inset-0 m-auto h-[calc(100%-4rem)] w-[calc(100%-6rem)] gap-4 rounded-lg border border-foreground/10  p-4 shadow-lg backdrop-blur-lg focus:outline-none lg:w-[65%]"
+            : "top-1/2 left-1/2 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-6 rounded-4xl border border-foreground/10 p-6 shadow-xl backdrop-blur-lg ring-1 ring-foreground/5 sm:max-w-md",
           className
         )}
-
         {...props}
       >
         {children}
+        {/* Render close button conditionally based on configuration rules */}
         {showCloseButton && !fullscreen && (
-          <DialogPrimitive.Close
-            data-slot="dialog-close"
-            className="cursor-pointer ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-6 right-6 rounded-xs opacity-90 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
-          >
-            <XIcon />
-            <span className="sr-only">Close</span>
+          <DialogPrimitive.Close data-slot="dialog-close" asChild>
+            <Button
+              variant="ghost"
+              className="absolute top-4 right-4 cursor-pointer opacity-90 transition-opacity hover:opacity-100"
+              size="icon-sm"
+            >
+              <XIcon />
+              <span className="sr-only">Close</span>
+            </Button>
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Content>
@@ -95,7 +105,16 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
+interface DialogFooterProps extends React.ComponentProps<"div"> {
+  showCloseButton?: boolean
+}
+
+function DialogFooter({
+  className,
+  showCloseButton = false,
+  children,
+  ...props
+}: DialogFooterProps) {
   return (
     <div
       data-slot="dialog-footer"
@@ -106,6 +125,12 @@ function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
       {...props}
     />
   )
+  {children}
+  {showCloseButton && (
+    <DialogPrimitive.Close asChild>
+      <Button variant="outline">Close</Button>
+    </DialogPrimitive.Close>
+  )}
 }
 
 function DialogTitle({
@@ -115,7 +140,10 @@ function DialogTitle({
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("text-lg leading-none font-semibold", className)}
+      className={cn(
+        "font-heading text-base leading-none font-semibold",
+        className
+      )}
       {...props}
     />
   )
@@ -128,7 +156,10 @@ function DialogDescription({
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"
-      className={cn("text-muted-foreground text-sm", className)}
+      className={cn(
+        "text-sm text-muted-foreground *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
+        className
+      )}
       {...props}
     />
   )

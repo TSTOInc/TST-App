@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -12,6 +12,10 @@ import ConvexClientProvider from '@/components/ConvexClientProvider'
 //Clerk
 import { ClerkProvider, SignedIn, SignedOut } from "@clerk/nextjs";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { cn } from "@/lib/utils";
+import { TooltipProvider } from "@/components/ui/tooltip";
+
+const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,7 +44,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={cn("font-sans", inter.variable)}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
@@ -51,6 +55,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               enableSystem
               disableTransitionOnChange
             >
+              <TooltipProvider>
               <SignedIn>
                 <SidebarProvider
 
@@ -94,6 +99,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </div>
                 <Toaster richColors position="top-center" />
               </SignedOut>
+
+              </TooltipProvider>
 
             </ThemeProvider>
           </ConvexClientProvider>

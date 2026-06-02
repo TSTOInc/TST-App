@@ -278,9 +278,9 @@ export default function TablePage() {
 
                     <div className="flex-1" /> {/* pushes button down */}
 
-                    <Button variant="outline" className="px-8 py-2 mt-2" asChild>
+                    <Button variant={"secondary"} className="p-5" asChild>
                       <Link href={`/loads/${load._id}`} className="flex items-center">
-                        <IconEye className="mr-2" />
+                        <IconEye />
                         View Load
                       </Link>
                     </Button>

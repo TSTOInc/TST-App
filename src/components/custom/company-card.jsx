@@ -10,7 +10,7 @@ export default function CompanyCard({ table, id, title, description, image, stat
 
     if (skeleton)
         return (
-            <Card className="rounded-xl border-none pt-0">
+            <Card className="rounded-xl ring-0 pt-0">
                 <Skeleton className="aspect-video w-full rounded-t-xl rounded-b-none object-cover" />
                 <CardHeader className="mb-2">
                     <CardTitle className="flex items-center justify-between">
@@ -24,7 +24,7 @@ export default function CompanyCard({ table, id, title, description, image, stat
 
     return (
         <Link href={link} className="group block transition-transform duration-200 ease-in-out hover:scale-[1.01]">
-            <Card className="border-none pt-0">
+            <Card className="ring-0 pt-0">
                 <CardContent className="px-0 relative overflow-hidden rounded-t-xl">
                     <img
                         src={

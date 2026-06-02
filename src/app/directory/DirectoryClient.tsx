@@ -128,7 +128,7 @@ export default function DirectoryClient() {
         {!loading &&
           results.length > 0 &&
           results.map((carrier: any) => (
-            <Card key={carrier.dotNumber} className="border-none p-4 bg-transparent shadow-none">
+            <Card key={carrier.dotNumber} className="ring-0 p-4 bg-transparent shadow-none">
               <CardContent>
                 <CardTitle>
                   <Link
