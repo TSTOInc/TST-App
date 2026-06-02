@@ -42,7 +42,6 @@ export function DateTimePicker({
             setDate(selectedDate)
             onChange(selectedDate)
           }}
-          initialFocus
         />
         <input
           type="time"

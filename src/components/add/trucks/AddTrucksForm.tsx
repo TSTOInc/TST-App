@@ -24,7 +24,11 @@ import {
 import { useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { Id } from "@convex/_generated/dataModel";
-
+import {
+  Field,
+  FieldDescription,
+  FieldLabel,
+} from "@/components/ui/field"
 
 const stepLabels = ["Truck Info", "Vehicle Info", "Picture"];
 const statuses: ComboBoxOption[] = [
@@ -60,6 +64,7 @@ export default function AddTrucksForm() {
     trigger,
     formState: { errors },
   } = useForm<FormData>({
+    mode: "onChange",
     resolver: zodResolver(formSchema),
     defaultValues: {
       picture: undefined,
@@ -195,115 +200,194 @@ export default function AddTrucksForm() {
 
         <form className="rounded-lg border p-4">
           {currentStep === 1 && (
-            <div className="grid w-full items-center gap-4">
-              <Label required>Truck Number</Label>
+            <div className="grid w-full items-center gap-6">
+
+              {/* TRUCK NUMBER */}
               <Controller
                 name="truck_number"
                 control={control}
-                render={({ field }) => <Input {...field} placeholder="Enter Truck Number" />}
+                render={({ field, fieldState: { error } }) => (
+                  <Field data-invalid={!!error}>
+                    <FieldLabel htmlFor="truck_number" required>Truck Number</FieldLabel>
+                    <Input
+                      {...field}
+                      id="truck_number"
+                      placeholder="Enter Truck Number"
+                      aria-invalid={!!error}
+                    />
+                    {error && <FieldDescription className="text-red-500">{error.message}</FieldDescription>}
+                  </Field>
+                )}
               />
-              {errors.truck_number && (
-                <p className="text-red-500">{errors.truck_number.message}</p>
-              )}
-              <Label>Truck Alias</Label>
+
+              {/* TRUCK ALIAS */}
               <Controller
                 name="truck_alias"
                 control={control}
-                render={({ field }) => <Input {...field} placeholder="Enter Truck Alias" />}
+                render={({ field, fieldState: { error } }) => (
+                  <Field data-invalid={!!error}>
+                    <FieldLabel htmlFor="truck_alias">Truck Alias</FieldLabel>
+                    <Input
+                      {...field}
+                      id="truck_alias"
+                      placeholder="Enter Truck Alias"
+                      aria-invalid={!!error}
+                    />
+                    {error && <FieldDescription className="text-red-500">{error.message}</FieldDescription>}
+                  </Field>
+                )}
               />
-              {errors.truck_alias && (
-                <p className="text-red-500">{errors.truck_alias.message}</p>
-              )}
-              <Label>Transponder ID</Label>
+
+              {/* TRANSPONDER ID */}
               <Controller
                 name="transponder_id"
                 control={control}
-                render={({ field }) => <Input {...field} placeholder="Enter Transponder ID" />}
+                render={({ field, fieldState: { error } }) => (
+                  <Field data-invalid={!!error}>
+                    <FieldLabel htmlFor="transponder_id">Transponder ID</FieldLabel>
+                    <Input
+                      {...field}
+                      id="transponder_id"
+                      placeholder="Enter Transponder ID"
+                      aria-invalid={!!error}
+                    />
+                    {error && <FieldDescription className="text-red-500">{error.message}</FieldDescription>}
+                  </Field>
+                )}
               />
-              {errors.transponder_id && (
-                <p className="text-red-500">{errors.transponder_id.message}</p>
-              )}
-              <Label>Status</Label>
+
+              {/* STATUS */}
               <Controller
                 name="status"
                 control={control}
-                render={({ field }) => (
-                  <ComboBox
-                    options={statuses}
-                    showBadges
-                    defaultValue={statuses.find((s) => s.value === field.value)}
-                    onSelect={(option) => field.onChange(option.value)}
-                  />
+                render={({ field, fieldState: { error } }) => (
+                  <Field data-invalid={!!error}>
+                    <FieldLabel required>Status</FieldLabel>
+                    <ComboBox
+                      options={statuses}
+                      showBadges
+                      defaultValue={statuses.find((s) => s.value === field.value)}
+                      onSelect={(option) => field.onChange(option.value)}
+                    />
+                    {error && <FieldDescription className="text-red-500">{error.message}</FieldDescription>}
+                  </Field>
                 )}
               />
+
             </div>
           )}
 
           {currentStep === 2 && (
-            <div className="grid w-full items-center gap-4">
-              <Label>Vin</Label>
+            <div className="grid w-full items-center gap-6">
+
+              {/* VIN */}
               <Controller
                 name="vin"
                 control={control}
-                render={({ field }) => <Input {...field} placeholder="Enter VIN Number" />}
+                render={({ field, fieldState: { error } }) => (
+                  <Field data-invalid={!!error}>
+                    <FieldLabel htmlFor="vin">Vin</FieldLabel>
+                    <Input
+                      {...field}
+                      id="vin"
+                      placeholder="Enter VIN Number"
+                      aria-invalid={!!error}
+                    />
+                    {error && <FieldDescription className="text-red-500">{error.message}</FieldDescription>}
+                  </Field>
+                )}
               />
-              {errors.vin && <p className="text-red-500">{errors.vin.message}</p>}
 
-              <Label>Make</Label>
+              {/* MAKE */}
               <Controller
                 name="make"
                 control={control}
-                render={({ field }) => <Input {...field} placeholder="Enter make" />}
+                render={({ field, fieldState: { error } }) => (
+                  <Field data-invalid={!!error}>
+                    <FieldLabel htmlFor="make">Make</FieldLabel>
+                    <Input
+                      {...field}
+                      id="make"
+                      placeholder="Enter make"
+                      aria-invalid={!!error}
+                    />
+                    {error && <FieldDescription className="text-red-500">{error.message}</FieldDescription>}
+                  </Field>
+                )}
               />
-              {errors.make && <p className="text-red-500">{errors.make.message}</p>}
 
-              <Label>Model</Label>
+              {/* MODEL */}
               <Controller
                 name="model"
                 control={control}
-                render={({ field }) => <Input {...field} placeholder="Enter model" />}
+                render={({ field, fieldState: { error } }) => (
+                  <Field data-invalid={!!error}>
+                    <FieldLabel htmlFor="model">Model</FieldLabel>
+                    <Input
+                      {...field}
+                      id="model"
+                      placeholder="Enter model"
+                      aria-invalid={!!error}
+                    />
+                    {error && <FieldDescription className="text-red-500">{error.message}</FieldDescription>}
+                  </Field>
+                )}
               />
-              {errors.model && <p className="text-red-500">{errors.model.message}</p>}
 
-              <Label>Year</Label>
-<Controller
-  name="year"
-  control={control}
-  render={({ field }) => (
-    <Input 
-      {...field} 
-      type="number" // Changes the keyboard layout/arrows for users
-      placeholder="Enter year" 
-      value={field.value ?? ""} // Prevents uncontrolled input errors
-      onChange={(e) => {
-        const val = e.target.value;
-        // If empty, pass undefined, otherwise parse it as an integer
-        field.onChange(val === "" ? undefined : parseInt(val, 10));
-      }}
-    />
-  )}
-/>
-              {errors.year && <p className="text-red-500">{errors.year.message}</p>}
+              {/* YEAR */}
+              <Controller
+                name="year"
+                control={control}
+                render={({ field, fieldState: { error } }) => (
+                  <Field data-invalid={!!error}>
+                    <FieldLabel htmlFor="year">Year</FieldLabel>
+                    <Input
+                      {...field}
+                      id="year"
+                      type="number"
+                      placeholder="Enter year"
+                      value={field.value ?? ""}
+                      aria-invalid={!!error}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        field.onChange(val === "" ? undefined : parseInt(val, 10));
+                      }}
+                    />
+                    {error && <FieldDescription className="text-red-500">{error.message}</FieldDescription>}
+                  </Field>
+                )}
+              />
+
             </div>
           )}
 
           {currentStep === 3 && (
-            <div className="grid w-full items-center gap-3">
-              <Label htmlFor="picture">Picture</Label>
+            <div className="grid w-full items-center gap-6">
+
+              {/* PICTURE UPLOAD */}
               <Controller
                 name="picture"
                 control={control}
-                render={({ field }) => (
-                  <ProfilePictureUpload onChange={(file: File) => field.onChange(file)} />
+                render={({ field, fieldState: { error } }) => (
+                  <Field data-invalid={!!error}>
+                    <FieldLabel htmlFor="picture">Picture</FieldLabel>
+                    <ProfilePictureUpload
+                      onChange={(file: File) => field.onChange(file)}
+                    />
+                    {preview && (
+                      <div className="mt-2 relative h-32 w-32 border rounded overflow-hidden">
+                        <img
+                          src={preview}
+                          alt="Preview"
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    )}
+                    {error && <FieldDescription className="text-red-500">{error.message}</FieldDescription>}
+                  </Field>
                 )}
               />
-              {preview && (
-                <img
-                  src={preview}
-                  alt="Preview"
-                  className="mt-2 h-32 w-32 object-cover rounded"
-                />
-              )}
+
             </div>
           )}
 

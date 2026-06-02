@@ -1,4 +1,5 @@
 "use client";
+
 import { toast } from "sonner";
 import React, { useState, ReactNode } from "react";
 import { useForm, Controller, FieldValues, UseFormReturn, FieldErrors } from "react-hook-form";
@@ -7,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import ProgressStepBar from "@/components/custom/ProgressStepBar";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Field, FieldLabel, FieldDescription } from "@/components/ui/field";
 import ComboBox, { ComboBoxOption } from "@/components/custom/ComboBox";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -50,7 +51,7 @@ export interface StepConfig {
 
 export interface DynamicMultiStepFormProps {
   steps: StepConfig[];
-  schema: z.ZodType<any, any, any>; // Fix type for zodResolver
+  schema: z.ZodType<any, any, any>;
   onSubmit: (data: any) => Promise<void> | void;
   initialValues?: Record<string, any>;
   submitButtonText?: string;
@@ -93,10 +94,9 @@ export default function DynamicMultiStepForm({
     ...formRest
   } = useForm({
     resolver: zodResolver(schema),
+    mode: "onChange", // 👈 Enables real-time input error dismissal
     defaultValues: computedDefaults,
   });
-
-  const { errors } = formState as { errors: FieldErrors<FieldValues> };
 
   const [currentStep, setCurrentStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
@@ -107,7 +107,7 @@ export default function DynamicMultiStepForm({
 
   const onNext = async () => {
     const stepFieldNames = steps[currentStep - 1].fields.map((f) => f.name);
-    const valid = await trigger(stepFieldNames);
+    const valid = await trigger(stepFieldNames as any);
 
     if (!valid) {
       toast.error("Please fill out all required fields");
@@ -140,88 +140,117 @@ export default function DynamicMultiStepForm({
       case "email":
       case "phone":
         return (
-          <div key={field.name}>
-            <Label required={field.required}>{field.label}</Label>
-            <Controller
-              name={field.name}
-              control={control}
-              render={({ field: rhfField }) => (
+          <Controller
+            key={field.name}
+            name={field.name}
+            control={control}
+            render={({ field: rhfField, fieldState: { error } }) => (
+              <Field data-invalid={!!error}>
+                <FieldLabel htmlFor={field.name} required={field.required}>
+                  {field.label}
+                </FieldLabel>
                 <Input
                   {...rhfField}
+                  id={field.name}
                   type={field.type === "phone" ? "tel" : field.type}
                   placeholder={`Enter ${field.label.toLowerCase()}`}
+                  aria-invalid={!!error}
                 />
-              )}
-            />
-            {errors[field.name]?.message && (
-              <p className="text-red-500 text-sm">{String(errors[field.name]?.message)}</p>
+                {error && (
+                  <FieldDescription className="text-red-500">
+                    {error.message}
+                  </FieldDescription>
+                )}
+              </Field>
             )}
-          </div>
+          />
         );
       case "combo":
         return (
-          <div key={field.name}>
-      <Controller
-        name={field.name}
-        control={control}
-        render={({ field: rhfField }) => (
-          <SearchableSelect
-            label={field.label}
-            required={field.required}
-            options={field.options || []}
-            value={rhfField.value}
-            onChange={rhfField.onChange}
-            placeholder={`Select ${field.label.toLowerCase()}`}
+          <Controller
+            key={field.name}
+            name={field.name}
+            control={control}
+            render={({ field: rhfField, fieldState: { error } }) => (
+              <Field data-invalid={!!error}>
+                <Controller
+                  name={field.name}
+                  control={control}
+                  render={({ field: selectField }) => (
+                    <SearchableSelect
+                      label={field.label}
+                      required={field.required}
+                      options={field.options || []}
+                      value={selectField.value}
+                      onChange={selectField.onChange}
+                      placeholder={`Select ${field.label.toLowerCase()}`}
+                    />
+                  )}
+                />
+                {error && (
+                  <FieldDescription className="text-red-500">
+                    {error.message}
+                  </FieldDescription>
+                )}
+              </Field>
+            )}
           />
-        )}
-      />
-      {errors[field.name]?.message && (
-        <p className="text-red-500 text-sm">{String(errors[field.name]?.message)}</p>
-      )}
-    </div>
         );
       case "file":
       case "picture":
         return (
-          <div key={field.name}>
-            <Label required={field.required}>{field.label}</Label>
-            <Controller
-              name={field.name}
-              control={control}
-              render={({ field: rhfField }) => (
+          <Controller
+            key={field.name}
+            name={field.name}
+            control={control}
+            render={({ field: rhfField, fieldState: { error } }) => (
+              <Field data-invalid={!!error}>
+                <FieldLabel htmlFor={field.name} required={field.required}>
+                  {field.label}
+                </FieldLabel>
                 <Input
+                  id={field.name}
                   type="file"
                   accept={field.type === "picture" ? "image/*" : undefined}
+                  aria-invalid={!!error}
                   onChange={(e) => {
                     if (e.target.files?.[0]) rhfField.onChange(e.target.files[0]);
                   }}
                 />
-              )}
-            />
-            {errors[field.name]?.message && (
-              <p className="text-red-500 text-sm">{String(errors[field.name]?.message)}</p>
+                {error && (
+                  <FieldDescription className="text-red-500">
+                    {error.message}
+                  </FieldDescription>
+                )}
+              </Field>
             )}
-          </div>
+          />
         );
       case "textarea":
         return (
-          <div key={field.name}>
-            <Label required={field.required}>{field.label}</Label>
-            <Controller
-              name={field.name}
-              control={control}
-              render={({ field: rhfField }) => (
+          <Controller
+            key={field.name}
+            name={field.name}
+            control={control}
+            render={({ field: rhfField, fieldState: { error } }) => (
+              <Field data-invalid={!!error}>
+                <FieldLabel htmlFor={field.name} required={field.required}>
+                  {field.label}
+                </FieldLabel>
                 <Textarea
                   {...rhfField}
+                  id={field.name}
                   placeholder={`Enter ${field.label.toLowerCase()}`}
-                  className="w-full rounded-md border p-2"
+                  aria-invalid={!!error}
                 />
-              )}
-            />
-            {errors[field.name]?.message && (
-              <p className="text-red-500 text-sm">{String(errors[field.name]?.message)}</p>
+                {error && (
+                  <FieldDescription className="text-red-500">
+                    {error.message}
+                  </FieldDescription>
+                )}
+              </Field>
             )}
-          </div>
+          />
         );
       case "custom":
         return (
@@ -251,10 +280,9 @@ export default function DynamicMultiStepForm({
           />
         )}
         <form className="rounded-lg border p-4" onSubmit={handleFinalSubmit}>
-          <div className="grid w-full items-center gap-4">
+          <div className="grid w-full items-center gap-6">
             {stepFields.map((field) => {
               if (field.name === "city") {
-                // Group city, state, zip together in one row
                 return (
                   <div key="city-state-zip" className="grid grid-cols-3 gap-4">
                     {["city", "state", "zip"].map((f) => {
@@ -265,10 +293,8 @@ export default function DynamicMultiStepForm({
                 );
               }
 
-              // Skip state & zip individually (since already grouped)
               if (["state", "zip"].includes(field.name)) return null;
 
-              // Default render
               return renderField(field);
             })}
           </div>
@@ -294,6 +320,7 @@ export default function DynamicMultiStepForm({
           </div>
         </form>
       </div>
+
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogContent>
           <DialogHeader>

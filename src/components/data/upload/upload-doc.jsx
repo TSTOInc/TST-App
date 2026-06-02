@@ -14,14 +14,13 @@ import {
 } from "@/components/ui/dialog";
 import FileUpload from "@/components/file-upload";
 import { IconPlus } from "@tabler/icons-react";
-import { toast } from "sonner"
+import { toast } from "sonner";
 
 export function DialogDemo({ title, maxFiles, maxSizeMB, entityType, entityId, category, expires = false, multiple = false, perFile = false, categories = [] }) {
     const [open, setOpen] = useState(false);
     const [files, setFiles] = useState([]);
     const [loading, setLoading] = useState(false);
     const [expiresAt, setExpiresAt] = useState(null);
-
 
     async function handleUpload() {
         if (!files.length) return;
@@ -58,14 +57,13 @@ export function DialogDemo({ title, maxFiles, maxSizeMB, entityType, entityId, c
             toast.success("Upload successful");
             setFiles([]);
             setExpiresAt(null);
-            setOpen(false); // ✅ close dialog only on success
+            setOpen(false); 
         } catch (err) {
             console.error(err);
         } finally {
             setLoading(false);
         }
     }
-
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -76,7 +74,8 @@ export function DialogDemo({ title, maxFiles, maxSizeMB, entityType, entityId, c
                 </Button>
             </DialogTrigger>
 
-            <DialogContent>
+            {/* Changed default width constraints here to support wider horizontal layout */}
+            <DialogContent className="sm:max-w-2xl w-full">
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
                     <DialogDescription>

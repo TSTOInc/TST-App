@@ -29,7 +29,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { format } from "date-fns"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 
 type Category = {
@@ -38,19 +37,16 @@ type Category = {
 };
 export type UploadFile = {
   id: string;
-  file: File | { name: string; size: number; type: string }; // allow FileMetadata
+  file: File | { name: string; size: number; type: string };
   category?: Category;
 };
 
 /* ---------------- LOGIC HELPERS ---------------- */
-
 function isRealFile(value: unknown): value is File {
   return value instanceof File;
 }
 
-
-/* ---------------- ICON LOGIC (UNCHANGED) ---------------- */
-
+/* ---------------- ICON LOGIC ---------------- */
 const getFileIcon = (file: { file: File | { type: string; name: string } }) => {
   const fileType = file.file instanceof File ? file.file.type : file.file.type;
   const fileName = file.file instanceof File ? file.file.name : file.file.name;
@@ -92,7 +88,6 @@ const getFileIcon = (file: { file: File | { type: string; name: string } }) => {
 };
 
 /* ---------------- COMPONENT ---------------- */
-
 export default function FileUpload({
   maxFiles = 10,
   maxSizeMB = 10,
@@ -138,7 +133,7 @@ export default function FileUpload({
 
   const categoryOptions = categories;
 
-  /* 🔑 SYNC FILES TO PARENT (LOGIC ONLY) */
+  /* SYNC FILES TO PARENT */
   useEffect(() => {
     if (!onFilesChange) return;
 
@@ -151,15 +146,14 @@ export default function FileUpload({
     onFilesChange(filesWithCategory);
   }, [files, fileCategories, perFile, onFilesChange]);
 
-  /* 🔑 SYNC EXPIRE DATE TO PARENT (LOGIC ONLY) */
+  /* SYNC EXPIRE DATE TO PARENT */
   useEffect(() => {
     if (!onExpireChange) return;
     onExpireChange(date);
   }, [date, onExpireChange]);
 
-
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 w-full">
       {/* Drop area */}
       <div
         className="cursor-pointer flex min-h-40 flex-col items-center justify-center rounded-xl border border-input border-dashed p-4 transition-colors hover:bg-accent/50 has-disabled:pointer-events-none has-[input:focus]:border-ring has-disabled:opacity-50 has-[input:focus]:ring-[3px] has-[input:focus]:ring-ring/50 data-[dragging=true]:bg-accent/50"
@@ -212,108 +206,112 @@ export default function FileUpload({
       {/* File list */}
       {files.length > 0 && (
         <>
-          <div className="space-y-2">
+          <div className="space-y-2 max-w-full">
             {files.map((file) => {
               const selected = fileCategories[file.id] || categoryOptions[0];
               return (
                 <div
-                  className="flex items-center justify-between gap-2 rounded-lg border bg-background p-2 pe-3"
+                  className="flex items-center justify-between gap-4 rounded-lg border bg-background p-2 pr-3 w-full"
                   key={file.id}
                 >
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    <div className="flex aspect-square size-10 shrink-0 items-center justify-center rounded border">
+                  {/* Left Column: Icon + Name Info Wrapper */}
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="flex aspect-square size-10 shrink-0 items-center justify-center rounded border bg-muted/40">
                       {getFileIcon(file)}
                     </div>
-                    <div className="flex min-w-0 flex-col gap-0.5">
-                      <p className="truncate font-medium text-[13px]">
-                        {file.file instanceof File
-                          ? file.file.name
-                          : file.file.name}
-                      </p>
+                    <div className="flex min-w-0 flex-col gap-0.5 flex-1">
+                    <p className="max-w-[130px] sm:max-w-[300px] truncate font-medium text-[13px]">
+  {file.file instanceof File ? file.file.name : file.file.name}
+</p>
                       <p className="text-muted-foreground text-xs">
-                        {formatBytes(
-                          file.file instanceof File
-                            ? file.file.size
-                            : file.file.size,
-                        )}
+                        {formatBytes(file.file instanceof File ? file.file.size : file.file.size)}
                       </p>
                     </div>
-                    {perFile && (
-                      <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="ml-2">{selected.label} <ChevronDownIcon className="size-4 ms-auto" /></Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        {categoryOptions.map((option) => (
-                          <DropdownMenuItem
-                            className="cursor-pointer pr-8"
-                            key={option.value}
-                            onClick={() =>
-                              setFileCategories((prev) => ({
-                                ...prev,
-                                [file.id]: option,
-                              }))
-                            }
-                          >
-                            {option.label}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    )}
                   </div>
 
-                  <Button
-                    aria-label="Remove file"
-                    className="-me-2 size-8 text-muted-foreground/80 hover:bg-transparent hover:text-foreground"
-                    onClick={() => removeFile(file.id)}
-                    size="icon"
-                    variant="ghost"
-                  >
-                    <XIcon aria-hidden="true" className="size-4" />
-                  </Button>
+                  {/* Right Column: Actions (Dropdown select + close clear button) */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {perFile && categoryOptions.length > 0 && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" className="h-9 gap-1 min-w-[110px] justify-between">
+                            <span className="truncate">{selected?.label}</span>
+                            <ChevronDownIcon className="size-3.5 opacity-60 shrink-0" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-[160px]">
+                          {categoryOptions.map((option) => (
+                            <DropdownMenuItem
+                              className="cursor-pointer"
+                              key={option.value}
+                              onClick={() =>
+                                setFileCategories((prev) => ({
+                                  ...prev,
+                                  [file.id]: option,
+                                }))
+                              }
+                            >
+                              {option.label}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+
+                    <Button
+                      aria-label="Remove file"
+                      className="size-8 text-muted-foreground/80 hover:bg-accent hover:text-foreground shrink-0"
+                      onClick={() => removeFile(file.id)}
+                      size="icon"
+                      variant="ghost"
+                    >
+                      <XIcon aria-hidden="true" className="size-4" />
+                    </Button>
+                  </div>
                 </div>
               )
             })}
 
             {files.length > 1 && (
-              <div>
-                <Button onClick={clearFiles} size="sm" variant="outline">
+              <div className="pt-1">
+                <Button onClick={clearFiles} size="sm" variant="outline" className="text-xs">
                   Remove all files
                 </Button>
               </div>
             )}
           </div>
-          <div>
-            {expires && (<Field>
-              <FieldLabel htmlFor="input-field-username">Expires on</FieldLabel>
-              <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    id="date"
-                    className="justify-start font-normal"
-                  >
-                    {date ? date.toLocaleDateString() : "Select date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto overflow-hidden p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    defaultMonth={date}
-                    captionLayout="dropdown"
-                    fromYear={new Date().getFullYear()}
-                    toYear={new Date().getFullYear() + 15}
-                    onSelect={(date) => {
-                      setDate(date)
-                      setOpen(false)
-                    }}
-                  />
 
-                </PopoverContent>
-              </Popover>
-            </Field>)}
+          <div className="pt-2">
+            {expires && (
+              <Field className="flex flex-col gap-1.5">
+                <FieldLabel htmlFor="date" className="text-xs font-medium">Expires on</FieldLabel>
+                <Popover open={open} onOpenChange={setOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      id="date"
+                      className="w-full sm:w-[240px] justify-start text-left font-normal h-9 text-sm"
+                    >
+                      {date ? date.toLocaleDateString() : <span className="text-muted-foreground">Select date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={date}
+                      defaultMonth={date}
+                      captionLayout="dropdown"
+                      startMonth={new Date(new Date().getFullYear(), 0)} 
+                      endMonth={new Date(new Date().getFullYear() + 15, 11)} 
+                      onSelect={(date) => {
+                        setDate(date)
+                        setOpen(false)
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </Field>
+            )}
           </div>
         </>
       )}

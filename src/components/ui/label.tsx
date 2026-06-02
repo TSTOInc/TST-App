@@ -5,10 +5,17 @@ import { Label as LabelPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 
+// Extended the component props to include the 'required' functionality from the old code
+interface LabelProps extends React.ComponentProps<typeof LabelPrimitive.Root> {
+  required?: boolean
+}
+
 function Label({
   className,
+  required,
+  children,
   ...props
-}: React.ComponentProps<typeof LabelPrimitive.Root>) {
+}: LabelProps) {
   return (
     <LabelPrimitive.Root
       data-slot="label"
@@ -17,7 +24,10 @@ function Label({
         className
       )}
       {...props}
-    />
+    >
+      {children}
+      {required && <b className="text-red-500" aria-hidden="true">*</b>}
+    </LabelPrimitive.Root>
   )
 }
 

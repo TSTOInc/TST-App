@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import ProgressStepBar from "../../custom/ProgressStepBar";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Field, FieldLabel, FieldDescription } from "@/components/ui/field";
 import ProfilePictureUpload from "@/components/custom/ProfilePictureUpload";
 import ComboBox, { ComboBoxOption } from "@/components/custom/ComboBox";
 import { IconLoader2 } from "@tabler/icons-react";
@@ -25,7 +25,7 @@ import DocUpload from "@/components/custom/DocUpload";
 import { api } from "@convex/_generated/api";
 import { useMutation } from "convex/react";
 
-const stepLabels = ["Info", "License", "Picture"]; // swapped order
+const stepLabels = ["Info", "License", "Picture"];
 const statuses: ComboBoxOption[] = [
   { value: "active", label: "Active" },
   { value: "inactive", label: "Inactive" },
@@ -44,7 +44,7 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-export default function AddEquipmentForm() {
+export default function AddDriverForm() {
   const router = useRouter();
   const createDriver = useMutation(api.drivers.create);
 
@@ -53,9 +53,9 @@ export default function AddEquipmentForm() {
     control,
     watch,
     trigger,
-    formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
+    mode: "onChange", // 👈 Real-time error removal as you type
     defaultValues: {
       picture: undefined,
       name: "",
@@ -138,14 +138,13 @@ export default function AddEquipmentForm() {
         status: data.status,
       };
 
-      console.log("Submitting payload:", JSON.stringify(payload));
       const promise = createDriver({ driver: payload });
 
       toast.promise(promise, {
         loading: "Adding Driver...",
         success: "✅ Driver added successfully!",
         error: (err: any) => `❌ ${err.message || "Failed to add Driver"}`,
-      });;
+      });
 
       const newDriverId = await promise;
 
@@ -169,6 +168,7 @@ export default function AddEquipmentForm() {
   });
 
   const isDisabled = submitting || uploading;
+
   return (
     <div className="p-6">
       <div className={isDisabled ? "pointer-events-none opacity-60" : "space-y-6"}>
@@ -181,84 +181,109 @@ export default function AddEquipmentForm() {
 
         <form className="rounded-lg border p-4">
           {currentStep === 1 && (
-            <div className="grid w-full items-center gap-4">
-              <Label required>Name</Label>
+            <div className="grid w-full items-center gap-6">
+              {/* NAME */}
               <Controller
                 name="name"
                 control={control}
-                render={({ field }) => <Input {...field} placeholder="Enter name" />}
+                render={({ field, fieldState: { error } }) => (
+                  <Field data-invalid={!!error}>
+                    <FieldLabel htmlFor="name" required>Name</FieldLabel>
+                    <Input {...field} id="name" placeholder="Enter name" aria-invalid={!!error} />
+                    {error && <FieldDescription className="text-red-500">{error.message}</FieldDescription>}
+                  </Field>
+                )}
               />
-              {errors.name && (
-                <p className="text-red-500">{errors.name.message}</p>
-              )}
-              <Label>License Number</Label>
+
+              {/* LICENSE NUMBER */}
               <Controller
                 name="license_number"
                 control={control}
-                render={({ field }) => <Input {...field} placeholder="Enter license number" />}
+                render={({ field, fieldState: { error } }) => (
+                  <Field data-invalid={!!error}>
+                    <FieldLabel htmlFor="license_number">License Number</FieldLabel>
+                    <Input {...field} id="license_number" placeholder="Enter license number" aria-invalid={!!error} />
+                    {error && <FieldDescription className="text-red-500">{error.message}</FieldDescription>}
+                  </Field>
+                )}
               />
-              {errors.license_number && (
-                <p className="text-red-500">{errors.license_number.message}</p>
-              )}
 
-              <Label required>Phone number</Label>
+              {/* PHONE NUMBER */}
               <Controller
                 name="phone"
                 control={control}
-                render={({ field }) => <Input {...field} placeholder="Enter phone number" />}
+                render={({ field, fieldState: { error } }) => (
+                  <Field data-invalid={!!error}>
+                    <FieldLabel htmlFor="phone" required>Phone number</FieldLabel>
+                    <Input {...field} id="phone" placeholder="Enter phone number" aria-invalid={!!error} />
+                    {error && <FieldDescription className="text-red-500">{error.message}</FieldDescription>}
+                  </Field>
+                )}
               />
-              {errors.phone && (
-                <p className="text-red-500">{errors.phone.message}</p>
-              )}
-              <Label>Email</Label>
+
+              {/* EMAIL */}
               <Controller
                 name="email"
                 control={control}
-                render={({ field }) => <Input {...field} placeholder="Enter email" />}
+                render={({ field, fieldState: { error } }) => (
+                  <Field data-invalid={!!error}>
+                    <FieldLabel htmlFor="email">Email</FieldLabel>
+                    <Input {...field} id="email" placeholder="Enter email" aria-invalid={!!error} />
+                    {error && <FieldDescription className="text-red-500">{error.message}</FieldDescription>}
+                  </Field>
+                )}
               />
-              {errors.email && (
-                <p className="text-red-500">{errors.email.message}</p>
-              )}
-              <Label>Driver status</Label>
+
+              {/* DRIVER STATUS */}
               <Controller
                 name="status"
                 control={control}
-                render={({ field }) => (
-                  <ComboBox
-                    options={statuses}
-                    showBadges
-                    defaultValue={statuses.find((s) => s.value === field.value)}
-                    onSelect={(option) => field.onChange(option.value)}
-                  />
+                render={({ field, fieldState: { error } }) => (
+                  <Field data-invalid={!!error}>
+                    <FieldLabel htmlFor="status">Driver status</FieldLabel>
+                    <ComboBox
+                      options={statuses}
+                      showBadges
+                      defaultValue={statuses.find((s) => s.value === field.value)}
+                      onSelect={(option) => field.onChange(option.value)}
+                    />
+                    {error && <FieldDescription className="text-red-500">{error.message}</FieldDescription>}
+                  </Field>
                 )}
               />
             </div>
           )}
+
           {currentStep === 2 && (
-            <div className="grid w-full items-center">
-              <div className="flex justify-center">
-                <Label className="text-lg">Upload License</Label>
-              </div>
-              <DocUpload onChange={(file: File) => setSelectedFile(file)} />
+            <div className="grid w-full items-center gap-4">
+              <Field>
+                <div className="flex justify-center mb-2">
+                  <FieldLabel className="text-lg">Upload License</FieldLabel>
+                </div>
+                <DocUpload onChange={(file: File) => setSelectedFile(file)} />
+              </Field>
             </div>
           )}
+
           {currentStep === 3 && (
-            <div className="grid w-full items-center gap-3">
-              <Label htmlFor="picture">Picture</Label>
+            <div className="grid w-full items-center gap-6">
+              {/* PICTURE */}
               <Controller
                 name="picture"
                 control={control}
-                render={({ field }) => (
-                  <ProfilePictureUpload onChange={(file: File) => field.onChange(file)} />
+                render={({ field, fieldState: { error } }) => (
+                  <Field data-invalid={!!error}>
+                    <FieldLabel htmlFor="picture">Picture</FieldLabel>
+                    <ProfilePictureUpload onChange={(file: File) => field.onChange(file)} />
+                    {preview && (
+                      <div className="mt-2 relative h-32 w-32 border rounded overflow-hidden">
+                        <img src={preview} alt="Preview" className="h-full w-full object-cover" />
+                      </div>
+                    )}
+                    {error && <FieldDescription className="text-red-500">{error.message}</FieldDescription>}
+                  </Field>
                 )}
               />
-              {preview && (
-                <img
-                  src={preview}
-                  alt="Preview"
-                  className="mt-2 h-32 w-32 object-cover rounded"
-                />
-              )}
             </div>
           )}
 

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import ProgressStepBar from "../../custom/ProgressStepBar";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Field, FieldLabel, FieldDescription } from "@/components/ui/field";
 import ProfilePictureUpload from "@/components/custom/ProfilePictureUpload";
 import ComboBox, { ComboBoxOption } from "@/components/custom/ComboBox";
 import { IconLoader2 } from "@tabler/icons-react";
@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/dialog";
 import { useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
-
 
 const statuses: ComboBoxOption[] = [
   { value: "active", label: "Active" },
@@ -57,7 +56,7 @@ const equipmentTypes: ComboBoxOption[] = [
   { value: "coil_carrier", label: "Coil Carrier" },
 ];
 
-const stepLabels = ["Info", "Picture"]; // swapped order
+const stepLabels = ["Info", "Picture"];
 
 const formSchema = z.object({
   picture: z.any().optional(),
@@ -73,15 +72,15 @@ export default function AddEquipmentForm() {
   const router = useRouter();
   const createEquipment = useMutation(api.equipment.create);
 
-
   const {
     handleSubmit,
     control,
     watch,
     trigger,
-    formState: { errors },
+    formState: { errors }, // (You can keep or remove this, since fieldState handles it now)
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
+    mode: "onChange", // 👈 ADD THIS LINE
     defaultValues: {
       picture: undefined,
       equipment_number: "",
@@ -125,7 +124,12 @@ export default function AddEquipmentForm() {
 
   const onNext = async () => {
     if (currentStep === 1) {
-      const valid = await trigger(["equipment_number", "equipment_length", "equipment_type", "status"]);
+      const valid = await trigger([
+        "equipment_number",
+        "equipment_length",
+        "equipment_type",
+        "status",
+      ]);
       if (!valid) {
         toast.error("Please fill all required info first");
         return;
@@ -158,14 +162,13 @@ export default function AddEquipmentForm() {
         loading: "Adding equipment...",
         success: "✅ Equipment added successfully!",
         error: (err: any) => `❌ ${err.message || "Failed to add equipment"}`,
-      });;
+      });
 
       const newEquipmentId = await promise;
 
       if (newEquipmentId) {
         router.push(`/equipment/${newEquipmentId}`);
       }
-
     } catch (err: any) {
       console.error(err);
     } finally {
@@ -173,7 +176,6 @@ export default function AddEquipmentForm() {
       setOpenDialog(false);
     }
   };
-
 
   const handleFinalSubmit = handleSubmit((data: FormData) => {
     if (!data.picture) {
@@ -197,74 +199,130 @@ export default function AddEquipmentForm() {
 
         <form className="rounded-lg border p-4">
           {currentStep === 1 && (
-            <div className="grid w-full items-center gap-4">
-              <Label required>Equipment number</Label>
+            <div className="grid w-full items-center gap-6">
+              {/* EQUIPMENT NUMBER */}
               <Controller
                 name="equipment_number"
                 control={control}
-                render={({ field }) => <Input {...field} placeholder="Enter equipment number" />}
-              />
-              {errors.equipment_number && (
-                <p className="text-red-500">{errors.equipment_number.message}</p>
-              )}
-
-              <Label>Equipment type</Label>
-              <Controller
-                name="equipment_type"
-                control={control}
-                render={({ field }) => (
-                  <ComboBox
-                    options={equipmentTypes}
-                    showBadges={false}
-                    defaultValue={equipmentTypes.find((t) => t.value === field.value)}
-                    onSelect={(option) => field.onChange(option.value)}
-                  />
+                render={({ field, fieldState: { error } }) => (
+                  <Field data-invalid={!!error}>
+                    <FieldLabel htmlFor="equipment_number" required>
+                      Equipment number
+                    </FieldLabel>
+                    <Input
+                      {...field}
+                      id="equipment_number"
+                      placeholder="Enter equipment number"
+                      aria-invalid={!!error}
+                    />
+                    {error && (
+                      <FieldDescription className="text-red-500">
+                        {error.message}
+                      </FieldDescription>
+                    )}
+                  </Field>
                 )}
               />
 
-              <Label required>Equipment length</Label>
+              {/* EQUIPMENT TYPE */}
+              <Controller
+                name="equipment_type"
+                control={control}
+                render={({ field, fieldState: { error } }) => (
+                  <Field data-invalid={!!error}>
+                    <FieldLabel htmlFor="equipment_type">Equipment type</FieldLabel>
+                    <ComboBox
+                      options={equipmentTypes}
+                      showBadges={false}
+                      defaultValue={equipmentTypes.find((t) => t.value === field.value)}
+                      onSelect={(option) => field.onChange(option.value)}
+                    />
+                    {error && (
+                      <FieldDescription className="text-red-500">
+                        {error.message}
+                      </FieldDescription>
+                    )}
+                  </Field>
+                )}
+              />
+
+              {/* EQUIPMENT LENGTH */}
               <Controller
                 name="equipment_length"
                 control={control}
-                render={({ field }) => <Input {...field} placeholder="Enter length in ft" />}
+                render={({ field, fieldState: { error } }) => (
+                  <Field data-invalid={!!error}>
+                    <FieldLabel htmlFor="equipment_length" required>
+                      Equipment length
+                    </FieldLabel>
+                    <Input
+                      {...field}
+                      id="equipment_length"
+                      placeholder="Enter length in ft"
+                      aria-invalid={!!error}
+                    />
+                    {error && (
+                      <FieldDescription className="text-red-500">
+                        {error.message}
+                      </FieldDescription>
+                    )}
+                  </Field>
+                )}
               />
-              {errors.equipment_length && (
-                <p className="text-red-500">{errors.equipment_length.message}</p>
-              )}
 
-              <Label>Equipment status</Label>
+              {/* EQUIPMENT STATUS */}
               <Controller
                 name="status"
                 control={control}
-                render={({ field }) => (
-                  <ComboBox
-                    options={statuses}
-                    showBadges
-                    defaultValue={statuses.find((s) => s.value === field.value)}
-                    onSelect={(option) => field.onChange(option.value)}
-                  />
+                render={({ field, fieldState: { error } }) => (
+                  <Field data-invalid={!!error}>
+                    <FieldLabel htmlFor="status">Equipment status</FieldLabel>
+                    <ComboBox
+                      options={statuses}
+                      showBadges
+                      defaultValue={statuses.find((s) => s.value === field.value)}
+                      onSelect={(option) => field.onChange(option.value)}
+                    />
+                    {error && (
+                      <FieldDescription className="text-red-500">
+                        {error.message}
+                      </FieldDescription>
+                    )}
+                  </Field>
                 )}
               />
             </div>
           )}
 
           {currentStep === 2 && (
-            <div className="grid w-full items-center gap-3">
-              <Label htmlFor="picture">Picture</Label>
+            <div className="grid w-full items-center gap-6">
+              {/* PICTURE */}
               <Controller
                 name="picture"
                 control={control}
-                render={({ field }) => (
-                  <ProfilePictureUpload onChange={(file: File) => field.onChange(file)} />
+                render={({ field, fieldState: { error } }) => (
+                  <Field data-invalid={!!error}>
+                    <FieldLabel htmlFor="picture">Picture</FieldLabel>
+                    <ProfilePictureUpload
+                      onChange={(file: File) => field.onChange(file)}
+                    />
+                    {preview && (
+                      <div className="mt-2 relative h-32 w-32 border rounded overflow-hidden">
+                        <img
+                          src={preview}
+                          alt="Preview"
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    )}
+                    {error && (
+                      <FieldDescription className="text-red-500">
+                        {error.message}
+                      </FieldDescription>
+                    )}
+                  </Field>
                 )}
               />
-              {preview && (
-                <img
-                  src={preview}
-                  alt="Preview"
-                  className="mt-2 h-32 w-32 object-cover rounded"
-                />
-              )}
             </div>
           )}
 
