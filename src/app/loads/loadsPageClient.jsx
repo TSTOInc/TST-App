@@ -21,27 +21,17 @@ import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { useAuth } from '@clerk/nextjs'
 
+// Import global formatting and parsing tools
+import { formatCentsToUSD, toCents } from "@/lib/currency"
 
-
-
-
-export function formatRate(value) {
-  const num = Number(value)
-  if (isNaN(num)) return "0.00"
-  return num.toFixed(2)
-}
 export default function TablePage() {
   const searchParams = useSearchParams()
   const router = useRouter()
 
-
-  //Check auth status
+  // Check auth status
   const { has } = useAuth();
 
-
-
   const loadsUnsorted = useQuery(api.getTable.all, has ? { table: "loads"} : "skip");
-
   
   const loads = loadsUnsorted
     ? [...loadsUnsorted].sort((a, b) => {
@@ -50,6 +40,7 @@ export default function TablePage() {
       return bNum - aNum; // descending
     })
     : null;
+    
   const [searchQuery, setSearchQuery] = useState("")
 
   const [filters, setFilters] = useState({
@@ -111,7 +102,6 @@ export default function TablePage() {
   }
 
   if (!loads) {
-    // Loading state while Convex fetches
     return (
       <Empty className="border border-dashed">
         <EmptyHeader>
@@ -159,8 +149,10 @@ export default function TablePage() {
     }
 
     const matchesLoadType = !filters.loadType || load.load_type === filters.loadType
-    const matchesMinRate = !filters.minRate || Number(load.rate) >= Number(filters.minRate)
-    const matchesMaxRate = !filters.maxRate || Number(load.rate) <= Number(filters.maxRate)
+    
+    // Convert filter limits to cents since load.rate is now integer-based cents
+    const matchesMinRate = !filters.minRate || Number(load.rate) >= toCents(filters.minRate)
+    const matchesMaxRate = !filters.maxRate || Number(load.rate) <= toCents(filters.maxRate)
 
     let matchesDate = true
     if (filters.dateRange) {
@@ -274,9 +266,12 @@ export default function TablePage() {
 
                   {/* RIGHT SIDE (auto width) */}
                   <div className="flex flex-col items-end w-fit pl-4">
-                    <span className="font-semibold text-xl w-full text-center">${formatRate(load.rate)}</span>
+                    {/* Updated to show dynamic currency securely parsed out of internal cents */}
+                    <span className="font-semibold text-xl w-full text-center">
+                      {formatCentsToUSD(load.rate)}
+                    </span>
 
-                    <div className="flex-1" /> {/* pushes button down */}
+                    <div className="flex-1" />
 
                     <Button variant={"secondary"} className="p-5" asChild>
                       <Link href={`/loads/${load._id}`} className="flex items-center">
@@ -287,8 +282,6 @@ export default function TablePage() {
                   </div>
                 </div>
               </Card>
-
-
             )
           })}
         </div>

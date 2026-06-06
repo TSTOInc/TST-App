@@ -17,12 +17,8 @@ import { DialogDemo } from "@/components/data/upload/upload-doc";
 import { DocumentCard } from "@/components/documents/document-card";
 import { AuditLogItem } from "@/components/data/log/log-item";
 import { cn } from "@/lib/utils";
-
+import { formatCentsToUSD, calculateLoadFinancials } from "@/lib/currency";
 // ---------------------- HELPERS ----------------------
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-});
 
 const formatDate = (dateStr) =>
   dateStr
@@ -111,50 +107,71 @@ const ComplexCard = ({ title, icon: Icon, value }) => (
   </Card>
 );
 
-const RateCard = ({ rate, feePercent, invoicedAt, paymentTerms, paid_at }) => {
-  const netRate = useMemo(() => rate - rate * (feePercent / 100), [rate, feePercent]);
+const RateCard = ({ rate, feePercent, invoicedAt, paymentTerms, paid_at, adjustments = [] }) => {
+  const financials = calculateLoadFinancials(rate, feePercent, adjustments); 
   return (
     <Card className="xl:col-span-2">
-      <CardHeader className="flex justify-between pb-2">
-        <CardTitle className="text-sm font-medium">Rate</CardTitle>
-        <DollarSign className="h-4 w-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex justify-between items-center">
-          <span className="text-2xl font-bold text-green-500">{currencyFormatter.format(netRate)}</span>
-          {(() => {
-            const status = getDueDateStatus(invoicedAt, paymentTerms?.days_to_pay, paid_at);
+  <CardHeader className="flex justify-between pb-2">
+    <CardTitle className="text-sm font-medium">Rate</CardTitle>
+    <DollarSign className="h-4 w-4 text-muted-foreground" />
+  </CardHeader>
+  <CardContent className="space-y-3">
+    <div className="flex justify-between items-center">
+      <span className="text-2xl font-bold text-green-500">{formatCentsToUSD(financials.netRateCents)}</span>
+      {(() => {
+        const status = getDueDateStatus(invoicedAt, paymentTerms?.days_to_pay, paid_at);
 
-            return (
-              <span className={cn("text-xl font-medium", status.color)}>
-                {status.text}
-              </span>
-            );
-          })()}
+        return (
+          <span className={cn("text-xl font-medium", status.color)}>
+            {status.text}
+          </span>
+        );
+      })()}
+    </div>
+    <div className="space-y-2">
+      <div className="flex justify-between items-center">
+        <span className="text-xs text-muted-foreground">Base Rate:</span>
+        <span className="text-xs font-medium">{formatCentsToUSD(financials.baseRateCents)}</span>
+      </div>
+
+      {/* Dynamic Additions (Lumper, Detention, Layover, etc.) */}
+      {financials.totalAdditionsCents > 0 && (
+        <div className="flex justify-between items-center">
+          <span className="text-xs text-muted-foreground">Adjustments (Additions):</span>
+          <span className="text-xs font-medium text-green-500">
+            +{formatCentsToUSD(financials.totalAdditionsCents)}
+          </span>
         </div>
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-muted-foreground">Base Rate:</span>
-            <span className="text-xs font-medium">{currencyFormatter.format(rate)}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-muted-foreground">Quick Pay ({feePercent}%):</span>
-            <span className="text-xs font-medium text-red-500">
-              -{currencyFormatter.format(rate * (feePercent / 100))}
-            </span>
-          </div>
-          <Separator />
-          <div className="flex justify-between items-center">
-            <span className="text-xs font-medium">Total:</span>
-            <span className="text-xs font-bold text-green-500">{currencyFormatter.format(netRate)}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-muted-foreground">Payment Terms:</span>
-            <span className="text-xs font-medium">{paymentTerms.name}</span>
-          </div>
+      )}
+
+      {/* Dynamic Deductions (Fuel Advances, Discounts, etc.) */}
+      {financials.totalDeductionsCents > 0 && (
+        <div className="flex justify-between items-center">
+          <span className="text-xs text-muted-foreground">Adjustments (Deductions):</span>
+          <span className="text-xs font-medium text-red-500">
+            -{formatCentsToUSD(financials.totalDeductionsCents)}
+          </span>
         </div>
-      </CardContent>
-    </Card>
+      )}
+
+      <div className="flex justify-between items-center">
+        <span className="text-xs text-muted-foreground">Quick Pay ({feePercent}%):</span>
+        <span className="text-xs font-medium text-red-500">
+          -{formatCentsToUSD(financials.quickPayFeeCents)}
+        </span>
+      </div>
+      <Separator />
+      <div className="flex justify-between items-center">
+        <span className="text-xs font-medium">Total:</span>
+        <span className="text-xs font-bold text-green-500">{formatCentsToUSD(financials.netRateCents)}</span>
+      </div>
+      <div className="flex justify-between items-center">
+        <span className="text-xs text-muted-foreground">Payment Terms:</span>
+        <span className="text-xs font-medium">{paymentTerms.name}</span>
+      </div>
+    </div>
+  </CardContent>
+</Card>
   );
 };
 

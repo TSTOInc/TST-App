@@ -8,6 +8,9 @@ import { useAuth } from '@clerk/nextjs'
 import { SectionCards } from "@/components/dashboard/section-cards";
 import { ChartAreaInteractive } from "@/components/chart-area-interactive";
 
+// Import global formatting engine
+import { formatCentsToUSD } from "@/lib/currency";
+
 function getPeriodStats(loads, brokers, start, end) {
   const payedPeriodLoads = loads.filter((load) => {
     const invoicedAt = load.paid_at ? new Date(load.paid_at) : null;
@@ -19,7 +22,8 @@ function getPeriodStats(loads, brokers, start, end) {
     return createdAt && createdAt >= start && createdAt < end;
   });
 
-  const revenue = payedPeriodLoads.reduce(
+  // Accumulate the flat raw cent values
+  const revenueCents = payedPeriodLoads.reduce(
     (acc, load) => acc + Number(load.rate || 0),
     0
   );
@@ -30,11 +34,8 @@ function getPeriodStats(loads, brokers, start, end) {
   });
 
   return {
-    revenue: revenue.toLocaleString("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 2,
-    }),
+    // Format safely using global configuration
+    revenue: formatCentsToUSD(revenueCents),
     brokers: periodBrokers.length,
     loads: periodLoads.length,
   };
@@ -44,15 +45,15 @@ const Home = () => {
   const pathname = usePathname() ?? "";
   const path = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
 
-  //Check auth status
+  // Check auth status
   const { has } = useAuth();
 
   const loads = useQuery(api.getTable.all, has ? { table: "loads"} : "skip");
   const brokers = useQuery(api.getTable.all, has ? { table: "brokers"} : "skip");
 
   const [stats, setStats] = useState({
-    last30Days: { revenue: "$0", brokers: 0, loads: 0 },
-    prev30Days: { revenue: "$0", brokers: 0, loads: 0 },
+    last30Days: { revenue: "$0.00", brokers: 0, loads: 0 },
+    prev30Days: { revenue: "$0.00", brokers: 0, loads: 0 },
   });
 
   const [chartRevenueData, setChartRevenueData] = useState([]);
@@ -92,7 +93,7 @@ const Home = () => {
       dailyLoadsMap[key] = 0;
     }
 
-    // 💰 Revenue by paid_at
+    // 💰 Revenue by paid_at (Aggregated securely in integer cent space)
     for (const load of loads) {
       if (load.paid_at && load.rate) {
         const key = new Date(load.paid_at).toISOString().split("T")[0];
@@ -104,7 +105,6 @@ const Home = () => {
 
     // 🚚 Loads by created_at
     for (const load of loads) {
-      console.log(load)
       if (load._creationTime) {
         const key = new Date(load._creationTime).toISOString().split("T")[0];
         if (dailyLoadsMap[key] !== undefined) {
@@ -116,16 +116,17 @@ const Home = () => {
     setStats({ last30Days, prev30Days });
 
     setChartRevenueData(
-      Object.entries(dailyRevenueMap).map(([date, revenue]) => ({
+      Object.entries(dailyRevenueMap).map(([date, revenueCents]) => ({
         date,
-        revenue,
+        // Convert integer cents to a standard float format ($) for linear charts
+        revenue: revenueCents / 100,
       }))
     );
 
     setChartLoadsData(
-      Object.entries(dailyLoadsMap).map(([date, loads]) => ({
+      Object.entries(dailyLoadsMap).map(([date, loadsCount]) => ({
         date,
-        loads,
+        loads: loadsCount,
       }))
     );
   }, [loads, brokers]);
