@@ -57,6 +57,7 @@ export const upsertOrganizationInternal = internalMutation({
     const orgData = {
       clerk_org_id: clerkOrgId,
       name: clerkOrg.name ?? "Unnamed Organization",
+      image_url: clerkOrg.image_url ?? undefined,
     };
 
     if (existing) {
