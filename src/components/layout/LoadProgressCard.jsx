@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -29,7 +31,6 @@ import { useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { cn } from "@/lib/utils"
 
-
 function mapLoadToInvoicePayload(load) {
   return {
     id: load.invoice_number || load.id,
@@ -57,7 +58,8 @@ function mapLoadToInvoicePayload(load) {
       description: "Line Haul",
       notes: `Truck# ${load.truck?.truck_number || ""}, Trailer# ${load.equipment?.equipment_number || ""}`,
       quantity: 1,
-      cost: Number(load.rate) || 0,
+      // CONVERSION RULE: Divide internal database cents by 100 before passing to external API boundary
+      cost: load.rate ? Number(load.rate) / 100 : 0,
       stops: load.stops
         ?.filter((s) => ["pickup", "delivery"].includes(s.type.toLowerCase()))
         .map((s, idx) => {
@@ -94,6 +96,7 @@ function mapLoadToInvoicePayload(load) {
     secondaryColor: "134A9E",
   }
 }
+
 const handleGenerateInvoice = async (data, carrier, setInvoicedAt) => {
   if (!data) return
 
@@ -115,7 +118,6 @@ const handleGenerateInvoice = async (data, carrier, setInvoicedAt) => {
       if (!data.invoiced_at || data.invoiced_at === "") {
         await setInvoicedAt({ loadId: data._id, invoiced_at: invoiceDate })
       }
-
 
       const res = await fetch("https://invoice4all.vercel.app/api", {
         method: "POST",
@@ -150,7 +152,6 @@ const handleGenerateInvoice = async (data, carrier, setInvoicedAt) => {
   )
 }
 
-
 function getVisibleStepLabels(progress, stops) {
   const labels = ["New"]
 
@@ -159,7 +160,7 @@ function getVisibleStepLabels(progress, stops) {
 
   let pickupIndex = 1
   let deliveryIndex = 1
-  let stepCounter = 0 // counts detailed steps
+  let stepCounter = 0 
 
   for (const stop of stops) {
     if (stop.type === "pickup") {
@@ -195,7 +196,6 @@ function getVisibleStepLabels(progress, stops) {
     }
   }
 
-  // Invoice steps
   const invoiceStep = stepCounter + 1
   const paidStep = stepCounter + 2
 
@@ -209,8 +209,6 @@ function getVisibleStepLabels(progress, stops) {
 
   return labels
 }
-
-
 
 function buildDetailedSteps(stops) {
   const steps = ["New"]
@@ -276,8 +274,9 @@ function buildVisibleSteps(stops) {
   steps.push("Invoice")
   return steps
 }
+
 function mapProgressToUI(progress, stops) {
-  if (progress === 0) return 0 // "New"
+  if (progress === 0) return 0 
 
   let uiIndex = 0
   let count = 0
@@ -292,9 +291,8 @@ function mapProgressToUI(progress, stops) {
     }
   }
 
-  return buildVisibleSteps(stops).length - 1 // Invoice
+  return buildVisibleSteps(stops).length - 1 
 }
-
 
 export default function LoadProgressCard({ data, carrier }) {
   const updateProgress = useMutation(api.loads.updateProgress);
@@ -347,7 +345,6 @@ export default function LoadProgressCard({ data, carrier }) {
   }
 
   async function handlePrev() {
-    // If currently PAID → confirm undo
     if (progress === detailedSteps.length - 1) {
       setShowUndoPaid(true);
       return;
