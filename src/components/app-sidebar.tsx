@@ -92,7 +92,23 @@ const data = {
       icon: IconMessageCircle,
       badge: "Alpha"
     },
-    
+    {
+      title: "Organization",
+      url: "/organization",
+      icon: IconBuildings,
+      items: [
+        {
+          title: "Details",
+          url: "/organization/details",
+          icon: IconUsers,
+        },
+        {
+          title: "Members",
+          url: "/organization/organization-members",
+          icon: IconUsers,
+        },
+      ]
+    },
   ],
   navClouds: [
     {

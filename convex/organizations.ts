@@ -1,4 +1,4 @@
-import { internalMutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
 
@@ -104,5 +104,28 @@ export const deleteOrganizationInternal = internalMutation({
     for (const m of memberships) {
       await ctx.db.delete(m._id);
     }
+  },
+});
+
+
+
+export const update = mutation({
+  args: {
+    id: v.id("organizations"),
+    name: v.string(),
+    usdot: v.optional(v.string()),
+    docket_number: v.optional(v.string()),
+    years_in_operation: v.optional(v.number()),
+    ein: v.optional(v.float64()),
+    address: v.optional(v.string()),
+    city: v.optional(v.string()),
+    state: v.optional(v.string()),
+    zip: v.optional(v.string()),
+    company_email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { id, ...fields } = args;
+    await ctx.db.patch(id, fields);
   },
 });
