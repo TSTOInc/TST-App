@@ -36,11 +36,11 @@ function mapLoadToInvoicePayload(load) {
     load_number: load.load_number,
     date: load.invoiced_at || load.created_at, // fallback to created_at
     carrier: {
-      name: "Three Stars Transport Inc",
-      address: "1427 Evanwood Ave",
-      address2: "La Puente, California 91744",
-      phone: "(619) 939-6319",
-      email: "threestars039@gmail.com",
+      name: load.carrier.name,
+      address:  load.carrier.address,
+      address2:  `${load.carrier.city || ""}, ${load.carrier.state || ""} ${load.carrier.zip || ""}`.trim(),
+      phone:  load.carrier.phone,
+      email:  load.carrier.company_email,
     },
     broker: {
       name: load.broker?.name || "N/A",
@@ -60,21 +60,41 @@ function mapLoadToInvoicePayload(load) {
       cost: Number(load.rate) || 0,
       stops: load.stops
         ?.filter((s) => ["pickup", "delivery"].includes(s.type.toLowerCase()))
-        .map((s, idx) => ({
-          type: (idx + 1) + ".- " + s.type.charAt(0).toUpperCase() + s.type.slice(1),
-          address: s.location.split(",")[0]?.trim() || "",
-          city: s.location.split(",")[1]?.trim() || "",
-          state: s.location.split(",")[2]?.trim().split(" ")[0] || "",
-          zip: s.location.split(",")[2]?.trim().split(" ")[1] || "",
-          datetime: s.appointment_time || s.window_start || "",
-          datetime2: s.window_end || "",
-        })),
+        .map((s, idx) => {
+          const parts = (s.location || "").split(",");
+        
+          const hasFullAddress =
+            parts.length >= 3 &&
+            parts[1]?.trim() &&
+            parts[2]?.trim();
+        
+          return {
+            type: `${idx + 1}.- ${s.type.charAt(0).toUpperCase()}${s.type.slice(1)}`,
+        
+            ...(hasFullAddress
+              ? {
+                  address: parts[0]?.trim() || "",
+                  city: parts[1]?.trim() || "",
+                  state: parts[2]?.trim().split(" ")[0] || "",
+                  zip: parts[2]?.trim().split(" ")[1] || "",
+                }
+              : {
+                  address: s.location || "",
+                  city: "",
+                  state: "",
+                  zip: "",
+                }),
+        
+            datetime: s.appointment_time || s.window_start || "",
+            datetime2: s.window_end || "",
+          };
+        }),
     }] || [],
     color: "134A9E",
     secondaryColor: "134A9E",
   }
 }
-const handleGenerateInvoice = async (data, setInvoicedAt) => {
+const handleGenerateInvoice = async (data, carrier, setInvoicedAt) => {
   if (!data) return
 
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -85,6 +105,7 @@ const handleGenerateInvoice = async (data, setInvoicedAt) => {
 
   const payload = mapLoadToInvoicePayload({
     ...data,
+    carrier,
     invoiced_at: invoiceDate, // force sync
   })
   payload.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -98,7 +119,10 @@ const handleGenerateInvoice = async (data, setInvoicedAt) => {
 
       const res = await fetch("https://invoice4all.vercel.app/api", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "x-api-key": process.env.NEXT_PUBLIC_INVOICE4ALL_API_KEY,
+        },
         body: JSON.stringify(payload),
       })
 
@@ -272,7 +296,7 @@ function mapProgressToUI(progress, stops) {
 }
 
 
-export default function LoadProgressCard({ data }) {
+export default function LoadProgressCard({ data, carrier }) {
   const updateProgress = useMutation(api.loads.updateProgress);
   const setInvoicedAt = useMutation(api.loads.setInvoicedAt);
   const setPaidAt = useMutation(api.loads.setPaidAt);
@@ -402,7 +426,7 @@ export default function LoadProgressCard({ data }) {
                       <Button
                         className="w-full"
                         onClick={() => {
-                          handleGenerateInvoice(data, setInvoicedAt);
+                          handleGenerateInvoice(data, carrier, setInvoicedAt);
                           handleNext();
                         }}
                       >

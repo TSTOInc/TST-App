@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -26,10 +26,18 @@ export function DialogDemo({ title, maxFiles, maxSizeMB, entityType, entityId, c
     // Tracks progress per file using its local unique identifier or index
     const [uploadProgress, setUploadProgress] = useState({});
 
+    // Reset progress tracking whenever the dialog sheet explicitly closes or opens
+    useEffect(() => {
+        if (!open) {
+            setUploadProgress({});
+            setExpiresAt(null);
+        }
+    }, [open]);
+
     async function handleUpload() {
         if (!files.length) return;
         setLoading(true);
-        // Reset progress mapping
+        // Clear out any old metrics before commencing execution
         setUploadProgress({});
 
         try {
@@ -118,7 +126,10 @@ export function DialogDemo({ title, maxFiles, maxSizeMB, entityType, entityId, c
 
             await Promise.all(uploadPromises);
             toast.success("All uploads successful");
+            
+            // Core Change: Clear out state variables before shutdown sequence toggles
             setFiles([]);
+            setUploadProgress({});
             setOpen(false);
         } catch (err) {
             console.error(err);

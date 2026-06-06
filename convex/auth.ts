@@ -1,9 +1,9 @@
-import { internalQuery } from "./_generated/server";
+import { query } from "./_generated/server";
 import { v } from "convex/values";
 
 
 // 🏢 Get Current Organization
-export const getUserWithOrg = internalQuery({
+export const getUserWithOrg = query({
     handler: async (ctx) => {
         // Check if user is authenticated
         const identity = await ctx.auth.getUserIdentity();

@@ -46,6 +46,54 @@ function isRealFile(value: unknown): value is File {
   return value instanceof File;
 }
 
+/**
+ * Automatically infers a matching category based on keywords inside the filename.
+ */
+function autoDetectCategory(fileName: string, categories: Category[]): Category | undefined {
+  const lowerName = fileName.toLowerCase();
+
+  // 1. Define keyword mapping rules based on your exact values
+  let targetValue: string | null = null;
+
+  //Check for Broker-specific documents
+  if (lowerName.includes("quickpay") || lowerName.includes("quick-pay")) {
+    targetValue = "QUICKPAY_AGREEMENT";
+  } else if (lowerName.includes("agreement") || lowerName.includes("contract") || lowerName.includes("broker-carrier")) {
+    targetValue = "CARRIER_AGREEMENT";
+  }
+
+
+
+  //Check for Load-specific documents
+  if (lowerName.includes("rate-con") || lowerName.includes("ratecon") || lowerName.includes("confirmation")) {
+    targetValue = "RATE_CONFIRMATION";
+  } else if (lowerName.includes("bol") || lowerName.includes("lading")) {
+    targetValue = "BOL";
+  } else if (lowerName.includes("pod") || lowerName.includes("delivery")) {
+    targetValue = "POD";
+  } else if (lowerName.includes("innout") || lowerName.includes("in-out") || lowerName.includes("ticket")) {
+    // Check ticket variations
+    if (lowerName.includes("lumper")) {
+      targetValue = "LUMPER";
+    } else if (lowerName.includes("scale")) {
+      targetValue = "SCALE_TICKET";
+    } else if (lowerName.includes("in") || lowerName.includes("out")) {
+      targetValue = "INNOUT_TICKET";
+    }
+  } else if (lowerName.includes("interchange") || lowerName.includes("trailer")) {
+    targetValue = "TRAILER_INTERCHANGE";
+  }
+
+  // 2. Find the actual category object from your provided array
+  if (targetValue) {
+    const matched = categories.find(c => c.value === targetValue);
+    if (matched) return matched;
+  }
+
+  // 3. Fall back to "Other" (MISC) if it exists in your list, otherwise undefined
+  return categories.find(c => c.value === "MISC");
+}
+
 /* ---------------- ICON LOGIC ---------------- */
 const getFileIcon = (file: { file: File | { type: string; name: string } }) => {
   const fileType = file.file instanceof File ? file.file.type : file.file.type;
@@ -133,6 +181,30 @@ export default function FileUpload({
 
   const categoryOptions = categories;
 
+  /* AUTO-DETECT CATEGORIES WHEN NEW FILES ARE ADDED */
+  useEffect(() => {
+    if (!perFile || categoryOptions.length === 0) return;
+
+    setFileCategories((prev) => {
+      let updated = false;
+      const next = { ...prev };
+
+      files.forEach((f) => {
+        // If this file item doesn't have a category assigned yet
+        if (!next[f.id]) {
+          const fileName = f.file instanceof File ? f.file.name : f.file.name;
+          const detected = autoDetectCategory(fileName, categoryOptions);
+
+          // Use auto-detected match, or fall back to the first available category option
+          next[f.id] = detected || categoryOptions[0];
+          updated = true;
+        }
+      });
+
+      return updated ? next : prev;
+    });
+  }, [files, categoryOptions, perFile]);
+
   /* SYNC FILES TO PARENT */
   useEffect(() => {
     if (!onFilesChange) return;
@@ -144,7 +216,7 @@ export default function FileUpload({
     }));
 
     onFilesChange(filesWithCategory);
-  }, [files, fileCategories, perFile, onFilesChange]);
+  }, [files, fileCategories, perFile, onFilesChange, categoryOptions]);
 
   /* SYNC EXPIRE DATE TO PARENT */
   useEffect(() => {
@@ -220,9 +292,9 @@ export default function FileUpload({
                       {getFileIcon(file)}
                     </div>
                     <div className="flex min-w-0 flex-col gap-0.5 flex-1">
-                    <p className="max-w-[130px] sm:max-w-[300px] truncate font-medium text-[13px]">
-  {file.file instanceof File ? file.file.name : file.file.name}
-</p>
+                      <p className="max-w-[130px] sm:max-w-[300px] truncate font-medium text-[13px]">
+                        {file.file instanceof File ? file.file.name : file.file.name}
+                      </p>
                       <p className="text-muted-foreground text-xs">
                         {formatBytes(file.file instanceof File ? file.file.size : file.file.size)}
                       </p>
@@ -301,8 +373,8 @@ export default function FileUpload({
                       selected={date}
                       defaultMonth={date}
                       captionLayout="dropdown"
-                      startMonth={new Date(new Date().getFullYear(), 0)} 
-                      endMonth={new Date(new Date().getFullYear() + 15, 11)} 
+                      startMonth={new Date(new Date().getFullYear(), 0)}
+                      endMonth={new Date(new Date().getFullYear() + 15, 11)}
                       onSelect={(date) => {
                         setDate(date)
                         setOpen(false)

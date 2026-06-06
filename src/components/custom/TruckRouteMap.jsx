@@ -18,6 +18,9 @@ export default function TruckRouteMap({ stops, progress = 0, showTruck = true })
   useEffect(() => {
     if (stops.length < 2) return;
 
+    // Track if the component has unmounted to abort async tasks safely
+    let isMounted = true;
+
     const map = new mapboxgl.Map({
       container: mapContainer.current,
       style: styleUrl,
@@ -34,12 +37,22 @@ export default function TruckRouteMap({ stops, progress = 0, showTruck = true })
     );
 
     map.on("load", () => {
+      // FIX 2: Safely ensure glyphs exist on the style object before adding text layers
+      if (map.getStyle()) {
+        map.setStyle({
+          ...map.getStyle(),
+          glyphs: "mapbox://fonts/mapbox/{fontstack}/{range}.pbf"
+        });
+      }
+
       const coordinates = stops.map((s) => `${s.lng},${s.lat}`).join(";");
       const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coordinates}?geometries=geojson&overview=full&steps=true&annotations=distance&access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`;
 
       fetch(url)
         .then((res) => res.json())
         .then((data) => {
+          // If the component unmounted while fetching, break out early
+          if (!isMounted) return;
           if (!data.routes || data.routes.length === 0) return;
 
           const route = data.routes[0];
@@ -66,47 +79,18 @@ export default function TruckRouteMap({ stops, progress = 0, showTruck = true })
             map.loadImage(
               "https://bxporjcib7gy7ljf.public.blob.vercel-storage.com/resources/lorry_low.png",
               (err, image) => {
-                if (err) throw err;
+                if (err || !isMounted) return;
                 map.addImage("truck-icon", image);
 
                 const legs = route.legs;
                 const maxLegIndex = legs.length - 1;
-
-                console.log("🚦 INPUT progress:", progress);
-                console.log("🛣️ Total legs:", legs.length);
-
-                const clampedProgress = Math.max(
-                  0,
-                  Math.min(progress, legs.length - 1e-6)
-                );
-
-
-                console.log("📏 Clamped progress:", clampedProgress);
+                const clampedProgress = Math.max(0, Math.min(progress, legs.length - 1e-6));
 
                 const legIndex = Math.floor(clampedProgress);
                 const legProgress = clampedProgress - legIndex;
-
-                console.log("📍 Current leg index:", legIndex);
-                console.log("📊 Progress within leg (0–1):", legProgress);
-
-                const steps =
-                  legs[Math.min(legIndex, maxLegIndex)].steps;
-
-                console.log("👣 Steps in leg:", steps.length);
-
-                const legCoords = steps.flatMap(
-                  (step) => step.geometry.coordinates
-                );
-
-                console.log("🗺️ Coordinates in leg:", legCoords.length);
-
-                const pointIndex = Math.floor(
-                  legProgress * (legCoords.length - 1)
-                );
-
-                console.log("🎯 Point index:", pointIndex);
-                console.log("📌 Truck coordinate:", legCoords[pointIndex]);
-
+                const steps = legs[Math.min(legIndex, maxLegIndex)].steps;
+                const legCoords = steps.flatMap((step) => step.geometry.coordinates);
+                const pointIndex = Math.floor(legProgress * (legCoords.length - 1));
                 const truckCoord = legCoords[pointIndex];
 
                 map.addSource("truck", {
@@ -139,8 +123,6 @@ export default function TruckRouteMap({ stops, progress = 0, showTruck = true })
             );
           }
 
-
-
           // Waypoints
           const features = stops.map((stop) => ({
             type: "Feature",
@@ -159,12 +141,10 @@ export default function TruckRouteMap({ stops, progress = 0, showTruck = true })
             },
           });
 
-          map.getStyle().glyphs ||= "mapbox://fonts/mapbox/{fontstack}/{range}.pbf";
-
           map.loadImage(
             "https://bxporjcib7gy7ljf.public.blob.vercel-storage.com/resources/pushpin_blue_low.png",
             (err, image) => {
-              if (err) throw err;
+              if (err || !isMounted) return;
               map.addImage("custom-marker", image);
 
               map.addLayer({
@@ -174,10 +154,7 @@ export default function TruckRouteMap({ stops, progress = 0, showTruck = true })
                 layout: {
                   "icon-image": "custom-marker",
                   "text-field": ["get", "label"],
-                  "text-font": [
-                    "Open Sans Semibold",
-                    "Arial Unicode MS Bold",
-                  ],
+                  "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
                   "text-offset": [0, 1.5],
                   "text-anchor": "bottom",
                   "icon-allow-overlap": true,
@@ -193,9 +170,7 @@ export default function TruckRouteMap({ stops, progress = 0, showTruck = true })
 
           // Fit bounds
           const bounds = new mapboxgl.LngLatBounds();
-          stops.forEach((stop) =>
-            bounds.extend([stop.lng, stop.lat])
-          );
+          stops.forEach((stop) => bounds.extend([stop.lng, stop.lat]));
           map.fitBounds(bounds, { padding: 50 });
 
           // Satellite toggle
@@ -217,10 +192,8 @@ export default function TruckRouteMap({ stops, progress = 0, showTruck = true })
             "route"
           );
 
-          const existingButton =
-            mapContainer.current.querySelector(
-              ".satellite-toggle-btn"
-            );
+          // FIX 1: Add a optional chain check to ensure mapContainer.current isn't null
+          const existingButton = mapContainer.current?.querySelector(".satellite-toggle-btn");
           if (existingButton) existingButton.remove();
 
           const toggleButton = document.createElement("button");
@@ -235,14 +208,10 @@ export default function TruckRouteMap({ stops, progress = 0, showTruck = true })
           toggleButton.style.borderRadius = "4px";
           toggleButton.style.cursor = "pointer";
           toggleButton.style.zIndex = 1;
-          toggleButton.style.boxShadow =
-            "rgba(0, 0, 0, 0.1) 0px 0px 0px 2px";
+          toggleButton.style.boxShadow = "rgba(0, 0, 0, 0.1) 0px 0px 0px 2px";
 
           toggleButton.onclick = () => {
-            const visibility = map.getLayoutProperty(
-              "satellite",
-              "visibility"
-            );
+            const visibility = map.getLayoutProperty("satellite", "visibility");
             map.setLayoutProperty(
               "satellite",
               "visibility",
@@ -252,12 +221,13 @@ export default function TruckRouteMap({ stops, progress = 0, showTruck = true })
 
           map.getContainer().appendChild(toggleButton);
         })
-        .catch((err) =>
-          console.error("Mapbox Directions API error:", err)
-        );
+        .catch((err) => console.error("Mapbox Directions API error:", err));
     });
 
-    return () => map.remove();
+    return () => {
+      isMounted = false; // Flag to stop any running images/fetches from updating state
+      map.remove();
+    };
   }, [stops, progress, theme]);
 
   return (

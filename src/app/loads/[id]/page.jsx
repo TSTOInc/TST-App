@@ -203,10 +203,10 @@ const DocumentsCard = ({ load, files }) => {
 // ---------------------- MAIN PAGE ----------------------
 export default function HomePage({ params }) {
   const { id } = React.use(params);
-  const data = useQuery(api.loads.byId, { id });
+  const data = useQuery(api.loads.byId, id ? { id } : "skip");
+  const carrier = useQuery(api.auth.getUserWithOrg)
   const files = useQuery(api.files.byId, { entityType: "loads", entityId: id }) || [];
   const logs = useQuery(api.logs.byId, { table: "loads", id: id });
-
   const sortedStops = useMemo(() => {
     if (!data?.stops) return [];
     return [...data.stops].sort((a, b) => {
@@ -293,7 +293,7 @@ export default function HomePage({ params }) {
 
         <TabsContent value="details" className="space-y-4">
           {/* Load Info */}
-          <LoadProgressCard data={data} />
+          <LoadProgressCard data={data} carrier={carrier.org} />
           <div className="grid gap-4 md:grid-cols-2">
 
             <InfoCard
