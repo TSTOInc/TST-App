@@ -2,42 +2,133 @@
 import React, { useEffect, useState, useMemo } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
-import { FileText, DollarSign, Package, Building2, NotepadText, MapPin, ArrowUpFromLine, ArrowDownToLine, FileSearch, FileTextIcon, Unplug, ActivityIcon, } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { toast } from "sonner"
+import { 
+  FileText, DollarSign, Package, Building2, NotepadText, MapPin, 
+  ArrowUpFromLine, ArrowDownToLine, FileSearch, FileTextIcon, Unplug, 
+  ActivityIcon, Plus, Trash2, Loader2, RefreshCw, Eye, Download
+} from "lucide-react"
 import { Separator } from "@/components/ui/separator"
-import { useQuery } from "convex/react"
+import { useQuery, useMutation } from "convex/react"
 import { api } from "@convex/_generated/api"
 import TimelineVertical from "@/components/TimelineVertical"
 import TruckRouteMap from "@/components/custom/TruckRouteMap"
 import InfoCard from '@/components/data/info-card'
 import LoadProgressCard from '@/components/layout/LoadProgressCard'
-import { IconFileDollar, IconUsersGroup } from "@tabler/icons-react";
+import { IconFileDollar } from "@tabler/icons-react";
 import { DialogDemo } from "@/components/data/upload/upload-doc";
 import { DocumentCard } from "@/components/documents/document-card";
 import { AuditLogItem } from "@/components/data/log/log-item";
 import { cn } from "@/lib/utils";
 import { formatCentsToUSD, calculateLoadFinancials } from "@/lib/currency";
-// ---------------------- HELPERS ----------------------
+// ---------------------- API PAYLOAD MAPPING ----------------------
+function mapLoadToInvoicePayload(load, liveAdjustments = []) {
+  // 1. Map the live changes directly into the target top-level adjustments array structure
+  const targetAdjustments = liveAdjustments.map(adj => ({
+    id: adj.id || crypto.randomUUID(),
+    description: adj.description,
+    type: adj.type, // "addition" | "deduction"
+    amountCents: adj.amountCents
+  }));
 
+  // 2. Map internal stops array to match the target nesting keys exactly
+  const targetStops = (load.stops || [])
+  .filter((s) => ["pickup", "delivery"].includes(s.type.toLowerCase()))
+  .map((s) => {
+    const fullLocationString = (s.location || "").trim(); 
+    
+    let displayCity = fullLocationString;
+    let extractedState = "";
+    let extractedZip = "";
+
+    // Regex looks for: [City Name], [2-letter State] [5-digit ZIP] at the end of the string
+    const zipRegex = /([^,]+),\s*([A-Z]{2})\s+(\d{5})$/;
+    const match = fullLocationString.match(zipRegex);
+
+    if (match) {
+      // 1. Extract ONLY the city name (e.g., "La Puente")
+      displayCity = match[1].trim(); 
+      // 2. Extract the state (e.g., "CA")
+      extractedState = match[2];
+      // 3. Extract the ZIP (e.g., "91744")
+      extractedZip = match[3];
+    } else {
+      // FALLBACK: If it doesn't match the format, we put the full string in 'city'
+      // and leave 'state' and 'zip' completely empty so nothing gets appended.
+      displayCity = fullLocationString;
+      extractedState = "";
+      extractedZip = "";
+    }
+
+    return {
+      type: s.type.charAt(0).toUpperCase() + s.type.slice(1), 
+      city: displayCity,     // ONLY "La Puente" (or full string if format is invalid)
+      state: extractedState, // "CA" (or empty if format is invalid)
+      zip: extractedZip,     // "91744" (or empty if format is invalid)
+      datetime: s.appointment_time || s.window_start || "",
+      datetime2: s.window_end || "",
+    };
+  });
+
+  // 3. Return the fully compliant document object
+  return {
+    id: String(load.invoice_number || load._id || ""),
+    load_number: load.load_number || "",
+    load_number_label: "Shipment", // Explicitly added to match target schema
+    date: load.invoiced_at || load._creationTime || new Date().toISOString(),
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    carrier: {
+      name: load.carrier?.name || "",
+      address: load.carrier?.address || "",
+      address2: `${load.carrier?.city || ""}, ${load.carrier?.state || ""} ${load.carrier?.zip || ""}`.trim(),
+      phone: load.carrier?.phone || "",
+      email: load.carrier?.company_email || "",
+    },
+    broker: {
+      name: load.broker?.name || "N/A",
+      address: load.broker?.address || "",
+      address2: `${load.broker?.city || ""}, ${load.broker?.state || ""} ${load.broker?.zip || ""}`.trim(),
+      phone: load.broker?.phone || "",
+      email: load.broker?.email || "",
+    },
+    adjustments: targetAdjustments, // Now maps to top level array of objects
+    items: [
+      {
+        description: "Line Haul",
+        notes: `Truck# ${load.truck?.truck_number || ""}, Trailer# ${load.equipment?.equipment_number || ""}`,
+        quantity: 1,
+        cost: load.rate ? Number(load.rate) / 100 : 0, // Keeps base cost mapping in fractional standard dollars
+        stops: targetStops
+      }
+    ],
+    color: "134A9E",
+    secondaryColor: "134A9E",
+  };
+}
+
+// ---------------------- HELPERS ----------------------
 const formatDate = (dateStr) =>
   dateStr
     ? new Date(dateStr).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
     : "N/A";
 
 const formatTimeRange = (start, end) => {
   const s = new Date(start);
   const e = new Date(end);
-
   const startDateStr = s.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   const endDateStr = e.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-
   const startTime = s.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
   const endTime = e.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 
@@ -47,46 +138,25 @@ const formatTimeRange = (start, end) => {
 };
 
 const getDueDateStatus = (invoiceDateStr, daysToPay, paid_at) => {
-  // Default fallback if incomplete data
   if (!invoiceDateStr || typeof daysToPay !== "number") {
     return { text: "IN PROGRESS", color: "text-muted-foreground" };
   }
-
   const invoiceDate = new Date(invoiceDateStr);
   if (isNaN(invoiceDate)) return { text: "", color: "text-muted-foreground" };
 
   const dueDate = new Date(invoiceDate);
   dueDate.setDate(invoiceDate.getDate() + daysToPay);
 
-  const diffDays = Math.ceil(
-    (dueDate.setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / (1000 * 60 * 60 * 24)
-  );
+  const diffDays = Math.ceil((dueDate.setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / (1000 * 60 * 60 * 24));
 
-  // 1. Paid status (Green)
-  if (paid_at !== undefined && paid_at !== null) {
-    return { text: "PAID", color: "text-green-500" };
-  }
-
-  // 2. Overdue status (Red)
-  if (diffDays < 0) {
-    const daysStr = Math.abs(diffDays) !== 1 ? "S" : "";
-    return { text: `OVERDUE BY ${Math.abs(diffDays)} DAY${daysStr}`, color: "text-rose-500 font-semibold animate-pulse" };
-  }
-
-  // 3. Due Today status (Orange/Yellow)
-  if (diffDays === 0) {
-    return { text: "DUE TODAY", color: "text-amber-500 font-medium" };
-  }
-
-  // 4. Upcoming status (Standard Blue or Muted)
-  const daysStr = diffDays !== 1 ? "S" : "";
-  return { text: `DUE IN ${diffDays} DAY${daysStr}`, color: "text-blue-400" };
+  if (paid_at !== undefined && paid_at !== null) return { text: "PAID", color: "text-green-500" };
+  if (diffDays < 0) return { text: `OVERDUE BY ${Math.abs(diffDays)} DAY${Math.abs(diffDays) !== 1 ? "S" : ""}`, color: "text-rose-500 font-semibold animate-pulse" };
+  if (diffDays === 0) return { text: "DUE TODAY", color: "text-amber-500 font-medium" };
+  return { text: `DUE IN ${diffDays} DAY${diffDays !== 1 ? "S" : ""}`, color: "text-blue-400" };
 };
 
 const geocodeAddress = async (address) => {
-  const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-    address
-  )}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&limit=1`
+  const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&limit=1`
   const res = await fetch(url)
   if (!res.ok) throw new Error("Geocoding failed")
   const data = await res.json()
@@ -94,7 +164,7 @@ const geocodeAddress = async (address) => {
   throw new Error(`Could not geocode address: ${address}`)
 }
 
-// ---------------------- COMPONENTS ----------------------
+// ---------------------- SUB COMPONENTS ----------------------
 const ComplexCard = ({ title, icon: Icon, value }) => (
   <Card>
     <CardHeader className="flex justify-between pb-2">
@@ -111,67 +181,51 @@ const RateCard = ({ rate, feePercent, invoicedAt, paymentTerms, paid_at, adjustm
   const financials = calculateLoadFinancials(rate, feePercent, adjustments); 
   return (
     <Card className="xl:col-span-2">
-  <CardHeader className="flex justify-between pb-2">
-    <CardTitle className="text-sm font-medium">Rate</CardTitle>
-    <DollarSign className="h-4 w-4 text-muted-foreground" />
-  </CardHeader>
-  <CardContent className="space-y-3">
-    <div className="flex justify-between items-center">
-      <span className="text-2xl font-bold text-green-500">{formatCentsToUSD(financials.netRateCents)}</span>
-      {(() => {
-        const status = getDueDateStatus(invoicedAt, paymentTerms?.days_to_pay, paid_at);
-
-        return (
-          <span className={cn("text-xl font-medium", status.color)}>
-            {status.text}
-          </span>
-        );
-      })()}
-    </div>
-    <div className="space-y-2">
-      <div className="flex justify-between items-center">
-        <span className="text-xs text-muted-foreground">Base Rate:</span>
-        <span className="text-xs font-medium">{formatCentsToUSD(financials.baseRateCents)}</span>
-      </div>
-
-      {/* Dynamic Additions (Lumper, Detention, Layover, etc.) */}
-      {financials.totalAdditionsCents > 0 && (
+      <CardHeader className="flex justify-between pb-2">
+        <CardTitle className="text-sm font-medium">Rate</CardTitle>
+        <DollarSign className="h-4 w-4 text-muted-foreground" />
+      </CardHeader>
+      <CardContent className="space-y-3">
         <div className="flex justify-between items-center">
-          <span className="text-xs text-muted-foreground">Adjustments (Additions):</span>
-          <span className="text-xs font-medium text-green-500">
-            +{formatCentsToUSD(financials.totalAdditionsCents)}
-          </span>
+          <span className="text-2xl font-bold text-green-500">{formatCentsToUSD(financials.netRateCents)}</span>
+          {(() => {
+            const status = getDueDateStatus(invoicedAt, paymentTerms?.days_to_pay, paid_at);
+            return <span className={cn("text-xl font-medium", status.color)}>{status.text}</span>;
+          })()}
         </div>
-      )}
-
-      {/* Dynamic Deductions (Fuel Advances, Discounts, etc.) */}
-      {financials.totalDeductionsCents > 0 && (
-        <div className="flex justify-between items-center">
-          <span className="text-xs text-muted-foreground">Adjustments (Deductions):</span>
-          <span className="text-xs font-medium text-red-500">
-            -{formatCentsToUSD(financials.totalDeductionsCents)}
-          </span>
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-muted-foreground">Base Rate:</span>
+            <span className="text-xs font-medium">{formatCentsToUSD(financials.baseRateCents)}</span>
+          </div>
+          {financials.totalAdditionsCents > 0 && (
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-muted-foreground">Adjustments (Additions):</span>
+              <span className="text-xs font-medium text-green-500">+{formatCentsToUSD(financials.totalAdditionsCents)}</span>
+            </div>
+          )}
+          {financials.totalDeductionsCents > 0 && (
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-muted-foreground">Adjustments (Deductions):</span>
+              <span className="text-xs font-medium text-red-500">-{formatCentsToUSD(financials.totalDeductionsCents)}</span>
+            </div>
+          )}
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-muted-foreground">Quick Pay ({feePercent}%):</span>
+            <span className="text-xs font-medium text-red-500">-{formatCentsToUSD(financials.quickPayFeeCents)}</span>
+          </div>
+          <Separator />
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-medium">Total:</span>
+            <span className="text-xs font-bold text-green-500">{formatCentsToUSD(financials.netRateCents)}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-muted-foreground">Payment Terms:</span>
+            <span className="text-xs font-medium">{paymentTerms?.name}</span>
+          </div>
         </div>
-      )}
-
-      <div className="flex justify-between items-center">
-        <span className="text-xs text-muted-foreground">Quick Pay ({feePercent}%):</span>
-        <span className="text-xs font-medium text-red-500">
-          -{formatCentsToUSD(financials.quickPayFeeCents)}
-        </span>
-      </div>
-      <Separator />
-      <div className="flex justify-between items-center">
-        <span className="text-xs font-medium">Total:</span>
-        <span className="text-xs font-bold text-green-500">{formatCentsToUSD(financials.netRateCents)}</span>
-      </div>
-      <div className="flex justify-between items-center">
-        <span className="text-xs text-muted-foreground">Payment Terms:</span>
-        <span className="text-xs font-medium">{paymentTerms.name}</span>
-      </div>
-    </div>
-  </CardContent>
-</Card>
+      </CardContent>
+    </Card>
   );
 };
 
@@ -181,19 +235,16 @@ const DocumentsCard = ({ load, files }) => {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Load Documents</CardTitle>
-        <DialogDemo title="Add Document" categories={
-          [
-            { value: "RATE_CONFIRMATION", label: "Rate Confirmation" },
-            { value: "BOL", label: "Bill of Lading" },
-            { value: "POD", label: "Proof of Delivery" },
-            { value: "INNOUT_TICKET", label: "In/Out Ticket" },
-            { value: "LUMPER", label: "Lumper Ticket" },
-            { value: "SCALE_TICKET", label: "Scale Ticket" },
-            { value: "TRAILER_INTERCHANGE", label: "Trailer Interchange" },
-            { value: "MISC", label: "Other" },
-          ]
-        } multiple={true} perFile={true} category="MISC" entityType="loads" entityId={load._id} expires={false} />
-
+        <DialogDemo title="Add Document" categories={[
+          { value: "RATE_CONFIRMATION", label: "Rate Confirmation" },
+          { value: "BOL", label: "Bill of Lading" },
+          { value: "POD", label: "Proof of Delivery" },
+          { value: "INNOUT_TICKET", label: "In/Out Ticket" },
+          { value: "LUMPER", label: "Lumper Ticket" },
+          { value: "SCALE_TICKET", label: "Scale Ticket" },
+          { value: "TRAILER_INTERCHANGE", label: "Trailer Interchange" },
+          { value: "MISC", label: "Other" },
+        ]} multiple={true} perFile={true} category="MISC" entityType="loads" entityId={load._id} expires={false} />
       </CardHeader>
       <CardContent className="space-y-2">
         {!filteredFiles.length ? (
@@ -202,18 +253,233 @@ const DocumentsCard = ({ load, files }) => {
           </p>
         ) : (
           <div className="w-full grid gap-4 grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 px-4">
-            {filteredFiles.map((file) => {
-              return (
-                <DocumentCard
-                  key={file._id}
-                  file={file}
-                />
-              )
-            })}
+            {filteredFiles.map((file) => <DocumentCard key={file._id} file={file} />)}
           </div>
         )}
       </CardContent>
     </Card>
+  );
+};
+
+// ---------------------- DYNAMIC INVOICE PREVIEW TAB CONTENT ----------------------
+const InvoiceTabContent = ({ loadData, carrierData }) => {
+  const [adjustments, setAdjustments] = useState(loadData.adjustments || []);
+  const [adjType, setAdjType] = useState("addition");
+  const [adjDescription, setAdjDescription] = useState("");
+  const [adjAmount, setAdjAmount] = useState("");
+  
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+
+  // Auto-fetch preview on adjustment structure mutations
+  useEffect(() => {
+    let active = true;
+    const fetchInvoiceBlob = async () => {
+      setIsPreviewLoading(true);
+      try {
+        const payload = mapLoadToInvoicePayload({ ...loadData, carrier: carrierData }, adjustments);
+        payload.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+        const res = await fetch("https://invoice4all.vercel.app/api", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": process.env.NEXT_PUBLIC_INVOICE4ALL_API_KEY || "",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) throw new Error("Preview compilation failed");
+        
+        const blob = await res.blob();
+        if (active) {
+          if (previewUrl) window.URL.revokeObjectURL(previewUrl);
+          setPreviewUrl(window.URL.createObjectURL(blob));
+        }
+      } catch (error) {
+        console.error(error);
+        toast.error("Could not render latest invoice preview modification");
+      } finally {
+        if (active) setIsPreviewLoading(false);
+      }
+    };
+
+    fetchInvoiceBlob();
+    return () => {
+      active = false;
+    };
+  }, [adjustments, loadData, carrierData]);
+
+  const handleAddAdjustment = (e) => {
+    e.preventDefault();
+    if (!adjDescription || !adjAmount) return;
+
+    const amountInCents = Math.round(parseFloat(adjAmount) * 100);
+    const newAdj = {
+      id: crypto.randomUUID(),
+      description: adjDescription,
+      type: adjType,
+      amountCents: amountInCents,
+    };
+
+    setAdjustments([...adjustments, newAdj]);
+    setAdjDescription("");
+    setAdjAmount("");
+  };
+
+  const handleRemoveAdjustment = (id) => {
+    setAdjustments(adjustments.filter(a => a.id !== id));
+  };
+
+  // Handler to download the compiled invoice blob
+  const handleDownloadInvoice = () => {
+    if (!previewUrl) return;
+    
+    const link = document.createElement("a");
+    link.href = previewUrl;
+    // Fallback naming conventions based on provided props
+    const invoiceName = loadData?.invoiceNumber || loadData?.id || "invoice";
+    link.download = `Invoice-${invoiceName}.pdf`;
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-3 items-start">
+      {/* Configuration Column */}
+      <div className="space-y-4 lg:col-span-1">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Plus className="h-4 w-4" /> Add Adjustment
+            </CardTitle>
+            <CardDescription>Append dynamic accessorial structures directly into the line items.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAddAdjustment} className="space-y-4">
+              <div className="space-y-1">
+                <Label>Type</Label>
+                <Select value={adjType} onValueChange={setAdjType}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="addition">Addition (Detention, Lumper)</SelectItem>
+                    <SelectItem value="deduction">Deduction (Advance, Fine)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <Label>Description</Label>
+                <Input 
+                  placeholder="Detention at pickup location" 
+                  value={adjDescription}
+                  onChange={(e) => setAdjDescription(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label>Amount (USD)</Label>
+                <div className="relative">
+                  <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    type="number" 
+                    step="0.01" 
+                    placeholder="0.00" 
+                    className="pl-8"
+                    value={adjAmount}
+                    onChange={(e) => setAdjAmount(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <Button type="submit" className="w-full text-xs">
+                Apply to Preview
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Applied Items</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 px-6 pb-4">
+            {adjustments.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic py-2">No adjustments declared.</p>
+            ) : (
+              <div className="divide-y divide-border">
+                {adjustments.map((adj) => (
+                  <div key={adj.id} className="flex justify-between items-center py-2.5 text-xs">
+                    <div className="flex flex-col">
+                      <span className="font-medium">{adj.description}</span>
+                      <span className={cn("text-[10px] uppercase font-bold", adj.type === 'addition' ? 'text-green-500' : 'text-red-500')}>{adj.type}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={cn("font-bold", adj.type === 'addition' ? 'text-green-500' : 'text-red-500')}>
+                        {adj.type === 'addition' ? '+' : '-'}{formatCentsToUSD(adj.amountCents)}
+                      </span>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground" onClick={() => handleRemoveAdjustment(adj.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Render Frame Column — Viewport-Calculated Dynamic Workspace */}
+      <div className="lg:col-span-2 flex flex-col space-y-2 h-[calc(100vh-30px)]">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
+            <Eye className="w-4 h-4" /> Live Document Sandbox
+          </div>
+          
+          <div className="flex items-center gap-4">
+            {isPreviewLoading && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground animate-pulse">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Compiling remote styles...
+              </div>
+            )}
+            
+            {/* Added Download Button */}
+            <Button
+              
+              size="sm"
+              className="text-xs h-10 flex items-center px-4 gap-1.5"
+              disabled={!previewUrl || isPreviewLoading}
+              onClick={handleDownloadInvoice}
+            >
+              <Download className="h-3.5 w-3.5" />
+              Download
+            </Button>
+          </div>
+        </div>
+
+        <Card className="flex-1 w-full overflow-hidden bg-neutral-900 border border-border relative rounded-xl shadow-inner flex items-center justify-center">
+          {previewUrl ? (
+            <iframe 
+              src={`${previewUrl}#toolbar=0&navpanes=0&view=FitH`} 
+              className={cn(
+                "w-full h-full block bg-white transition-opacity duration-200 border-none", 
+                isPreviewLoading ? "opacity-40" : "opacity-100"
+              )} 
+            />
+          ) : (
+            <div className="text-center text-muted-foreground space-y-2 p-4">
+              <RefreshCw className="h-7 w-7 animate-spin mx-auto text-neutral-600" />
+              <p className="text-xs tracking-wide">Initializing secure render channel...</p>
+            </div>
+          )}
+        </Card>
+      </div>
+    </div>
   );
 };
 
@@ -224,6 +490,7 @@ export default function HomePage({ params }) {
   const carrier = useQuery(api.auth.getUserWithOrg)
   const files = useQuery(api.files.byId, { entityType: "loads", entityId: id }) || [];
   const logs = useQuery(api.logs.byId, { table: "loads", id: id });
+  
   const sortedStops = useMemo(() => {
     if (!data?.stops) return [];
     return [...data.stops].sort((a, b) => {
@@ -235,25 +502,12 @@ export default function HomePage({ params }) {
 
   const timelineStops = useMemo(() => {
     if (!sortedStops.length) return [];
-
     return sortedStops.map((stop, index) => ({
       id: index + 1,
-      title:
-        stop.type === "pickup"
-          ? "Pickup"
-          : stop.type === "delivery"
-            ? "Delivery"
-            : "Stop",
+      title: stop.type === "pickup" ? "Pickup" : stop.type === "delivery" ? "Delivery" : "Stop",
       description: stop.location,
-      date: stop.appointment_time
-        ? formatDate(stop.appointment_time)
-        : formatTimeRange(stop.window_start, stop.window_end),
-      icon:
-        stop.type === "pickup"
-          ? ArrowUpFromLine
-          : stop.type === "delivery"
-            ? ArrowDownToLine
-            : MapPin,
+      date: stop.appointment_time ? formatDate(stop.appointment_time) : formatTimeRange(stop.window_start, stop.window_end),
+      icon: stop.type === "pickup" ? ArrowUpFromLine : stop.type === "delivery" ? ArrowDownToLine : MapPin,
     }));
   }, [sortedStops]);
 
@@ -261,7 +515,6 @@ export default function HomePage({ params }) {
 
   useEffect(() => {
     if (!sortedStops.length) return;
-
     const fetchStops = async () => {
       const stopsWithCoordinates = await Promise.all(
         sortedStops.map(async (stop) => {
@@ -279,8 +532,7 @@ export default function HomePage({ params }) {
     };
     fetchStops();
   }, [sortedStops]);
-  console.log("Stops:", stopsWithCoords.length);
-  console.log("Max progress:", stopsWithCoords.length - 1);
+
   if (!data) return <div>Loading...</div>;
 
   return (
@@ -292,10 +544,11 @@ export default function HomePage({ params }) {
         </div>
         <RateCard
           rate={Number.parseFloat(data.rate)}
-          feePercent={data.payment_terms.fee_percent}
+          feePercent={data.payment_terms?.fee_percent || 0}
           invoicedAt={data.invoiced_at}
           paymentTerms={data.payment_terms}
           paid_at={data.paid_at}
+          adjustments={data.adjustments || []}
         />
       </div>
 
@@ -304,15 +557,13 @@ export default function HomePage({ params }) {
           <TabsTrigger value="details"><FileSearch className="h-4 w-4" />Details</TabsTrigger>
           <TabsTrigger value="parties"><Unplug className="h-4 w-4" />Parties</TabsTrigger>
           <TabsTrigger value="documents"><FileTextIcon className="h-4 w-4" />Documents</TabsTrigger>
-          <TabsTrigger value="timeline"><IconFileDollar className="h-4 w-4" />Invoice</TabsTrigger>
+          <TabsTrigger value="invoice"><IconFileDollar className="h-4 w-4" />Invoice</TabsTrigger>
           <TabsTrigger value="logs"><ActivityIcon className="h-4 w-4" />Logs</TabsTrigger>
         </TabsList>
 
         <TabsContent value="details" className="space-y-4">
-          {/* Load Info */}
-          <LoadProgressCard data={data} carrier={carrier.org} />
+          <LoadProgressCard data={data} carrier={carrier?.org} />
           <div className="grid gap-4 md:grid-cols-2">
-
             <InfoCard
               CardIcon={<Package className="h-5 w-5" />}
               title="Load Information"
@@ -336,7 +587,6 @@ export default function HomePage({ params }) {
             </Card>
           </div>
 
-          {/* Route Info */}
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader>
@@ -377,8 +627,8 @@ export default function HomePage({ params }) {
               title="Broker Information"
               inline={false}
               fields={[
-                { label: "Name", value: data.broker.name, type: "link", href: `/brokers/${data.broker._id}`, external: false },
-                { label: "Address", value: data.broker.address + ", " + data.broker.city + ", " + data.broker.state + " " + data.broker.zip },
+                { label: "Name", value: data.broker?.name, type: "link", href: `/brokers/${data.broker?._id}`, external: false },
+                { label: "Address", value: data.broker ? (data.broker.address + ", " + data.broker.city + ", " + data.broker.state + " " + data.broker.zip) : "" },
                 { label: "Agent", value: data?.broker_agent?.name || "No Agent" },
               ]}
             />
@@ -387,29 +637,19 @@ export default function HomePage({ params }) {
               title="Equipment Information"
               inline={false}
               fields={[
-                {
-                  label: "Truck",
-                  value: data.truck.truck_number,
-                  type: "link",
-                  href: `/trucks/${data.truck._id}`,
-                  external: false
-                },
-                {
-                  label: "Equipment",
-                  value: data.equipment?.equipment_number || "No Equipment",
-                  type: data.equipment ? "link" : "text",
-                  href: data.equipment ? `/equipment/${data.equipment._id}` : undefined,
-                  external: false
-                },
+                { label: "Truck", value: data.truck?.truck_number, type: "link", href: `/trucks/${data.truck?._id}`, external: false },
+                { label: "Equipment", value: data.equipment?.equipment_number || "No Equipment", type: data.equipment ? "link" : "text", href: data.equipment ? `/equipment/${data.equipment?._id}` : undefined, external: false },
               ]}
             />
-
-
           </div>
         </TabsContent>
 
         <TabsContent value="documents" className="space-y-4">
           <DocumentsCard load={data} files={files} />
+        </TabsContent>
+
+        <TabsContent value="invoice" className="space-y-4">
+          <InvoiceTabContent loadData={data} carrierData={carrier?.org} />
         </TabsContent>
 
         <TabsContent value="logs" className="space-y-4">
