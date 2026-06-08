@@ -48,7 +48,6 @@ export default function LoadDetailsStep({ control, errors }: LoadDetailsStepProp
       </div>
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-
         {/* LENGTH FT */}
         <div className="space-y-2">
           <Label required>Length (ft)</Label>
@@ -64,17 +63,54 @@ export default function LoadDetailsStep({ control, errors }: LoadDetailsStepProp
 
         {/* RATE */}
         <div className="space-y-2">
-          <Label required>Rate ($)</Label>
+          <Label required>Rate</Label>
           <Controller
             name="loadDetails.rate"
             control={control}
-            render={({ field }) => <Input {...field} placeholder="Rate ($)" />}
+            render={({ field: { onChange, onBlur, value, ...restField } }) => (
+              <div className="relative mt-1 rounded-md shadow-sm">
+                {/* Visual $ Indicator */}
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                  <span className="text-muted-foreground text-sm">$</span>
+                </div>
+                
+                <Input
+                  {...restField}
+                  value={value || ""}
+                  className="pl-7" // Push the text out so it doesn't overlap the $
+                  placeholder="0.00"
+                  onChange={(e) => {
+                    let val = e.target.value
+                    
+                    // 1. Filter out everything except digits and decimal dots
+                    val = val.replace(/[^0-9.]/g, "")
+                    
+                    // 2. Prevent users from inputting multiple decimals (e.g., 12.34.56)
+                    const parts = val.split(".")
+                    if (parts.length > 2) {
+                      val = parts[0] + "." + parts.slice(1).join("")
+                    }
+                    
+                    onChange(val)
+                  }}
+                  onBlur={(e) => {
+                    const rawValue = parseFloat(e.target.value)
+                    if (!isNaN(rawValue)) {
+                      // 3. Force exact .00 precision format when user changes focus
+                      onChange(rawValue.toFixed(2))
+                    }
+                    onBlur() // Trigger React Hook Form's built-in validation pipeline
+                  }}
+                />
+              </div>
+            )}
           />
           {errors.loadDetails?.rate && (
             <p className="text-red-500 text-sm">{errors.loadDetails.rate.message}</p>
           )}
         </div>
       </div>
+
       {/* LOAD TYPE */}
       <div className="space-y-2">
         <Label required>Load Type</Label>

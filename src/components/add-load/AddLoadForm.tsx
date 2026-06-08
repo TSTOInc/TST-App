@@ -174,8 +174,16 @@ export default function AddLoadForm() {
 
   const onSubmit = async (data: FormData) => {
     try {
+      // 💵 Convert the dollar string to integer cents
+      const rawRate = parseFloat(data.loadDetails.rate) || 0
+      const rateInCents = Math.round(rawRate * 100)
+
       const cleanData = {
         ...data,
+        loadDetails: {
+          ...data.loadDetails,
+          rate: rateInCents, // Now a whole integer passed down to the DB
+        },
         stops: data.stops.map((s) => {
           if (s.timeType === "appointment") {
             return {
@@ -199,27 +207,23 @@ export default function AddLoadForm() {
         }),
       }
 
-
-      const promise = createLoad({ data: cleanData }) // ✅ no Dates
+      const promise = createLoad({ data: cleanData })
 
       toast.promise(promise, {
         loading: "Adding Load...",
         success: "✅ Load added successfully!",
         error: (err: any) => `❌ ${err.message || "Failed to add load"}`,
-      });;
+      })
 
-      const newLoadId = await promise;
+      const newLoadId = await promise
 
       if (newLoadId) {
-        router.push(`/loads/${newLoadId}`);
+        router.push(`/loads/${newLoadId}`)
       }
-    }
-    catch (err) {
+    } catch (err) {
       console.log(err)
     }
   }
-
-
 
   const canAddStop = fields.length < 10
   const canRemoveStop = fields.length > 2
