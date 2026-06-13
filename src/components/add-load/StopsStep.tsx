@@ -15,6 +15,27 @@ import { DateTimePicker } from "@/components/add-load/DateTimePicker";
 import { MapPin, Plus, Trash } from "lucide-react";
 import TruckRouteMap from "@/components/custom/TruckRouteMap";
 
+
+
+
+interface GeocodedStop {
+  coordinates: [number, number];
+  lat: number;
+  lng: number;
+  type: string;
+  location: string;
+  timeType: string;
+  appointmentTime?: any;
+  windowStart?: any;
+  windowEnd?: any;
+}
+
+
+
+
+
+
+
 // ---------------------- GEOCODING HELPER ----------------------
 const geocodeAddress = async (address: string) => {
   const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
@@ -53,7 +74,7 @@ export default function StopsStep({
   remove,
   fields,
 }: StopsStepProps) {
-  const [stopsWithCoords, setStopsWithCoords] = useState<any[]>([]);
+  const [stopsWithCoords, setStopsWithCoords] = useState<GeocodedStop[]>([]);  
   const [loadingStops, setLoadingStops] = useState<boolean[]>([]);
 
   // ---------------------- HANDLE GEOCODE ON BLUR ----------------------
@@ -255,7 +276,7 @@ export default function StopsStep({
       {/* ---------------- RIGHT SIDE MAP ---------------- */}
       <div className="relative">
         {stopsWithCoords.length > 0 ? (
-          <TruckRouteMap stops={stopsWithCoords} showTruck={false} />
+          <TruckRouteMap stops={stopsWithCoords as any} showTruck={false} />
         ) : (
           <div className="aspect-video bg-muted rounded-lg flex flex-col items-center justify-center text-center space-y-2">
             <MapPin className="h-12 w-12 text-muted-foreground" />
