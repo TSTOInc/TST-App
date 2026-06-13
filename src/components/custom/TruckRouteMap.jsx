@@ -7,8 +7,13 @@ import "mapbox-gl/dist/mapbox-gl.css";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
-export default function TruckRouteMap({ stops, progress = 0, showTruck = true }) {
+export default function TruckRouteMap({
+  stops = [],
+  progress = 0,
+  showTruck = true,
+}) {
   const { theme } = useTheme();
+
   const mapContainer = useRef(null);
   const styleUrl =
     theme === "dark"
@@ -16,7 +21,7 @@ export default function TruckRouteMap({ stops, progress = 0, showTruck = true })
       : "mapbox://styles/angel-dom/cmfsxqoz900a301s0gzp917we";
 
   useEffect(() => {
-    if (stops.length < 2) return;
+    if (!Array.isArray(stops) || stops.length < 2) return;
 
     // Track if the component has unmounted to abort async tasks safely
     let isMounted = true;
@@ -45,7 +50,10 @@ export default function TruckRouteMap({ stops, progress = 0, showTruck = true })
         });
       }
 
-      const coordinates = stops.map((s) => `${s.lng},${s.lat}`).join(";");
+      const coordinates =
+        Array.isArray(stops)
+          ? stops.map((s) => `${s.lng},${s.lat}`).join(";")
+          : "";
       const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coordinates}?geometries=geojson&overview=full&steps=true&annotations=distance&access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`;
 
       fetch(url)
@@ -89,8 +97,10 @@ export default function TruckRouteMap({ stops, progress = 0, showTruck = true })
                 const legIndex = Math.floor(clampedProgress);
                 const legProgress = clampedProgress - legIndex;
                 const steps = legs[Math.min(legIndex, maxLegIndex)].steps;
-                const legCoords = steps.flatMap((step) => step.geometry.coordinates);
+                const legCoords =
+                  steps?.flatMap((step) => step.geometry?.coordinates || []) || [];
                 const pointIndex = Math.floor(legProgress * (legCoords.length - 1));
+                if (!legCoords.length) return;
                 const truckCoord = legCoords[pointIndex];
 
                 map.addSource("truck", {

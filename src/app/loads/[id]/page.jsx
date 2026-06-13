@@ -27,6 +27,7 @@ import { DocumentCard } from "@/components/documents/document-card";
 import { AuditLogItem } from "@/components/data/log/log-item";
 import { cn } from "@/lib/utils";
 import { formatCentsToUSD, calculateLoadFinancials } from "@/lib/currency";
+import { useAuth } from "@clerk/nextjs";
 // ---------------------- API PAYLOAD MAPPING ----------------------
 function mapLoadToInvoicePayload(load, liveAdjustments = []) {
   // 1. Map the live changes directly into the target top-level adjustments array structure
@@ -487,8 +488,14 @@ const InvoiceTabContent = ({ loadData, carrierData }) => {
 export default function HomePage({ params }) {
   const { id } = React.use(params);
 
+  //Check if auth
+  const { isLoaded, isSignedIn } = useAuth();
+      
   // 1. Grab the organization/carrier identity first
-  const carrier = useQuery(api.auth.getUserWithOrg)
+  const carrier = useQuery(
+    api.auth.getUserWithOrg,
+    isLoaded && isSignedIn ? {} : "skip"
+  );    
   
   const data = useQuery(api.loads.byId, id ? { id } : "skip");
   const files = useQuery(api.files.byId, id ? { entityType: "loads", entityId: id } : "skip") || [];
@@ -536,7 +543,14 @@ export default function HomePage({ params }) {
     };
     fetchStops();
   }, [sortedStops]);
-
+  if (!isLoaded) {
+    return (
+      <div className="p-6 text-sm text-muted-foreground animate-pulse">
+        Loading authentication...
+      </div>
+    );
+  }
+  
   if (!carrier || !data) return <div className="p-6 text-sm text-muted-foreground animate-pulse">Getting your secured load information...</div>;
 
   return (
