@@ -488,8 +488,8 @@ export default function HomePage({ params }) {
   const { id } = React.use(params);
   const data = useQuery(api.loads.byId, id ? { id } : "skip");
   const carrier = useQuery(api.auth.getUserWithOrg)
-  const files = useQuery(api.files.byId, { entityType: "loads", entityId: id }) || [];
-  const logs = useQuery(api.logs.byId, { table: "loads", id: id });
+  const files = useQuery(api.files.byId, id ? { entityType: "loads", entityId: id } : "skip") || [];
+  const logs = useQuery(api.logs.byId, id ? { table: "loads", id: id } : "skip");
   
   const sortedStops = useMemo(() => {
     if (!data?.stops) return [];
