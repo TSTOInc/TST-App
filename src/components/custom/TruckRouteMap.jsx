@@ -37,6 +37,14 @@ export default function TruckRouteMap({ stops, progress = 0, showTruck = true })
     );
 
     map.on("load", () => {
+      // FIX 2: Safely ensure glyphs exist on the style object before adding text layers
+      if (map.getStyle()) {
+        map.setStyle({
+          ...map.getStyle(),
+          glyphs: "mapbox://fonts/mapbox/{fontstack}/{range}.pbf"
+        });
+      }
+
       const coordinates = stops.map((s) => `${s.lng},${s.lat}`).join(";");
       const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coordinates}?geometries=geojson&overview=full&steps=true&annotations=distance&access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`;
 

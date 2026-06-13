@@ -486,10 +486,14 @@ const InvoiceTabContent = ({ loadData, carrierData }) => {
 // ---------------------- MAIN PAGE ----------------------
 export default function HomePage({ params }) {
   const { id } = React.use(params);
-  const data = useQuery(api.loads.byId, id ? { id } : "skip");
+
+  // 1. Grab the organization/carrier identity first
   const carrier = useQuery(api.auth.getUserWithOrg)
+  
+  const data = useQuery(api.loads.byId, id ? { id } : "skip");
   const files = useQuery(api.files.byId, id ? { entityType: "loads", entityId: id } : "skip") || [];
   const logs = useQuery(api.logs.byId, id ? { table: "loads", id: id } : "skip");
+
   
   const sortedStops = useMemo(() => {
     if (!data?.stops) return [];
@@ -533,7 +537,7 @@ export default function HomePage({ params }) {
     fetchStops();
   }, [sortedStops]);
 
-  if (!data) return <div>Loading...</div>;
+  if (!carrier || !data) return <div className="p-6 text-sm text-muted-foreground animate-pulse">Getting your secured load information...</div>;
 
   return (
     <div className="flex-1 space-y-4 p-4 pt-6">
