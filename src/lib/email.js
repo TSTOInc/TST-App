@@ -13,7 +13,10 @@ export const send = async (emailFormData) => {
 
         const res = await fetch("https://invoice4all.vercel.app/api", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": process.env.NEXT_PUBLIC_INVOICE4ALL_API_KEY || "",
+          },
             body: JSON.stringify(payload),
         });
 

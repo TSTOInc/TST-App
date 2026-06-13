@@ -123,7 +123,7 @@ const handleGenerateInvoice = async (data, carrier, setInvoicedAt) => {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "x-api-key": process.env.NEXT_PUBLIC_INVOICE4ALL_API_KEY,
+          "x-api-key": process.env.NEXT_PUBLIC_INVOICE4ALL_API_KEY || "",
         },
         body: JSON.stringify(payload),
       })
