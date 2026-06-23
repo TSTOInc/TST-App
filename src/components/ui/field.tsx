@@ -97,11 +97,15 @@ function FieldContent({ className, ...props }: React.ComponentProps<"div">) {
     />
   )
 }
-
+interface FieldLabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {
+  required?: boolean;
+}
 function FieldLabel({
   className,
+  required, // 2. Destructure 'required' so it doesn't leak into the native <Label>
+  children,
   ...props
-}: React.LabelHTMLAttributes<HTMLLabelElement>) { // 👈 Changed here
+}: FieldLabelProps) { 
   return (
     <Label
       data-slot="field-label"
@@ -109,8 +113,12 @@ function FieldLabel({
         "group/field-label peer/field-label flex w-fit gap-2 leading-snug...",
         className
       )}
-      {...(props as any)}
-    />
+      {...props as any}
+    >
+      {children}
+      {/* 3. Optional: Automatically append an asterisk if required is true */}
+      {required && <span className="text-red-500" aria-hidden="true">*</span>}
+    </Label>
   )
 }
 
