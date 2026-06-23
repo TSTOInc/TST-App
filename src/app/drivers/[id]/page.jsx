@@ -63,14 +63,11 @@ function getFileIcon(mimeType) {
     if (mimeType.startsWith('text/')) return FileTextIcon;
     return FileIcon; // fallback generic file icon
 }
-// Helper function to determine license status
 const getLicenseStatus = (expiresAt) => {
     if (!expiresAt) return { status: "Unknown" };
 
-    const expires = new Date(expiresAt).getTime();
+    const expires = expiresAt; 
     const now = Date.now();
-
-    if (isNaN(expires)) return { status: "Unknown" };
 
     const daysLeft = Math.ceil((expires - now) / (1000 * 60 * 60 * 24));
 

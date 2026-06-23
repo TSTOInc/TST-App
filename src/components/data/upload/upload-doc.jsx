@@ -57,12 +57,11 @@ export function DialogDemo({ title, maxFiles, maxSizeMB, entityType, entityId, e
                         filename: fileToUpload.name,
                         mimeType: fileToUpload.type,
                         size: fileToUpload.size,
-                        // IF perFile is true -> use specific file category
-                        // IF perFile is false -> fall back to the first category in the array
                         category: perFile ? fileWrapper.category?.value : categories[0]?.value,
                         entityType,
                         entityId,
-                        expiresAt: expiresAt ? expiresAt.toISOString() : undefined
+                        // CHANGE THIS: Send raw milliseconds for v.number()
+                        expiresAt: expiresAt ? expiresAt.getTime() : undefined 
                     }),
                 });
 
