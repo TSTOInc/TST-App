@@ -17,12 +17,12 @@ import FileUpload from "@/components/file-upload";
 import { IconPlus, IconLoader2, IconCheck } from "@tabler/icons-react";
 import { toast } from "sonner";
 
-export function DialogDemo({ title, maxFiles, maxSizeMB, entityType, entityId, category, expires = false, multiple = false, perFile = false, categories = [] }) {
+export function DialogDemo({ title, maxFiles, maxSizeMB, entityType, entityId, expires = false, multiple = false, perFile = false, categories = [] }) {
     const [open, setOpen] = useState(false);
     const [files, setFiles] = useState([]);
     const [loading, setLoading] = useState(false);
     const [expiresAt, setExpiresAt] = useState(null);
-    
+
     // Tracks progress per file using its local unique identifier or index
     const [uploadProgress, setUploadProgress] = useState({});
 
@@ -49,6 +49,7 @@ export function DialogDemo({ title, maxFiles, maxSizeMB, entityType, entityId, c
                 setUploadProgress(prev => ({ ...prev, [fileKey]: { name: fileToUpload.name, progress: 0, status: 'uploading' } }));
 
                 // 1. Get the Presigned URL from your Next.js API
+                // Inside DialogDemo handleUpload:
                 const tokenRes = await fetch("/api/upload", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -56,7 +57,9 @@ export function DialogDemo({ title, maxFiles, maxSizeMB, entityType, entityId, c
                         filename: fileToUpload.name,
                         mimeType: fileToUpload.type,
                         size: fileToUpload.size,
-                        category: perFile ? fileWrapper.category?.value : category,
+                        // IF perFile is true -> use specific file category
+                        // IF perFile is false -> fall back to the first category in the array
+                        category: perFile ? fileWrapper.category?.value : categories[0]?.value,
                         entityType,
                         entityId,
                         expiresAt: expiresAt ? expiresAt.toISOString() : undefined
@@ -126,7 +129,7 @@ export function DialogDemo({ title, maxFiles, maxSizeMB, entityType, entityId, c
 
             await Promise.all(uploadPromises);
             toast.success("All uploads successful");
-            
+
             // Core Change: Clear out state variables before shutdown sequence toggles
             setFiles([]);
             setUploadProgress({});
@@ -179,7 +182,7 @@ export function DialogDemo({ title, maxFiles, maxSizeMB, entityType, entityId, c
                                         {fileTrack.status === 'uploading' && `${fileTrack.progress}%`}
                                         {fileTrack.status === 'finalizing' && (
                                             <>
-                                                <IconLoader2 className="h-3 w-3 animate-spin text-primary" /> 
+                                                <IconLoader2 className="h-3 w-3 animate-spin text-primary" />
                                                 Processing...
                                             </>
                                         )}
@@ -192,8 +195,8 @@ export function DialogDemo({ title, maxFiles, maxSizeMB, entityType, entityId, c
                                         {fileTrack.status === 'error' && <span className="text-destructive">Failed</span>}
                                     </span>
                                 </div>
-                                <Progress 
-                                    value={fileTrack.progress} 
+                                <Progress
+                                    value={fileTrack.progress}
                                     className={`h-2 transition-all ${fileTrack.status === 'error' ? '[&>div]:bg-destructive' : ''}`}
                                 />
                             </div>

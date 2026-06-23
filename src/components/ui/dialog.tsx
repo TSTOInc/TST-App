@@ -48,8 +48,7 @@ function DialogOverlay({
   )
 }
 
-interface DialogContentProps
-  extends React.ComponentProps<typeof DialogPrimitive.Content> {
+type DialogContentProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
   fullscreen?: boolean
 }

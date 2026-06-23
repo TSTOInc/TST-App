@@ -185,9 +185,17 @@ const LicenseCard = ({ driver, files }) => {
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Driver License</CardTitle>
+                <CardTitle>Commercial driver's License</CardTitle>
                 {!license && (
-                    <DialogDemo title="Add Driver License" multiple={false} category="CDL" entityType="drivers" entityId={driver._id} expires={true} />
+                    <DialogDemo
+                        title="Add CDL"
+                        multiple={false}
+                        perFile={false}
+                        categories={[{ value: "CDL", label: "CDL" }]}
+                        entityType="drivers"
+                        entityId={driver._id}
+                        expires={true}
+                    />
                 )}
 
             </CardHeader>
@@ -265,7 +273,15 @@ const FilesCard = ({ driver, files, orgId }) => {
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Driver Documents</CardTitle>
-                <DialogDemo title="Add Document" multiple={true} perFile={false} category="MISC" entityType="drivers" entityId={driver._id} expires={false} />
+                <DialogDemo
+                    title="Add Document"
+                    multiple={true}
+                    perFile={false}
+                    categories={[{ value: "MISC", label: "Other" }]}
+                    entityType="drivers"
+                    entityId={driver._id}
+                    expires={false}
+                />
 
             </CardHeader>
             <CardContent className="space-y-2">
@@ -321,7 +337,7 @@ export default function TablePage({ params }) {
                     />
                     <LicenseCard driver={data} files={files} />
                 </div>
-                <FilesCard driver={data} files={files}/>
+                <FilesCard driver={data} files={files} />
             </div>
         </div>
     )

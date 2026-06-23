@@ -82,7 +82,15 @@ export default function TablePage({ params }) {
                         <Card className="gap-4">
                             <CardHeader className="flex flex-row items-center justify-between">
                                 <CardTitle>Trailer Registration</CardTitle>
-                                <DialogDemo title="Add Registration" multiple={false} category="REGISTRATION" entityType="trucks" entityId={data._id} expires={true} />
+                                <DialogDemo
+                                                        title="Add Registration"
+                                                        multiple={false}
+                                                        perFile={false}
+                                                        categories={[{ value: "REGISTRATION"}]}
+                                                        entityType="equipment"
+                                                        entityId={data._id}
+                                                        expires={true}
+                                                    />
                             </CardHeader>
 
                             <CardContent className="">
@@ -108,7 +116,7 @@ export default function TablePage({ params }) {
                             <Card>
                                 <CardHeader className="flex flex-row justify-between">
                                     <CardTitle>Truck Documents</CardTitle>
-                                    <DialogDemo title="Add Document" multiple={true} category="MISC" entityType="equipment" entityId={data._id} expires={false} />
+                                    <DialogDemo title="Add Document" multiple={true} categories={[{value:"MISC"}]} entityType="equipment" entityId={data._id} expires={false} />
                                 </CardHeader>
 
                                 <CardContent className="w-full grid gap-4 grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 px-4">

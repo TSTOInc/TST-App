@@ -265,7 +265,7 @@ const DocumentsCard = ({ truck, documents }) => {
         <Card className="gap-4">
             <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Truck Documents</CardTitle>
-                <DialogDemo title="Add Document" multiple={true} category="MISC" entityType="trucks" entityId={truck._id} expires={false} />
+                <DialogDemo title="Add Document" multiple={true} categories={[{value:"MISC"}]} entityType="trucks" entityId={truck._id} expires={false} />
             </CardHeader>
 
             <CardContent className="w-full grid gap-4 grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 px-4">
@@ -335,7 +335,7 @@ export default function TablePage({ params }) {
                                 <CardHeader className="flex flex-row items-center justify-between">
                                     <CardTitle>Truck Registration</CardTitle>
                                     {!Registration && (
-                                        <DialogDemo title="Add Registration" category="REGISTRATION" entityType="trucks" entityId={data._id} expires={true} />
+                                        <DialogDemo title="Add Registration" categories={[{value:"REGISTRATION"}]} entityType="trucks" entityId={data._id} expires={true} />
                                     )}
                                 </CardHeader>
 
@@ -353,7 +353,7 @@ export default function TablePage({ params }) {
                                 <CardHeader className="flex flex-row items-center justify-between">
                                     <CardTitle>Truck ID Card</CardTitle>
                                     {!IDCard && (
-                                        <DialogDemo title="Add ID Card" category="ID_CARD" entityType="trucks" entityId={data._id} expires={true} />
+                                        <DialogDemo title="Add ID Card" categories={[{value:"ID_CARD"}]} entityType="trucks" entityId={data._id} expires={true} />
                                     )}
                                 </CardHeader>
 
