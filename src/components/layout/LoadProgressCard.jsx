@@ -111,7 +111,10 @@ const handleGenerateInvoice = async (data, carrier, setInvoicedAt) => {
     carrier,
     invoiced_at: invoiceDate, // force sync
   })
-  payload.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+  
+  // 1. Explicitly attach timezone and adjustments to avoid API crash
+  payload.timezone = tz
+  payload.adjustments = data.adjustments || []
 
   await toast.promise(
     (async () => {
@@ -134,10 +137,10 @@ const handleGenerateInvoice = async (data, carrier, setInvoicedAt) => {
       const blob = await res.blob()
       const url = window.URL.createObjectURL(blob)
 
-      // Open PDF in new tab
+      // Open PDF/Download
       const link = document.createElement("a")
       link.href = url
-      link.download = `invoice-${payload.id}.pdf`
+      link.download = `invoice-${payload.id || "download"}.pdf`
       link.target = "_blank"
       link.click()
 

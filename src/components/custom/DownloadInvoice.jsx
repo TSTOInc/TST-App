@@ -97,14 +97,17 @@ const constructInvoicePayload = (data) => {
 };
 
 export default function DownloadInvoiceButton({ data }) {
-
     const [loading, setLoading] = useState(false);
 
     const handleDownload = async () => {
+        // 1. Construct the base payload
         const payload = constructInvoicePayload(data);
 
-        setLoading(true);
+        // 2. Ensure adjustments and timezone are included to prevent API 500 errors
+        payload.adjustments = data?.adjustments || [];
+        payload.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+        setLoading(true);
 
         await toast.promise(
             (async () => {
@@ -124,14 +127,14 @@ export default function DownloadInvoiceButton({ data }) {
 
                 const a = document.createElement("a");
                 a.href = url;
-                a.download = `invoice-${payload.id}.pdf`;
+                a.download = `invoice-${payload.id || "download"}.pdf`;
                 document.body.appendChild(a);
                 a.click();
 
                 a.remove();
                 window.URL.revokeObjectURL(url);
 
-                return true; // resolves successfully
+                return true; 
             })(),
             {
                 loading: "Generating Invoice...",
@@ -139,8 +142,8 @@ export default function DownloadInvoiceButton({ data }) {
                 error: (err) => err?.message || "Failed to download PDF",
             }
         );
+        
         await new Promise((resolve) => setTimeout(resolve, 250));
-
         setLoading(false);
     };
 
@@ -148,7 +151,7 @@ export default function DownloadInvoiceButton({ data }) {
         <Button onClick={handleDownload} disabled={loading}>
             {loading ? (
                 <>
-                    <IconLoader2 className="animate-spin" />
+                    <IconLoader2 className="animate-spin mr-2 h-4 w-4" />
                     Downloading...
                 </>
             ) : (

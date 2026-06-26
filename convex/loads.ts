@@ -94,6 +94,39 @@ export const updateProgress = mutation({
     return { updated: true, progress: safeProgress, load_status }
   },
 })
+
+
+
+export const updateAdjustments = mutation({
+  args: {
+    id: v.id("loads"),
+    adjustments: v.array(
+      v.object({
+        id: v.string(),
+        description: v.string(),
+        type: v.union(v.literal("addition"), v.literal("deduction")),
+        amountCents: v.number(),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    // 1. Fetch the existing load to ensure it exists
+    const existingLoad = await ctx.db.get(args.id);
+    if (!existingLoad) {
+      throw new Error("Load record not found");
+    }
+
+    // 2. Perform the update patch operation
+    await ctx.db.patch(args.id, {
+      adjustments: args.adjustments,
+    });
+
+    return { success: true };
+  },
+});
+
+
+
 export const setInvoicedAt = mutation({
   args: {
     loadId: v.id("loads"),

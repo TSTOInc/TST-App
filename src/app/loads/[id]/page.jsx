@@ -264,6 +264,7 @@ const DocumentsCard = ({ load, files }) => {
 
 // ---------------------- DYNAMIC INVOICE PREVIEW TAB CONTENT ----------------------
 const InvoiceTabContent = ({ loadData, carrierData }) => {
+  // Sync state initially with db data, fallback to empty array
   const [adjustments, setAdjustments] = useState(loadData.adjustments || []);
   const [adjType, setAdjType] = useState("addition");
   const [adjDescription, setAdjDescription] = useState("");
@@ -271,6 +272,17 @@ const InvoiceTabContent = ({ loadData, carrierData }) => {
   
   const [previewUrl, setPreviewUrl] = useState(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Initialize Convex mutation hook
+  const updateAdjustmentsMutation = useMutation(api.loads.updateAdjustments);
+
+  // Keep internal adjustments state in sync if loadData changes downstream
+  useEffect(() => {
+    if (loadData.adjustments) {
+      setAdjustments(loadData.adjustments);
+    }
+  }, [loadData.adjustments]);
 
   // Auto-fetch preview on adjustment structure mutations
   useEffect(() => {
@@ -311,7 +323,24 @@ const InvoiceTabContent = ({ loadData, carrierData }) => {
     };
   }, [adjustments, loadData, carrierData]);
 
-  const handleAddAdjustment = (e) => {
+  // DB Sync Routine
+  const syncAdjustmentsToDatabase = async (updatedList) => {
+    setIsSaving(true);
+    try {
+      await updateAdjustmentsMutation({
+        id: loadData._id,
+        adjustments: updatedList
+      });
+      toast.success("Database synced successfully");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to commit adjustments to database.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleAddAdjustment = async (e) => {
     e.preventDefault();
     if (!adjDescription || !adjAmount) return;
 
@@ -323,13 +352,23 @@ const InvoiceTabContent = ({ loadData, carrierData }) => {
       amountCents: amountInCents,
     };
 
-    setAdjustments([...adjustments, newAdj]);
+    const targetList = [...adjustments, newAdj];
+    setAdjustments(targetList);
+    
+    // Reset inputs
     setAdjDescription("");
     setAdjAmount("");
+
+    // Auto-save mutation call
+    await syncAdjustmentsToDatabase(targetList);
   };
 
-  const handleRemoveAdjustment = (id) => {
-    setAdjustments(adjustments.filter(a => a.id !== id));
+  const handleRemoveAdjustment = async (id) => {
+    const targetList = adjustments.filter(a => a.id !== id);
+    setAdjustments(targetList);
+    
+    // Auto-save mutation call
+    await syncAdjustmentsToDatabase(targetList);
   };
 
   // Handler to download the compiled invoice blob
@@ -338,8 +377,7 @@ const InvoiceTabContent = ({ loadData, carrierData }) => {
     
     const link = document.createElement("a");
     link.href = previewUrl;
-    // Fallback naming conventions based on provided props
-    const invoiceName = loadData?.invoiceNumber || loadData?.id || "invoice";
+    const invoiceName = loadData?.invoice_number || loadData?._id || "invoice";
     link.download = `Invoice-${invoiceName}.pdf`;
     
     document.body.appendChild(link);
@@ -362,7 +400,7 @@ const InvoiceTabContent = ({ loadData, carrierData }) => {
             <form onSubmit={handleAddAdjustment} className="space-y-4">
               <div className="space-y-1">
                 <Label>Type</Label>
-                <Select value={adjType} onValueChange={setAdjType}>
+                <Select value={adjType} onValueChange={setAdjType} disabled={isSaving}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -379,6 +417,7 @@ const InvoiceTabContent = ({ loadData, carrierData }) => {
                   placeholder="Detention at pickup location" 
                   value={adjDescription}
                   onChange={(e) => setAdjDescription(e.target.value)}
+                  disabled={isSaving}
                 />
               </div>
 
@@ -393,12 +432,17 @@ const InvoiceTabContent = ({ loadData, carrierData }) => {
                     className="pl-8"
                     value={adjAmount}
                     onChange={(e) => setAdjAmount(e.target.value)}
+                    disabled={isSaving}
                   />
                 </div>
               </div>
 
-              <Button type="submit" className="w-full text-xs">
-                Apply to Preview
+              <Button type="submit" className="w-full text-xs" disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" /> Saving Changes...
+                  </>
+                ) : "Apply & Save"}
               </Button>
             </form>
           </CardContent>
@@ -423,7 +467,13 @@ const InvoiceTabContent = ({ loadData, carrierData }) => {
                       <span className={cn("font-bold", adj.type === 'addition' ? 'text-green-500' : 'text-red-500')}>
                         {adj.type === 'addition' ? '+' : '-'}{formatCentsToUSD(adj.amountCents)}
                       </span>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground" onClick={() => handleRemoveAdjustment(adj.id)}>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6 text-muted-foreground" 
+                        onClick={() => handleRemoveAdjustment(adj.id)}
+                        disabled={isSaving}
+                      >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
@@ -435,7 +485,7 @@ const InvoiceTabContent = ({ loadData, carrierData }) => {
         </Card>
       </div>
 
-      {/* Render Frame Column — Viewport-Calculated Dynamic Workspace */}
+      {/* Render Frame Column */}
       <div className="lg:col-span-2 flex flex-col space-y-2 h-[calc(100vh-30px)]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
@@ -443,18 +493,17 @@ const InvoiceTabContent = ({ loadData, carrierData }) => {
           </div>
           
           <div className="flex items-center gap-4">
-            {isPreviewLoading && (
+            {(isPreviewLoading || isSaving) && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground animate-pulse">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Compiling remote styles...
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> 
+                {isSaving ? "Syncing database..." : "Compiling remote styles..."}
               </div>
             )}
             
-            {/* Added Download Button */}
             <Button
-              
               size="sm"
               className="text-xs h-10 flex items-center px-4 gap-1.5"
-              disabled={!previewUrl || isPreviewLoading}
+              disabled={!previewUrl || isPreviewLoading || isSaving}
               onClick={handleDownloadInvoice}
             >
               <Download className="h-3.5 w-3.5" />
@@ -469,7 +518,7 @@ const InvoiceTabContent = ({ loadData, carrierData }) => {
               src={`${previewUrl}#toolbar=0&navpanes=0&view=FitH`} 
               className={cn(
                 "w-full h-full block bg-white transition-opacity duration-200 border-none", 
-                isPreviewLoading ? "opacity-40" : "opacity-100"
+                isPreviewLoading || isSaving ? "opacity-40" : "opacity-100"
               )} 
             />
           ) : (

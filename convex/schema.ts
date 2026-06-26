@@ -94,8 +94,6 @@ export default defineSchema({
     .index("by_chatId", ["chatId"])
     .index("by_user_chat", ["userId", "chatId"]),
 
-
-
   drivers: defineTable({
     created_by: v.id("users"),
     org_id: v.id("organizations"),
@@ -141,6 +139,16 @@ export default defineSchema({
     payment_terms_id: v.id("payment_terms"),
     progress: v.float64(),
     rate: v.number(),
+    adjustments: v.optional(
+      v.array(
+        v.object({
+          id: v.string(),
+          description: v.string(),
+          type: v.union(v.literal("addition"), v.literal("deduction")),
+          amountCents: v.number(),
+        })
+      )
+    ),
     truck_id: v.id("trucks"),
     drivers: v.optional(v.array(v.string())),
   }).index("by_brokerId", ["broker_id"]).index("by_orgId", ["org_id"]),
