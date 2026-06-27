@@ -1,0 +1,134 @@
+"use client"
+
+import * as React from "react"
+import { Search, X } from "lucide-react"
+import { Input } from "./ui/input"
+import { Button } from "./ui/button"
+import { Skeleton } from "./ui/skeleton"
+import { cn } from "../lib/utils"
+import {
+  ButtonGroup,
+  ButtonGroupText,
+} from "./ui/button-group"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "./ui/input-group"
+
+export interface SearchBarProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange"> {
+  value?: string
+  onValueChange?: (value: string) => void
+  onClear?: () => void
+  showClearButton?: boolean
+  debounceMs?: number
+  containerClassName?: string
+  skeleton?: boolean
+}
+
+export function SearchBar({
+  value: controlledValue,
+  onValueChange,
+  onClear,
+  showClearButton = true,
+  debounceMs = 0,
+  className,
+  containerClassName,
+  placeholder = "Search...",
+  skeleton = false,
+  ...props
+}: SearchBarProps) {
+  const [internalValue, setInternalValue] = React.useState("")
+  const timeoutRef = React.useRef<NodeJS.Timeout | null>(null)
+
+  // Use controlled value if provided, otherwise use internal state
+  const value = controlledValue !== undefined ? controlledValue : internalValue
+  const setValue = controlledValue !== undefined ? onValueChange : setInternalValue
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value
+
+    if (debounceMs > 0) {
+      // Update internal state immediately for responsive UI
+      if (controlledValue === undefined) {
+        setInternalValue(newValue)
+      }
+
+      // Debounce the callback
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+
+      timeoutRef.current = setTimeout(() => {
+        setValue?.(newValue)
+      }, debounceMs)
+    } else {
+      // No debounce, update immediately
+      setValue?.(newValue)
+    }
+  }
+
+  const handleClear = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+    }
+    setValue?.("")
+    onClear?.()
+  }
+
+  React.useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [])
+
+  if (skeleton) {
+    return (
+      <div className={cn("relative w-full flex justify-center", containerClassName)}>
+        <div className="w-full max-w-xl relative">
+          <Skeleton className={cn("h-9 w-full rounded-full", className)} />
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className={cn("relative w-full flex justify-center", containerClassName)}>
+      <div className="w-full max-w-xl relative">
+        <ButtonGroup className="w-full">
+          <InputGroup className="rounded-full">
+            <InputGroupInput
+              type="search"
+              value={value}
+              onChange={handleChange}
+              placeholder={placeholder}
+              className={cn(
+                "pl-4 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden",
+                className,
+              )}
+              {...props}
+            />
+            <InputGroupAddon align="inline-end">
+            {showClearButton && value && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-7"
+                onClick={handleClear}
+                aria-label="Clear search"
+              >
+                <X className="size-4" />
+              </Button>
+            )}
+            </InputGroupAddon>
+          </InputGroup>
+          <Button variant="outline" className="rounded-full"><Search className="text-muted-foreground" /></Button>
+        </ButtonGroup>
+      </div>
+    </div>
+
+  )
+}
