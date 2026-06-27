@@ -28,7 +28,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       />
       <SidebarInset>
         <SiteHeader />
-        <main className="p-4 flex-1">
+        <main className="flex-1">
           {children}
         </main>
       </SidebarInset>
