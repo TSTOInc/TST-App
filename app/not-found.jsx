@@ -7,13 +7,13 @@ import {
     EmptyDescription,
     EmptyHeader,
     EmptyTitle,
-} from "../components/ui/empty"
+} from "@/components/ui/empty"
 import {
     InputGroup,
     InputGroupAddon,
     InputGroupInput,
-} from "../components/ui/input-group"
-import { Kbd } from "../components/ui/kbd"
+} from "@/components/ui/input-group"
+import { Kbd } from "@/components/ui/kbd"
 
 const NotFound = () => {
     return (

@@ -26,10 +26,10 @@ import {
   AlertDialogTrigger,
 } from "../ui/alert-dialog";
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "../ui/sheet"
-import { send } from "../../lib/email"
+import { send } from "@/lib/email"
 import { useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { cn } from "../../lib/utils"
+import { cn } from "@/lib/utils"
 
 function mapLoadToInvoicePayload(load) {
   return {

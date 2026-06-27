@@ -10,7 +10,7 @@ import {
   IconAlertTriangle,
 } from "@tabler/icons-react"
 
-import { cn } from "../../lib/utils"
+import { cn } from "@/lib/utils"
 
 import {
   Tooltip,

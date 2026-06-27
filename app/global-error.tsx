@@ -7,8 +7,8 @@ import {
   EmptyDescription,
   EmptyHeader,
   EmptyTitle,
-} from "../components/ui/empty"
-import { Button } from "../components/ui/button"
+} from "@/components/ui/empty"
+import { Button } from "@/components/ui/button"
 
 export default function GlobalError({
   error,

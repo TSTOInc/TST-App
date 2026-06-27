@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import * as z from "zod";
 import { toast } from "sonner";
-import DynamicMultiStepForm, { StepConfig } from "../../../../../components/forms/DynamicMultiStepForm";
+import DynamicMultiStepForm, { StepConfig } from "@/components/forms/DynamicMultiStepForm";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { useRouter } from "next/navigation";

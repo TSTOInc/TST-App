@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Avatar as AvatarPrimitive } from "radix-ui"
 
-import { cn } from "../../lib/utils"
+import { cn } from "@/lib/utils"
 
 // Helper function to extract initials safely from string children
 function GetInitials(name?: string) {

@@ -1,13 +1,13 @@
 "use client"
 import React from 'react'
-import ProfileHeader from '../../../../components/layout/ProfileHeader'
-import { Card, CardHeader, CardTitle, CardContent } from "../../../../components/ui/card"
+import ProfileHeader from '@/components/layout/ProfileHeader'
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
-import InfoCard from '../../../../components/data/info-card';
-import { DocumentCard } from '../../../../components/documents/document-card';
-import { DialogDemo } from '../../../../components/data/upload/upload-doc';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../components/ui/tabs';
+import InfoCard from '@/components/data/info-card';
+import { DocumentCard } from '@/components/documents/document-card';
+import { DialogDemo } from '@/components/data/upload/upload-doc';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileTextIcon, LayoutListIcon } from 'lucide-react';
 
 

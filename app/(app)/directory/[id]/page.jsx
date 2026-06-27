@@ -1,12 +1,12 @@
 "use client"
 import { notFound } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
-import { Button } from '../../../../components/ui/button';
+import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import Loading from '../../../../components/custom/Loading';
-import { Card, CardContent, CardDescription, CardHeader, CardFooter, CardTitle } from '../../../../components/ui/card';
+import Loading from '@/components/custom/Loading';
+import { Card, CardContent, CardDescription, CardHeader, CardFooter, CardTitle } from '@/components/ui/card';
 import { IconMapPin } from '@tabler/icons-react';
-import { Badge } from '../../../../components/ui/badge';
+import { Badge } from '@/components/ui/badge';
 import { Car } from 'lucide-react';
 
 

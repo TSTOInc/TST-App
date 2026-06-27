@@ -5,7 +5,7 @@ import { Search, X } from "lucide-react"
 import { Input } from "./ui/input"
 import { Button } from "./ui/button"
 import { Skeleton } from "./ui/skeleton"
-import { cn } from "../lib/utils"
+import { cn } from "@/lib/utils"
 import {
   ButtonGroup,
   ButtonGroupText,

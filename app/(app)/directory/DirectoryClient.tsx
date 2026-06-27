@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "../../../components/ui/button";
-import { Input } from "../../../components/ui/input";
-import { Card, CardContent, CardTitle } from "../../../components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { IconSearch } from "@tabler/icons-react";
 import Link from "next/link";
-import Loading from "../../../components/custom/Loading";
+import Loading from "@/components/custom/Loading";
 
 export default function DirectoryClient() {
   const searchParams = useSearchParams();

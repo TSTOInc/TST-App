@@ -1,4 +1,4 @@
-import InfoGrid from "../../../components/data/info-grid";
+import InfoGrid from "@/components/data/info-grid";
 
 const driverSchema = {
   title: "name", // simple key

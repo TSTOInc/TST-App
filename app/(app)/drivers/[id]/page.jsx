@@ -1,11 +1,11 @@
 "use client"
 import React, { useState } from 'react'
-import ProfileHeader from '../../../components/layout/ProfileHeader'
-import { Card, CardHeader, CardTitle, CardContent } from "../../../../components/ui/card"
-import { Button } from "../../../../components/ui/button"
+import ProfileHeader from '@/components/layout/ProfileHeader'
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { IconAlertTriangle, IconCheck, IconPlus, IconTrash } from '@tabler/icons-react'
 import { toast } from "sonner"; // or "@/components/ui/sonner" if aliased
-import PDFPreview from '../../../components/custom/PDFPreview'
+import PDFPreview from '@/components/custom/PDFPreview'
 import {
     Dialog,
     DialogContent,
@@ -16,11 +16,11 @@ import {
     DialogDescription,
     DialogClose
 
-} from "../../../../components/ui/dialog";
-import InfoCard from '../../../../components/data/info-card'
+} from "@/components/ui/dialog";
+import InfoCard from '@/components/data/info-card'
 import { useQuery, useMutation } from "convex/react"
 import { api } from "@convex/_generated/api";
-import { DialogDemo } from "../../../../components/data/upload/upload-doc";
+import { DialogDemo } from "@/components/data/upload/upload-doc";
 import { EllipsisVerticalIcon, EyeIcon, FileTextIcon, OctagonAlertIcon, PencilIcon, RefreshCwIcon, TrashIcon, FileIcon, FileImageIcon, FileVideoIcon, DownloadIcon } from 'lucide-react'
 import {
     DropdownMenu,
@@ -28,19 +28,19 @@ import {
     DropdownMenuItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from "../../../../components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu"
 import { createClient } from '@supabase/supabase-js'
-import { cn } from '../../../../lib/utils'
-import { Label } from '../../../../components/ui/label'
-import { Input } from '../../../../components/ui/input'
+import { cn } from '@/lib/utils'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
 import {
     InputGroup,
     InputGroupAddon,
     InputGroupInput,
     InputGroupText,
     InputGroupTextarea,
-} from "../../../../components/ui/input-group"
-import { DocumentCard } from '../../../../components/documents/document-card'
+} from "@/components/ui/input-group"
+import { DocumentCard } from '@/components/documents/document-card'
 
 
 const statusColor = {

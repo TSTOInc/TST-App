@@ -1,17 +1,17 @@
 "use client"
 export const dynamic = "force-dynamic";
 import React, { use, useEffect, useState } from 'react'
-import ProfileHeader from '../../../../components/layout/ProfileHeader'
+import ProfileHeader from '@/components/layout/ProfileHeader'
 import { useSearchParams, useRouter } from "next/navigation";
-import { Badge } from "../../../../components/ui/badge"
-import { Card, CardHeader, CardTitle, CardContent } from "../../../../components/ui/card"
-import { Button } from "../../../../components/ui/button"
-import { Textarea } from "../../../../components/ui/textarea"
-import { Label } from "../../../../components/ui/label"
-import { Input } from "../../../../components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import { toast } from "sonner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../../components/ui/tabs"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../../../../components/ui/collapsible";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronsUpDown, PlusIcon } from "lucide-react"
 import {
     Sheet,
@@ -20,13 +20,13 @@ import {
     SheetHeader,
     SheetTitle,
     SheetTrigger,
-} from "../../../../components/ui/sheet"
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../../../../components/ui/select"
-import InfoCard from '../../../../components/data/info-card';
+} from "@/components/ui/sheet"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+import InfoCard from '@/components/data/info-card';
 import { useQuery, useMutation } from "convex/react"
 import { api } from "@convex/_generated/api"
-import { DialogDemo } from '../../../../components/data/upload/upload-doc';
-import { DocumentCard } from '../../../../components/documents/document-card';
+import { DialogDemo } from '@/components/data/upload/upload-doc';
+import { DocumentCard } from '@/components/documents/document-card';
 
 
 const addOrdinalSuffix = (day) => {

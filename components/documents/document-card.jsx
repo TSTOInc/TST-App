@@ -28,7 +28,7 @@ import {
     DropdownMenuTrigger,
 } from "../ui/dropdown-menu"
 import { createClient } from '@supabase/supabase-js'
-import { cn } from "../../lib/utils"
+import { cn } from "@/lib/utils"
 import { IconAlertTriangle, IconCheck } from "@tabler/icons-react"
 import { Field, FieldLabel } from "../ui/field"
 import {

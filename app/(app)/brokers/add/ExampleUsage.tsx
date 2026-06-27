@@ -3,8 +3,8 @@ export const dynamic = "force-dynamic";
 
 import * as z from "zod";
 import { useState, useEffect } from "react";
-import DynamicMultiStepForm, { StepConfig } from "../../../../components/forms/DynamicMultiStepForm";
-import { ComboBoxOption } from "../../../../components/custom/ComboBox";
+import DynamicMultiStepForm, { StepConfig } from "@/components/forms/DynamicMultiStepForm";
+import { ComboBoxOption } from "@/components/custom/ComboBox";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "convex/react";

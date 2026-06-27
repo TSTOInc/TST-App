@@ -5,8 +5,8 @@ import { useOrganization } from "@clerk/nextjs";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { Check, X, Pencil, Building2, Contact2, ShieldAlert } from "lucide-react";
-import { Button } from "../../../../components/ui/button";
-import { Input } from "../../../../components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function HomePage() {
   const { organization: clerkOrg, isLoaded } = useOrganization();

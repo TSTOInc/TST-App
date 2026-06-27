@@ -1,6 +1,6 @@
 import { IconMessageCircle } from "@tabler/icons-react"
 
-import { Button } from "../../../components/ui/button"
+import { Button } from "@/components/ui/button"
 import {
   Empty,
   EmptyContent,
@@ -8,7 +8,7 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "../../../components/ui/empty"
+} from "@/components/ui/empty"
 
 export default function Page() {
   return (

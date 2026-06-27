@@ -3,13 +3,13 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useQuery, useMutation } from "convex/react"
 import { api } from "@convex/_generated/api"
-import { Button } from '../../../../components/ui/button'
+import { Button } from '@/components/ui/button'
 import { SendIcon } from "lucide-react"
-import { ButtonGroup } from "../../../../components/ui/button-group"
-import { InputGroup, InputGroupInput } from "../../../../components/ui/input-group"
+import { ButtonGroup } from "@/components/ui/button-group"
+import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
 import { useUser } from "@clerk/nextjs"
-import { Avatar, AvatarFallback, AvatarImage } from "../../../../components/ui/avatar"
-import { Skeleton } from '../../../../components/ui/skeleton'
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Skeleton } from '@/components/ui/skeleton'
 import { useRouter } from "next/navigation"
 
 const Page = ({ params }) => {

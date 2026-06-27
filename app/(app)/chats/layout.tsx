@@ -9,16 +9,16 @@ import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from "../../../components/ui/avatar"
+} from "@/components/ui/avatar"
 import {
   Item,
   ItemActions,
   ItemContent,
   ItemMedia,
   ItemTitle,
-} from "../../../components/ui/item"
-import { Skeleton } from '../../../components/ui/skeleton'
-import { Button } from '../../../components/ui/button'
+} from "@/components/ui/item"
+import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
 import { Id } from '@convex/_generated/dataModel'
 
 interface ChatsLayoutProps {

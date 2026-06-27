@@ -4,7 +4,7 @@ import * as React from "react"
 import { Tooltip as TooltipPrimitive } from "radix-ui"
 import { cva, type VariantProps } from "class-variance-authority"
 
-import { cn } from "../../lib/utils"
+import { cn } from "@/lib/utils"
 
 // 1. Tooltip Content state styles matching Shadcn updates and your custom status colors
 const tooltipVariants = cva(

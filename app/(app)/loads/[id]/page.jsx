@@ -6,28 +6,28 @@ import { useQuery, useMutation } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { useAuth } from "@clerk/nextjs"
 import { toast } from "sonner"
-import { cn } from "../../../../lib/utils"
-import { formatCentsToUSD, calculateLoadFinancials } from "../../../../lib/currency"
+import { cn } from "@/lib/utils"
+import { formatCentsToUSD, calculateLoadFinancials } from "@/lib/currency"
 
 // Design Layout Components
-import { Badge } from "../../../../components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../../components/ui/tabs"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../../../components/ui/card"
-import { Textarea } from "../../../../components/ui/textarea"
-import { Button } from "../../../../components/ui/button"
-import { Input } from "../../../../components/ui/input"
-import { Label } from "../../../../components/ui/label"
-import { Separator } from "../../../../components/ui/separator"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 // Application Shared Elements
-import TimelineVertical from "../../../../components/TimelineVertical"
-import TruckRouteMap from "../../../../components/custom/TruckRouteMap"
-import InfoCard from '../../../../components/data/info-card'
-import LoadProgressCard from '../../../../components/layout/LoadProgressCard'
-import { DialogDemo } from "../../../../components/data/upload/upload-doc"
-import { DocumentCard } from "../../../../components/documents/document-card"
-import { AuditLogItem } from "../../../../components/data/log/log-item"
+import TimelineVertical from "@/components/TimelineVertical"
+import TruckRouteMap from "@/components/custom/TruckRouteMap"
+import InfoCard from '@/components/data/info-card'
+import LoadProgressCard from '@/components/layout/LoadProgressCard'
+import { DialogDemo } from "@/components/data/upload/upload-doc"
+import { DocumentCard } from "@/components/documents/document-card"
+import { AuditLogItem } from "@/components/data/log/log-item"
 
 // Icon Packs
 import {

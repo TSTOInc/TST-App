@@ -1,9 +1,9 @@
 "use client"
 import React from 'react'
-import ProfileHeader from '../../../../../components/layout/ProfileHeader'
+import ProfileHeader from '@/components/layout/ProfileHeader'
 import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
-import InfoCard from '../../../../../components/data/info-card'
+import InfoCard from '@/components/data/info-card'
 
 
 

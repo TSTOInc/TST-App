@@ -8,11 +8,11 @@ import { api } from "@convex/_generated/api"
 import { useAuth } from '@clerk/nextjs'
 
 // Component UI
-import { Card } from "../../../components/ui/card"
-import { Badge } from "../../../components/ui/badge"
-import { Button } from "../../../components/ui/button"
-import SearchBar from "../../../components/ui/search-bar"
-import FiltersToolbar from "../../../components/ui/filters-toolbar"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import SearchBar from "@/components/ui/search-bar"
+import FiltersToolbar from "@/components/ui/filters-toolbar"
 import {
   Empty,
   EmptyContent,
@@ -20,11 +20,11 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "../../../components/ui/empty"
+} from "@/components/ui/empty"
 
 // Icons & Utils
 import { IconMapPin, IconEye, IconZoomQuestion, IconLoader2 } from "@tabler/icons-react"
-import { formatCentsToUSD, toCents } from "../../../lib/currency"
+import { formatCentsToUSD, toCents } from "@/lib/currency"
 
 // ----------------------------------------------------------------------
 // Pure Utility Functions (Isolated from Component Render Lifecycle)

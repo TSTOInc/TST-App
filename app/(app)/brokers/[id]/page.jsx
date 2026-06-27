@@ -1,19 +1,19 @@
 "use client"
 import React, { useEffect, useState } from 'react'
-import ProfileHeader from '../../../../components/layout/ProfileHeader'
+import ProfileHeader from '@/components/layout/ProfileHeader'
 import { use, useMemo } from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import { Badge } from "../../../../components/ui/badge"
-import { Separator } from "../../../../components/ui/separator"
-import { Card, CardHeader, CardTitle, CardContent } from "../../../../components/ui/card"
-import { Button } from "../../../../components/ui/button"
-import { Textarea } from "../../../../components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
 import { IconEye, IconLoader2, IconMapPin, IconPlus, IconTrash } from '@tabler/icons-react'
 import { toast } from "sonner"; // or "@/components/ui/sonner" if aliased
-import { Input } from "../../../../components/ui/input"
-import { Label } from "../../../../components/ui/label"
-import { RadioGroup, RadioGroupItem } from "../../../../components/ui/radio-group";
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Sheet,
   SheetClose,
@@ -23,7 +23,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "../../../../components/ui/sheet"
+} from "@/components/ui/sheet"
 import {
   Field,
   FieldDescription,
@@ -32,17 +32,17 @@ import {
   FieldLegend,
   FieldSeparator,
   FieldSet,
-} from "../../../../components/ui/field"
+} from "@/components/ui/field"
 
 import { useQuery, useMutation } from "convex/react"
 import { api } from '@convex/_generated/api'
-import InfoCard from '../../../../components/data/info-card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../components/ui/tabs'
-import { DialogDemo } from '../../../../components/data/upload/upload-doc'
-import { DocumentCard } from '../../../../components/documents/document-card'
-import { LoadCard } from '../../../../components/data/load/load-card'
-import { Item, ItemActions, ItemContent, ItemHeader, ItemMedia, ItemTitle } from '../../../../components/ui/item'
-import { Avatar, AvatarFallback, AvatarImage } from '../../../../components/ui/avatar'
+import InfoCard from '@/components/data/info-card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { DialogDemo } from '@/components/data/upload/upload-doc'
+import { DocumentCard } from '@/components/documents/document-card'
+import { LoadCard } from '@/components/data/load/load-card'
+import { Item, ItemActions, ItemContent, ItemHeader, ItemMedia, ItemTitle } from '@/components/ui/item'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { EyeIcon } from 'lucide-react'
 
 const AgentsCard = ({ broker, agents }) => {

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { ArrowRightIcon, ChevronDown, ChevronRight } from "lucide-react"
-import { cn } from "../../../lib/utils"
+import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "../../ui/avatar"
 
 function prettyFieldName(key, upperCase = true) {
