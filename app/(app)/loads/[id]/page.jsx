@@ -33,7 +33,9 @@ import { AuditLogItem } from "@/components/data/log/log-item"
 import {
   FileText, DollarSign, Package, Building2, NotepadText, MapPin,
   ArrowUpFromLine, ArrowDownToLine, FileSearch, FileTextIcon, Unplug,
-  ActivityIcon, Plus, Trash2, Loader2, RefreshCw, Eye, Download
+  ActivityIcon, Plus, Trash2, Loader2, RefreshCw, Eye, Download,
+  MinusCircleIcon,
+  PlusCircleIcon
 } from "lucide-react"
 import { IconFileDollar } from "@tabler/icons-react"
 
@@ -277,7 +279,6 @@ DocumentsCard.displayName = "DocumentsCard";
 // ---------------------- INVOICE TAB CONTENT ----------------------
 const InvoiceTabContent = React.memo(({ loadData, carrierData }) => {
   const [adjustments, setAdjustments] = useState(loadData.adjustments || []);
-  const [adjType, setAdjType] = useState("addition");
   const [adjDescription, setAdjDescription] = useState("");
   const [adjAmount, setAdjAmount] = useState("");
 
@@ -291,10 +292,16 @@ const InvoiceTabContent = React.memo(({ loadData, carrierData }) => {
     if (loadData.adjustments) setAdjustments(loadData.adjustments);
   }, [loadData.adjustments]);
 
-  // Debounced API compilation loop to minimize layout flashes & server load
+  // Clean up object URLs *only* when a new one replaces it or on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl) window.URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  // Debounced API compilation loop
   useEffect(() => {
     let active = true;
-    let urlToClean = null;
 
     const fetchInvoiceBlob = async () => {
       setIsPreviewLoading(true);
@@ -313,12 +320,15 @@ const InvoiceTabContent = React.memo(({ loadData, carrierData }) => {
 
         const blob = await res.blob();
         if (active) {
-          urlToClean = window.URL.createObjectURL(blob);
-          setPreviewUrl(urlToClean);
+          const url = window.URL.createObjectURL(blob);
+          setPreviewUrl((prev) => {
+            if (prev) window.URL.revokeObjectURL(prev); // Clean up the immediate previous version
+            return url;
+          });
         }
       } catch (error) {
         console.error(error);
-        toast.error("Could not compile layout previews.");
+        toast.error("Could not update invoice preview.");
       } finally {
         if (active) setIsPreviewLoading(false);
       }
@@ -331,7 +341,6 @@ const InvoiceTabContent = React.memo(({ loadData, carrierData }) => {
     return () => {
       active = false;
       clearTimeout(delayDebounce);
-      if (urlToClean) window.URL.revokeObjectURL(urlToClean);
     };
   }, [adjustments, loadData, carrierData]);
 
@@ -339,21 +348,25 @@ const InvoiceTabContent = React.memo(({ loadData, carrierData }) => {
     setIsSaving(true);
     try {
       await updateAdjustmentsMutation({ id: loadData._id, adjustments: updatedList });
-      toast.success("Database sync complete");
     } catch (err) {
       console.error(err);
-      toast.error("Cloud storage allocation write error.");
+      toast.error("Failed to save adjustments. Please try again.");
     } finally {
       setIsSaving(false);
     }
   }, [loadData._id, updateAdjustmentsMutation]);
 
-  const handleAddAdjustment = async (e) => {
-    e.preventDefault();
+  const handleAddAdjustment = async (type) => {
     if (!adjDescription || !adjAmount) return;
 
     const amountInCents = Math.round(parseFloat(adjAmount) * 100);
-    const newAdj = { id: crypto.randomUUID(), description: adjDescription, type: adjType, amountCents: amountInCents };
+    const newAdj = {
+      id: crypto.randomUUID(),
+      description: adjDescription,
+      type,
+      amountCents: amountInCents
+    };
+
     const targetList = [...adjustments, newAdj];
 
     setAdjustments(targetList);
@@ -380,63 +393,113 @@ const InvoiceTabContent = React.memo(({ loadData, carrierData }) => {
   }, [previewUrl, loadData?.invoice_number]);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3 items-start">
+    <div className="grid gap-6 lg:grid-cols-3 items-start p-1">
+      {/* LEFT COLUMN: CONTROLS */}
       <div className="space-y-4 lg:col-span-1">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Plus className="h-4 w-4" /> Add Adjustment
+        <Card className="shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Plus className="h-4 w-4" /> Add Extra Charges / Discounts
             </CardTitle>
-            <CardDescription>Append structural accessorial line items.</CardDescription>
+            <CardDescription>Include accessorials like detention, lumper, or advance fines.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleAddAdjustment} className="space-y-4">
-              <div className="space-y-1">
-                <Label>Type</Label>
-                <Select value={adjType} onValueChange={setAdjType} disabled={isSaving}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="addition">Addition (Detention, Lumper)</SelectItem>
-                    <SelectItem value="deduction">Deduction (Advance, Fine)</SelectItem>
-                  </SelectContent>
-                </Select>
+          <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="description">Description</Label>
+              <Input
+                id="description"
+                placeholder="e.g., Detention at receiver, Lumper fee"
+                value={adjDescription}
+                onChange={(e) => setAdjDescription(e.target.value)}
+                disabled={isSaving}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="amount">Amount (USD)</Label>
+              <div className="relative">
+                <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="amount"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  className="pl-8"
+                  value={adjAmount}
+                  onChange={(e) => setAdjAmount(e.target.value)}
+                  disabled={isSaving}
+                />
               </div>
-              <div className="space-y-1">
-                <Label>Description</Label>
-                <Input placeholder="Detention" value={adjDescription} onChange={(e) => setAdjDescription(e.target.value)} disabled={isSaving} />
-              </div>
-              <div className="space-y-1">
-                <Label>Amount (USD)</Label>
-                <div className="relative">
-                  <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input type="number" step="0.01" placeholder="0.00" className="pl-8" value={adjAmount} onChange={(e) => setAdjAmount(e.target.value)} disabled={isSaving} />
-                </div>
-              </div>
-              <Button type="submit" className="w-full text-xs" disabled={isSaving}>
-                {isSaving ? <><Loader2 className="w-3.5 h-3.5 animate-spin mr-2" /> Syncing...</> : "Apply & Save"}
+            </div>
+
+            {/* Multi-action submit area eliminates dropdown clutter */}
+            <div className="grid grid-cols-2 gap-2.5 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                className={cn(
+                  "text-xs font-medium h-9 gap-1.5 transition-colors",
+                  "border-green-200 bg-green-50/30 text-green-600 hover:bg-green-50 hover:text-green-700 hover:border-green-300",
+                  "dark:border-green-900/40 dark:bg-green-950/10 dark:text-green-400 dark:hover:bg-green-950/30"
+                )}
+                disabled={isSaving || !adjDescription || !adjAmount}
+                onClick={() => handleAddAdjustment("addition")}
+              >
+                <PlusCircleIcon className="h-3.5 w-3.5 shrink-0" />
+                <span>Add Charge</span>
               </Button>
-            </form>
+
+              <Button
+                type="button"
+                variant="outline"
+                className={cn(
+                  "text-xs font-medium h-9 gap-1.5 transition-colors",
+                  "border-red-200 bg-red-50/30 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300",
+                  "dark:border-red-900/40 dark:bg-red-950/10 dark:text-red-400 dark:hover:bg-red-950/30"
+                )}
+                disabled={isSaving || !adjDescription || !adjAmount}
+                onClick={() => handleAddAdjustment("deduction")}
+              >
+                <MinusCircleIcon className="h-3.5 w-3.5 shrink-0" />
+                <span>Deduct Amount</span>
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader><CardTitle className="text-base">Applied Items</CardTitle></CardHeader>
-          <CardContent className="px-6 pb-4">
+        {/* APPLIED ITEMS */}
+        <Card className="shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Applied Items ({adjustments.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             {adjustments.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic">No adjustments declared.</p>
+              <div className="text-center py-6 border border-dashed rounded-lg border-muted bg-muted/20">
+                <p className="text-xs text-muted-foreground">No extra items added yet.</p>
+              </div>
             ) : (
-              <div className="divide-y divide-border">
+              <div className="divide-y divide-border max-h-[300px] overflow-y-auto pr-1">
                 {adjustments.map((adj) => (
-                  <div key={adj.id} className="flex justify-between items-center py-2.5 text-xs">
-                    <div className="flex flex-col">
-                      <span className="font-medium">{adj.description}</span>
-                      <span className={cn("text-[10px] uppercase font-bold", adj.type === 'addition' ? 'text-green-500' : 'text-red-500')}>{adj.type}</span>
+                  <div key={adj.id} className="flex justify-between items-center py-2.5 text-xs group">
+                    <div className="flex flex-col min-w-0 pr-2">
+                      <span className="font-medium truncate">{adj.description}</span>
+                      <span className="text-[10px] text-muted-foreground capitalize">{adj.type}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className={cn("font-bold", adj.type === 'addition' ? 'text-green-500' : 'text-red-500')}>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={cn(
+                        "font-semibold",
+                        adj.type === 'addition' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                      )}>
                         {adj.type === 'addition' ? '+' : '-'}{formatCentsToUSD(adj.amountCents)}
                       </span>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground" onClick={() => handleRemoveAdjustment(adj.id)} disabled={isSaving}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground opacity-80 hover:opacity-100 hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => handleRemoveAdjustment(adj.id)}
+                        disabled={isSaving}
+                      >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
@@ -448,29 +511,41 @@ const InvoiceTabContent = React.memo(({ loadData, carrierData }) => {
         </Card>
       </div>
 
+      {/* RIGHT COLUMN: LIVE PREVIEW */}
       <div className="lg:col-span-2 flex flex-col space-y-2 h-[calc(100vh-140px)]">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
-            <Eye className="w-4 h-4" /> Live Preview Sandbox
-          </div>
-          <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <Eye className="w-4 h-4 text-muted-foreground" /> Invoice Preview
+            {/* Seamless, micro-copy state indicator */}
             {(isPreviewLoading || isSaving) && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground animate-pulse">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Rendering...
-              </div>
+              <span className="text-xs font-normal text-muted-foreground flex items-center gap-1 ml-2 bg-muted px-2 py-0.5 rounded-full">
+                <Loader2 className="w-3 h-3 animate-spin text-primary" /> Updating...
+              </span>
             )}
-            <Button size="sm" className="text-xs h-9 flex items-center px-4 gap-1.5" disabled={!previewUrl || isPreviewLoading || isSaving} onClick={handleDownloadInvoice}>
-              <Download className="h-3.5 w-3.5" /> Download PDF
-            </Button>
           </div>
+          <Button
+            size="sm"
+            className="text-xs h-8 gap-1.5 font-medium shadow-sm"
+            disabled={!previewUrl}
+            onClick={handleDownloadInvoice}
+          >
+            <Download className="h-3.5 w-3.5" /> Download PDF
+          </Button>
         </div>
-        <Card className="flex-1 w-full overflow-hidden bg-neutral-900 relative rounded-xl shadow-inner flex items-center justify-center border-none">
+
+        <Card className="flex-1 w-full overflow-hidden bg-neutral-100 dark:bg-neutral-900 border border-border shadow-inner relative rounded-xl flex items-center justify-center">
           {previewUrl ? (
-            <iframe src={`${previewUrl}#toolbar=0&navpanes=0&view=FitH`} className={cn("w-full h-full block bg-white transition-opacity duration-200 border-none", isPreviewLoading || isSaving ? "opacity-40" : "opacity-100")} />
+            <iframe
+              src={`${previewUrl}#toolbar=0&navpanes=0&view=FitH`}
+              className={cn(
+                "w-full h-full block bg-white transition-opacity duration-150",
+                isPreviewLoading || isSaving ? "opacity-60 pointer-events-none" : "opacity-100"
+              )}
+            />
           ) : (
-            <div className="text-center text-muted-foreground space-y-2 p-4">
-              <RefreshCw className="h-7 w-7 animate-spin mx-auto text-neutral-600" />
-              <p className="text-xs tracking-wide">Compiling secure canvas matrix...</p>
+            <div className="text-center space-y-3 p-6 max-w-sm">
+              <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
+              <p className="text-xs text-muted-foreground font-medium">Generating your invoice document...</p>
             </div>
           )}
         </Card>
@@ -483,7 +558,7 @@ InvoiceTabContent.displayName = "InvoiceTabContent";
 // ---------------------- MAIN PAGE CONTAINER ----------------------
 export default function HomePage({ params }) {
   const { id } = React.use(params);
-  
+
   //Check auth via clerk before querying from convex
   const { isLoaded, isSignedIn } = useAuth();
   const shouldQuery = isLoaded && isSignedIn;
@@ -551,13 +626,13 @@ export default function HomePage({ params }) {
     return () => { active = false; };
   }, [sortedStops]);
 
-if (!isLoaded || !carrier || !data) {
-  return (
-    <div className="flex items-center justify-center w-full h-full">
-      <Loader2 className="w-12 h-12 animate-spin text-muted-foreground" />
-    </div>
-  );
-}
+  if (!isLoaded || !carrier || !data) {
+    return (
+      <div className="flex items-center justify-center w-full h-full">
+        <Loader2 className="w-12 h-12 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 space-y-4 p-4 pt-6">
@@ -590,13 +665,14 @@ if (!isLoaded || !carrier || !data) {
           <div className="grid gap-4 md:grid-cols-2">
             <InfoCard
               CardIcon={<Package className="h-5 w-5" />}
+              editable={{ tableName: "loads", id: data._id }}
               title="Load Information"
               inline={false}
               fields={[
-                { label: "COMMODITY", value: data.commodity },
-                { label: "LOAD TYPE", value: data.load_type },
-                { label: "LENGTH FT", value: data.length_ft },
-                { label: "CREATED AT", value: data._creationTime, type: "date" },
+                { label: "COMMODITY", value: data.commodity, key: "commodity" }, // Added key
+                { label: "LOAD TYPE", value: data.load_type, key: "load_type" }, // Added key
+                { label: "LENGTH FT", value: data.length_ft, key: "length_ft" }, // Added key
+                { label: "CREATED AT", value: data._creationTime, type: "date" }, // No key = Read-only even in edit mode
               ]}
             />
             <Card>
@@ -637,19 +713,58 @@ if (!isLoaded || !carrier || !data) {
               CardIcon={<Building2 className="h-5 w-5" />}
               title="Broker Information"
               inline={false}
+              editable={{
+                tableName: "loads", // Replace with your parent collection table name
+                id: data._id
+              }}
               fields={[
-                { label: "Name", value: data.broker?.name, type: "link", href: `/brokers/${data.broker?._id}`, external: false },
-                { label: "Address", value: data.broker ? `${data.broker.address}, ${data.broker.city}, ${data.broker.state} ${data.broker.zip}` : "" },
-                { label: "Agent", value: data?.broker_agent?.name || "No Agent assigned" },
+                {
+                  label: "Name",
+                  key: "broker_id",
+                  value: data.broker?._id,
+                  type: "reference",
+                  referenceTable: "brokers"
+                },
+                {
+                  label: "Address",
+                  // Read-only formats the full address block string; 
+                  // Edit mode drops back to a simple, direct text string value modifier
+                  value: data.broker ? `${data.broker.address}, ${data.broker.city}, ${data.broker.state} ${data.broker.zip}` : "N/A"
+                  // Note: If you want to update address subfields directly from here, 
+                  // they should be updated on a dedicated broker management view since this table tracks parent records (like loads)
+                },
+                {
+                  label: "Agent",
+                  key: "broker_agent_id",
+                  value: data.broker_agent?._id,
+                  type: "reference",
+                  referenceTable: "broker_agents"
+                },
               ]}
             />
             <InfoCard
               CardIcon={<Package className="h-5 w-5" />}
               title="Equipment Information"
               inline={false}
+              editable={{
+                tableName: "loads",
+                id: data._id
+              }}
               fields={[
-                { label: "Truck", value: data.truck?.truck_number, type: "link", href: `/trucks/${data.truck?._id}`, external: false },
-                { label: "Equipment", value: data.equipment?.equipment_number || "No Equipment assigned", type: data.equipment ? "link" : "text", href: data.equipment ? `/equipment/${data.equipment?._id}` : undefined, external: false },
+                {
+                  label: "Truck",
+                  key: "truck_id",
+                  value: data.truck?._id,
+                  type: "reference",
+                  referenceTable: "trucks"
+                },
+                {
+                  label: "Equipment",
+                  key: "equipment_id",
+                  value: data.equipment?._id,
+                  type: "reference",
+                  referenceTable: "equipment"
+                },
               ]}
             />
           </div>
