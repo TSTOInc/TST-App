@@ -670,7 +670,7 @@ export default function HomePage({ params }) {
               inline={false}
               fields={[
                 { label: "COMMODITY", value: data.commodity, key: "commodity" }, // Added key
-                { label: "LOAD TYPE", value: data.load_type, key: "load_type" }, // Added key
+                { label: "LOAD TYPE", value: data.load_type, key: "load_type", type: "select", options: [{ value: "FTL", label: "FTL" }, { value: "LTL", label: "LTL" }] }, // Added key
                 { label: "LENGTH FT", value: data.length_ft, key: "length_ft" }, // Added key
                 { label: "CREATED AT", value: data._creationTime, type: "date" }, // No key = Read-only even in edit mode
               ]}
@@ -723,7 +723,9 @@ export default function HomePage({ params }) {
                   key: "broker_id",
                   value: data.broker?._id,
                   type: "reference",
-                  referenceTable: "brokers"
+                  href: `/brokers/${data.broker?._id}`,
+                  referenceTable: "brokers",
+                  external: false
                 },
                 {
                   label: "Address",
@@ -738,7 +740,9 @@ export default function HomePage({ params }) {
                   key: "broker_agent_id",
                   value: data.broker_agent?._id,
                   type: "reference",
-                  referenceTable: "broker_agents"
+                  href: `/broker_agents/${data.broker_agent?._id}`,
+                  referenceTable: "broker_agents",
+                  external: false
                 },
               ]}
             />
@@ -756,14 +760,18 @@ export default function HomePage({ params }) {
                   key: "truck_id",
                   value: data.truck?._id,
                   type: "reference",
-                  referenceTable: "trucks"
+                  href: `/trucks/${data.truck?._id}`,
+                  referenceTable: "trucks",
+                  external: false
                 },
                 {
                   label: "Equipment",
                   key: "equipment_id",
                   value: data.equipment?._id,
                   type: "reference",
-                  referenceTable: "equipment"
+                  href: `/equipment/${data.equipment?._id}`,
+                  referenceTable: "equipment",
+                  external: false
                 },
               ]}
             />

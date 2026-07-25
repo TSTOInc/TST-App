@@ -8,6 +8,7 @@ import LinkButton from "@/components/link"
 import formatPhoneNumber from "@/utils/formatPhone"
 import SearchableSelect from "@/components/comp-229"
 import { PencilIcon } from "lucide-react"
+import { toast } from "sonner"
 
 function formatTimestamp(ms) {
   const date = new Date(Math.floor(ms));
@@ -17,26 +18,53 @@ function formatTimestamp(ms) {
   }).format(date);
 }
 
-// Updated Field Component: Swapped native select for your SearchableSelect
-const Field = ({ label, value, type, inline, href, blank, external, isEditing, onChange, options = [] }) => {
-  const link = href ?? value;
-  const isEmpty = value === null || value === undefined;
-  let displayValue = "N/A";
+/**
+ * Normalizes options into { value, label, description } for SearchableSelect
+ */
+function normalizeOptions(options = []) {
+  return options.map(opt => {
+    if (typeof opt === "string" || typeof opt === "number") {
+      return { value: String(opt), label: String(opt) };
+    }
+    return {
+      value: opt.id ?? opt.value,
+      label: opt.label ?? opt.name ?? String(opt.id ?? opt.value),
+      description: opt.description,
+    };
+  });
+}
 
-  // Normalize options shape for SearchableSelect (maps 'id' to 'value')
-  const searchableOptions = options.map(opt => ({
-    value: opt.id,
-    label: opt.label,
-    description: opt.description
-  }));
+/**
+ * Sub-component for reference fields to safely call React hooks at top-level
+ */
+const ReferenceFieldContent = ({ referenceTable, options: staticOptions, value, ...props }) => {
+  // Call useQuery top-level (only conditionally skips execution if referenceTable is missing)
+  const dynamicOptions = useQuery(
+    api.lookups.getOptions,
+    referenceTable ? { referenceTable } : "skip"
+  ) || [];
+
+  const rawOptions = referenceTable ? dynamicOptions : staticOptions;
+  const searchableOptions = normalizeOptions(rawOptions);
+
+  return <FieldRenderer searchableOptions={searchableOptions} value={value} {...props} />;
+};
+
+const FieldRenderer = ({ 
+  label, value, type, inline, href, blank, external = false, 
+  isEditing, onChange, searchableOptions = [] 
+}) => {
+  const link = href && value ? href : null;
+  const isEmpty = value === null || value === undefined;
+  let displayValue = "No " + label + " found";
 
   if (!isEmpty) {
     if (type === "date") {
       displayValue = formatTimestamp(value);
     } else if (type === "phone") {
       displayValue = formatPhoneNumber(value);
-    } else if (type === "reference") {
-      const matchedOption = searchableOptions.find(opt => opt.value === value);
+    } else if (type === "reference" || type === "select") {
+      const matchedOption = searchableOptions.find(opt => String(opt.value) === String(value));
       displayValue = matchedOption ? matchedOption.label : String(value);
     } else {
       displayValue = String(value);
@@ -49,9 +77,9 @@ const Field = ({ label, value, type, inline, href, blank, external, isEditing, o
       <div className={`flex ${inline ? "items-center gap-2" : "flex-col"} mb-4 w-full`}>
         {inline && <p className="text-muted-foreground text-sm font-medium min-w-[100px]">{label}:</p>}
         
-        {type === "reference" ? (
+        {type === "reference" || type === "select" ? (
           <SearchableSelect
-            label={inline ? undefined : label} // Don't duplicate labels if inline layout handles it
+            label={inline ? undefined : label}
             placeholder={`Select ${label.toLowerCase()}...`}
             options={searchableOptions}
             value={value ?? ""}
@@ -77,8 +105,8 @@ const Field = ({ label, value, type, inline, href, blank, external, isEditing, o
   const content = (
     <div className="flex items-center gap-1">
       <p>{displayValue}</p>
-      {!isEmpty && type !== "link" && <Copy value={value} />}
-      {type === "link" && link && (
+      {!isEmpty && type !== "reference" && type !== "select" && <Copy value={value} />}
+      {!isEmpty && (type === "reference" || type === "select") && link && (
         <LinkButton href={link} blank={blank} external={external} />
       )}
     </div>
@@ -97,28 +125,18 @@ const Field = ({ label, value, type, inline, href, blank, external, isEditing, o
   );
 };
 
+// Dispatcher field component
+const Field = (props) => {
+  if (props.type === "reference" || props.type === "select") {
+    return <ReferenceFieldContent {...props} />;
+  }
+  return <FieldRenderer {...props} />;
+};
+
 export default function InfoCard({ CardIcon, title, fields, inline = true, editable }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editState, setEditState] = useState({});
   const mutateFields = useMutation(api.generic.updateGenericFields);
-
-  // 1. Build a map to hold option datasets dynamically for each distinct lookup table configuration
-  const lookupOptionsMap = {};
-
-  // Find all distinct tables mentioned in fields layout
-  const requiredTables = Array.from(
-    new Set(
-      fields
-        .filter(f => f.type === "reference" && f.referenceTable)
-        .map(f => f.referenceTable)
-    )
-  );
-
-  // 2. Load the dynamic universal search data hooks
-  requiredTables.forEach((tableName) => {
-    const data = useQuery(api.lookups.getOptions, { referenceTable: tableName }) || [];
-    lookupOptionsMap[tableName] = data;
-  });
 
   const handleStartEditing = () => {
     const initialState = {};
@@ -137,16 +155,38 @@ export default function InfoCard({ CardIcon, title, fields, inline = true, edita
 
   const handleSave = async () => {
     if (!editable?.tableName || !editable?.id) return;
-    try {
-      await mutateFields({
+
+    const changedFields = {};
+    fields.forEach((field) => {
+      if (field.key && editState[field.key] !== field.value) {
+        changedFields[field.key] = editState[field.key];
+      }
+    });
+
+    if (Object.keys(changedFields).length === 0) {
+      toast.info("No changes to save");
+      setIsEditing(false);
+      return;
+    }
+
+    toast.promise(
+      mutateFields({
         tableName: editable.tableName,
         id: editable.id,
-        fields: editState,
-      });
-      setIsEditing(false);
-    } catch (err) {
-      console.error("Failed to batch update card fields:", err);
-    }
+        fields: changedFields,
+      }),
+      {
+        loading: "Saving changes...",
+        success: () => {
+          setIsEditing(false);
+          return "Changes saved successfully";
+        },
+        error: (err) => {
+          console.error("Failed to batch update card fields:", err);
+          return "Failed to save changes";
+        },
+      }
+    );
   };
 
   return (
@@ -171,27 +211,24 @@ export default function InfoCard({ CardIcon, title, fields, inline = true, edita
       
       <CardContent className="ml-4 space-y-2">
         <div className="grid grid-cols-1 2xl:grid-cols-2 gap-x-6 gap-y-1">
-          {fields.map((field, i) => {
-            const optionsList = field.type === "reference" ? (lookupOptionsMap[field.referenceTable] || []) : [];
-
-            return (
-              <Field
-                key={i}
-                label={field.label}
-                value={isEditing && field.key ? editState[field.key] : field.value}
-                type={field.type || "text"}
-                href={field.href} 
-                blank={field.blank ?? true}
-                external={field.external ?? true}
-                inline={inline}
-                isEditing={isEditing && !!field.key} 
-                onChange={(newValue) => handleFieldChange(field.key, newValue)}
-                options={optionsList}
-              />
-            );
-          })}
+          {fields.map((field, i) => (
+            <Field
+              key={field.key || i}
+              label={field.label}
+              value={isEditing && field.key ? editState[field.key] : field.value}
+              type={field.type || "text"}
+              href={field.href} 
+              blank={field.blank ?? true}
+              external={field.external ?? true}
+              inline={inline}
+              isEditing={isEditing && !!field.key} 
+              onChange={(newValue) => handleFieldChange(field.key, newValue)}
+              referenceTable={field.referenceTable}
+              options={field.options}
+            />
+          ))}
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
