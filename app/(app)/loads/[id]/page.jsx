@@ -35,7 +35,14 @@ import {
   ArrowUpFromLine, ArrowDownToLine, FileSearch, FileTextIcon, Unplug,
   ActivityIcon, Plus, Trash2, Loader2, RefreshCw, Eye, Download,
   MinusCircleIcon,
-  PlusCircleIcon
+  PlusCircleIcon,
+  CalendarIcon,
+  CreditCardIcon,
+  CalculatorIcon,
+  CheckCircle2Icon,
+  PencilIcon,
+  XIcon,
+  CheckIcon
 } from "lucide-react"
 import { IconFileDollar } from "@tabler/icons-react"
 
@@ -276,37 +283,166 @@ const DocumentsCard = React.memo(({ load, files }) => {
 });
 DocumentsCard.displayName = "DocumentsCard";
 
-// ---------------------- INVOICE TAB CONTENT ----------------------
-const InvoiceTabContent = React.memo(({ loadData, carrierData }) => {
-  const [adjustments, setAdjustments] = useState(loadData.adjustments || []);
+
+// Helper function to format any incoming date into YYYY-MM-DD required by <input type="date" />
+const formatDateForInput = (dateVal) => {
+  if (!dateVal) return "";
+  if (typeof dateVal === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateVal)) {
+    return dateVal;
+  }
+  try {
+    const dateObj = new Date(dateVal);
+    if (isNaN(dateObj.getTime())) return "";
+    return dateObj.toISOString().split("T")[0];
+  } catch (e) {
+    return "";
+  }
+};
+
+
+export const InvoiceTabContent = React.memo(({ loadData, carrierData }) => {
+  // --- MAIN FORM STATES ---
+  const [invoiceNumber, setInvoiceNumber] = useState(loadData?.invoice_number || "");
+  const [invoicedAt, setInvoicedAt] = useState(formatDateForInput(loadData?.invoiced_at));
+  const [paymentTermsId, setPaymentTermsId] = useState(loadData?.payment_terms_id || "");
+  const [rate, setRate] = useState(loadData?.rate || 0);
+  const [adjustments, setAdjustments] = useState(loadData?.adjustments || []);
+
+  // --- SECTION EDITING STATES ---
+  // Tracks which section is currently in edit mode ('details' | 'rate' | null)
+  const [editingSection, setEditingSection] = useState(null);
+
+  // Temporary draft state for inline section editing
+  const [detailsDraft, setDetailsDraft] = useState({
+    invoiceNumber: "",
+    invoicedAt: "",
+    paymentTermsId: "",
+  });
+  const [rateDraft, setRateDraft] = useState(0);
+
+  // --- ADJUSTMENT INPUT STATES ---
   const [adjDescription, setAdjDescription] = useState("");
   const [adjAmount, setAdjAmount] = useState("");
 
+  // --- UI & API STATES ---
   const [previewUrl, setPreviewUrl] = useState(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const updateAdjustmentsMutation = useMutation(api.loads.updateAdjustments);
+  // --- API HOOKS ---
+  const updateInvoiceMutation = useMutation(api.loads.updateInvoiceDetails);
 
+  const paymentTermsList =
+    useQuery(
+      api.payment_terms.getByBroker,
+      loadData?.broker_id ? { broker_id: loadData.broker_id } : "skip"
+    ) || [];
+
+  // Sync main state if initial loadData updates remotely
   useEffect(() => {
-    if (loadData.adjustments) setAdjustments(loadData.adjustments);
-  }, [loadData.adjustments]);
+    if (loadData) {
+      setInvoiceNumber(loadData.invoice_number || "");
+      setInvoicedAt(formatDateForInput(loadData.invoiced_at));
+      setPaymentTermsId(loadData.payment_terms_id || "");
+      setRate(loadData.rate || 0);
+      setAdjustments(loadData.adjustments || []);
+    }
+  }, [loadData]);
 
-  // Clean up object URLs *only* when a new one replaces it or on unmount
+  // Clean up blob URLs
   useEffect(() => {
     return () => {
       if (previewUrl) window.URL.revokeObjectURL(previewUrl);
     };
   }, [previewUrl]);
 
-  // Debounced API compilation loop
+  // --- SAVE TO DATABASE ---
+  const saveToDatabase = useCallback(
+    async (updatedFields) => {
+      if (!loadData?._id) return;
+      setIsSaving(true);
+      try {
+        await updateInvoiceMutation({
+          id: loadData._id,
+          ...updatedFields,
+        });
+      } catch (err) {
+        console.error("Save error:", err);
+        toast.error("Failed to save load changes.");
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [loadData?._id, updateInvoiceMutation]
+  );
+
+  // --- EDIT & CANCEL ACTION HANDLERS ---
+  const handleStartEditDetails = () => {
+    setDetailsDraft({
+      invoiceNumber,
+      invoicedAt,
+      paymentTermsId,
+    });
+    setEditingSection("details");
+  };
+
+  const handleSaveDetails = async () => {
+    setInvoiceNumber(detailsDraft.invoiceNumber);
+    setInvoicedAt(detailsDraft.invoicedAt);
+    setPaymentTermsId(detailsDraft.paymentTermsId);
+
+    await saveToDatabase({
+      invoice_number: detailsDraft.invoiceNumber,
+      invoiced_at: detailsDraft.invoicedAt,
+      payment_terms_id: detailsDraft.paymentTermsId,
+    });
+
+    setEditingSection(null);
+  };
+
+  const handleCancelDetails = () => {
+    setEditingSection(null);
+  };
+
+  const handleStartEditRate = () => {
+    setRateDraft(rate/100);
+    setEditingSection("rate");
+  };
+
+  const handleSaveRate = async () => {
+    const numericRate = Number(rateDraft) * 100 || 0;
+    setRate(numericRate);
+
+    await saveToDatabase({
+      rate: numericRate,
+    });
+
+    setEditingSection(null);
+  };
+
+  const handleCancelRate = () => {
+    setEditingSection(null);
+  };
+
+  // --- LIVE PREVIEW COMPILATION ---
   useEffect(() => {
     let active = true;
 
     const fetchInvoiceBlob = async () => {
       setIsPreviewLoading(true);
       try {
-        const payload = mapLoadToInvoicePayload({ ...loadData, carrier: carrierData }, adjustments);
+        const payload = mapLoadToInvoicePayload(
+          {
+            ...loadData,
+            invoice_number: invoiceNumber,
+            invoiced_at: invoicedAt,
+            payment_terms_id: paymentTermsId,
+            rate: Number(rate),
+            carrier: carrierData,
+          },
+          adjustments
+        );
+
         const res = await fetch("https://invoice4all.vercel.app/api", {
           method: "POST",
           headers: {
@@ -316,19 +452,18 @@ const InvoiceTabContent = React.memo(({ loadData, carrierData }) => {
           body: JSON.stringify(payload),
         });
 
-        if (!res.ok) throw new Error("Compilation failed");
+        if (!res.ok) throw new Error("Preview generation failed");
 
         const blob = await res.blob();
         if (active) {
           const url = window.URL.createObjectURL(blob);
           setPreviewUrl((prev) => {
-            if (prev) window.URL.revokeObjectURL(prev); // Clean up the immediate previous version
+            if (prev) window.URL.revokeObjectURL(prev);
             return url;
           });
         }
       } catch (error) {
         console.error(error);
-        toast.error("Could not update invoice preview.");
       } finally {
         if (active) setIsPreviewLoading(false);
       }
@@ -336,26 +471,15 @@ const InvoiceTabContent = React.memo(({ loadData, carrierData }) => {
 
     const delayDebounce = setTimeout(() => {
       fetchInvoiceBlob();
-    }, 400);
+    }, 450);
 
     return () => {
       active = false;
       clearTimeout(delayDebounce);
     };
-  }, [adjustments, loadData, carrierData]);
+  }, [invoiceNumber, invoicedAt, paymentTermsId, rate, adjustments, loadData, carrierData]);
 
-  const syncAdjustmentsToDatabase = useCallback(async (updatedList) => {
-    setIsSaving(true);
-    try {
-      await updateAdjustmentsMutation({ id: loadData._id, adjustments: updatedList });
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to save adjustments. Please try again.");
-    } finally {
-      setIsSaving(false);
-    }
-  }, [loadData._id, updateAdjustmentsMutation]);
-
+  // --- ADJUSTMENT HANDLERS ---
   const handleAddAdjustment = async (type) => {
     if (!adjDescription || !adjAmount) return;
 
@@ -364,176 +488,388 @@ const InvoiceTabContent = React.memo(({ loadData, carrierData }) => {
       id: crypto.randomUUID(),
       description: adjDescription,
       type,
-      amountCents: amountInCents
+      amountCents: amountInCents,
     };
 
     const targetList = [...adjustments, newAdj];
-
     setAdjustments(targetList);
     setAdjDescription("");
     setAdjAmount("");
 
-    await syncAdjustmentsToDatabase(targetList);
+    await saveToDatabase({ adjustments: targetList });
   };
 
-  const handleRemoveAdjustment = useCallback(async (id) => {
-    const targetList = adjustments.filter(a => a.id !== id);
-    setAdjustments(targetList);
-    await syncAdjustmentsToDatabase(targetList);
-  }, [adjustments, syncAdjustmentsToDatabase]);
+  const handleRemoveAdjustment = useCallback(
+    async (id) => {
+      const targetList = adjustments.filter((a) => a.id !== id);
+      setAdjustments(targetList);
+      await saveToDatabase({ adjustments: targetList });
+    },
+    [adjustments, saveToDatabase]
+  );
 
   const handleDownloadInvoice = useCallback(() => {
     if (!previewUrl) return;
     const link = document.createElement("a");
     link.href = previewUrl;
-    link.download = `Invoice-${loadData?.invoice_number || "export"}.pdf`;
+    link.download = `Invoice-${invoiceNumber || "draft"}.pdf`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  }, [previewUrl, loadData?.invoice_number]);
+  }, [previewUrl, invoiceNumber]);
+
+  // --- FINANCIAL MATH ---
+  const additionsCents = adjustments
+    .filter((a) => a.type === "addition")
+    .reduce((acc, cur) => acc + (cur.amountCents || 0), 0);
+
+  const deductionsCents = adjustments
+    .filter((a) => a.type === "deduction")
+    .reduce((acc, cur) => acc + (cur.amountCents || 0), 0);
+
+  const netTotalCents = rate + additionsCents - deductionsCents;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3 items-start p-1">
-      {/* LEFT COLUMN: CONTROLS */}
-      <div className="space-y-4 lg:col-span-1">
-        <Card className="shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Plus className="h-4 w-4" /> Add Extra Charges / Discounts
-            </CardTitle>
-            <CardDescription>Include accessorials like detention, lumper, or advance fines.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="description">Description</Label>
-              <Input
-                id="description"
-                placeholder="e.g., Detention at receiver, Lumper fee"
-                value={adjDescription}
-                onChange={(e) => setAdjDescription(e.target.value)}
-                disabled={isSaving}
-              />
+    <div className="grid gap-6 lg:grid-cols-12 items-start p-1">
+      {/* LEFT COLUMN: EDITABLE CONTROLS */}
+      <div className="lg:col-span-5 space-y-4 pr-1">
+        
+        {/* 1. GENERAL & TERMS */}
+        <Card className="shadow-sm border-border">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <FileText className="h-4 w-4" /> Invoice Details
+              </CardTitle>
+              <CardDescription className="text-xs pl-6">
+                Basic identification and payment terms.
+              </CardDescription>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="amount">Amount (USD)</Label>
-              <div className="relative">
-                <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="amount"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  className="pl-8"
-                  value={adjAmount}
-                  onChange={(e) => setAdjAmount(e.target.value)}
+            {editingSection === "details" ? (
+              <div className="flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                  onClick={handleCancelDetails}
                   disabled={isSaving}
+                >
+                  <XIcon className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-7 px-2.5 text-xs gap-1"
+                  onClick={handleSaveDetails}
+                  disabled={isSaving}
+                >
+                  <CheckIcon className="h-3.5 w-3.5" /> Save
+                </Button>
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2.5 text-xs gap-1"
+                onClick={handleStartEditDetails}
+                disabled={editingSection !== null || isSaving}
+              >
+                <PencilIcon className="h-3 w-3" /> Edit
+              </Button>
+            )}
+          </CardHeader>
+          <CardContent className="space-y-3 px-4 pb-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="invoice_number" className="text-xs font-medium">
+                  Invoice #
+                </Label>
+                <Input
+                  id="invoice_number"
+                  disabled={editingSection !== "details"}
+                  value={
+                    editingSection === "details"
+                      ? detailsDraft.invoiceNumber
+                      : invoiceNumber
+                  }
+                  onChange={(e) =>
+                    setDetailsDraft((prev) => ({
+                      ...prev,
+                      invoiceNumber: e.target.value,
+                    }))
+                  }
+                  className="h-8 text-xs"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label
+                  htmlFor="invoiced_at"
+                  className="text-xs font-medium flex items-center gap-1"
+                >
+                  <CalendarIcon className="h-3 w-3 text-muted-foreground" /> Date
+                </Label>
+                <Input
+                  id="invoiced_at"
+                  type="date"
+                  disabled={editingSection !== "details"}
+                  value={
+                    editingSection === "details" ? detailsDraft.invoicedAt : invoicedAt
+                  }
+                  onChange={(e) =>
+                    setDetailsDraft((prev) => ({
+                      ...prev,
+                      invoicedAt: e.target.value,
+                    }))
+                  }
+                  className="h-8 text-xs"
                 />
               </div>
             </div>
 
-            {/* Multi-action submit area eliminates dropdown clutter */}
-            <div className="grid grid-cols-2 gap-2.5 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                className={cn(
-                  "text-xs font-medium h-9 gap-1.5 transition-colors",
-                  "border-green-200 bg-green-50/30 text-green-600 hover:bg-green-50 hover:text-green-700 hover:border-green-300",
-                  "dark:border-green-900/40 dark:bg-green-950/10 dark:text-green-400 dark:hover:bg-green-950/30"
-                )}
-                disabled={isSaving || !adjDescription || !adjAmount}
-                onClick={() => handleAddAdjustment("addition")}
+            <div className="space-y-1">
+              <Label className="text-xs font-medium flex items-center gap-1">
+                <CreditCardIcon className="h-3 w-3 text-muted-foreground" /> Payment Terms
+              </Label>
+              <Select
+                disabled={editingSection !== "details"}
+                value={
+                  editingSection === "details"
+                    ? detailsDraft.paymentTermsId
+                    : paymentTermsId
+                }
+                onValueChange={(val) =>
+                  setDetailsDraft((prev) => ({
+                    ...prev,
+                    paymentTermsId: val,
+                  }))
+                }
               >
-                <PlusCircleIcon className="h-3.5 w-3.5 shrink-0" />
-                <span>Add Charge</span>
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                className={cn(
-                  "text-xs font-medium h-9 gap-1.5 transition-colors",
-                  "border-red-200 bg-red-50/30 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300",
-                  "dark:border-red-900/40 dark:bg-red-950/10 dark:text-red-400 dark:hover:bg-red-950/30"
-                )}
-                disabled={isSaving || !adjDescription || !adjAmount}
-                onClick={() => handleAddAdjustment("deduction")}
-              >
-                <MinusCircleIcon className="h-3.5 w-3.5 shrink-0" />
-                <span>Deduct Amount</span>
-              </Button>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Select broker payment terms..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {paymentTermsList.map((term) => (
+                    <SelectItem key={term._id} value={term._id} className="text-xs">
+                      {term.name} ({term.days_to_pay} days
+                      {term.is_quickpay ? ` • ${term.fee_percent}% QP` : ""})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
 
-        {/* APPLIED ITEMS */}
-        <Card className="shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Applied Items ({adjustments.length})
+        {/* 2. BASE RATE & CALCULATION SUMMARY */}
+        <Card className="shadow-sm border-border">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <CalculatorIcon className="h-4 w-4" /> Rate Summary
             </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {adjustments.length === 0 ? (
-              <div className="text-center py-6 border border-dashed rounded-lg border-muted bg-muted/20">
-                <p className="text-xs text-muted-foreground">No extra items added yet.</p>
+            {editingSection === "rate" ? (
+              <div className="flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                  onClick={handleCancelRate}
+                  disabled={isSaving}
+                >
+                  <XIcon className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-7 px-2.5 text-xs gap-1"
+                  onClick={handleSaveRate}
+                  disabled={isSaving}
+                >
+                  <CheckIcon className="h-3.5 w-3.5" /> Save
+                </Button>
               </div>
             ) : (
-              <div className="divide-y divide-border max-h-[300px] overflow-y-auto pr-1">
-                {adjustments.map((adj) => (
-                  <div key={adj.id} className="flex justify-between items-center py-2.5 text-xs group">
-                    <div className="flex flex-col min-w-0 pr-2">
-                      <span className="font-medium truncate">{adj.description}</span>
-                      <span className="text-[10px] text-muted-foreground capitalize">{adj.type}</span>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className={cn(
-                        "font-semibold",
-                        adj.type === 'addition' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                      )}>
-                        {adj.type === 'addition' ? '+' : '-'}{formatCentsToUSD(adj.amountCents)}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-muted-foreground opacity-80 hover:opacity-100 hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => handleRemoveAdjustment(adj.id)}
-                        disabled={isSaving}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2.5 text-xs gap-1"
+                onClick={handleStartEditRate}
+                disabled={editingSection !== null || isSaving}
+              >
+                <PencilIcon className="h-3 w-3" /> Edit
+              </Button>
             )}
+          </CardHeader>
+          <CardContent className="space-y-3 px-4 pb-4">
+            <div className="space-y-1">
+              <Label htmlFor="rate" className="text-xs font-medium">
+                Line Haul Rate (USD)
+              </Label>
+              <div className="relative">
+                <DollarSign className="absolute left-2.5 top-2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="rate"
+                  type="number"
+                  step="1"
+                  disabled={editingSection !== "rate"}
+                  value={editingSection === "rate" ? rateDraft : rate/100}
+                  onChange={(e) => setRateDraft(e.target.value)}
+                  className="pl-8 h-8 text-xs"
+                />
+              </div>
+            </div>
+
+            {/* Calculations Breakdown */}
+            <div className="rounded-md bg-muted/50 p-2.5 space-y-1 text-xs">
+              <div className="flex justify-between text-muted-foreground">
+                <span>Base Line Haul:</span>
+                <span>{formatCentsToUSD(rate)}</span>
+              </div>
+              <div className="flex justify-between text-green-600 dark:text-green-400">
+                <span>Extra Charges:</span>
+                <span>+{formatCentsToUSD(additionsCents)}</span>
+              </div>
+              <div className="flex justify-between text-red-600 dark:text-red-400">
+                <span>Deductions:</span>
+                <span>-{formatCentsToUSD(deductionsCents)}</span>
+              </div>
+              <div className="border-t border-border pt-1.5 mt-1 flex justify-between font-bold text-foreground">
+                <span>Total Invoice Amount:</span>
+                <span className="text-sm">{formatCentsToUSD(netTotalCents)}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 3. ACCESSORIALS & ADJUSTMENTS */}
+        <Card className="shadow-sm border-border">
+          <CardHeader>
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Plus className="h-4 w-4" /> Charges & Discounts
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 px-4 pb-4">
+            <div className="space-y-2">
+              <Input
+                placeholder="Description (e.g. Detention, Lumper)"
+                value={adjDescription}
+                onChange={(e) => setAdjDescription(e.target.value)}
+                className="h-8 text-xs"
+              />
+              <div className="relative">
+                <DollarSign className="absolute left-2.5 top-2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={adjAmount}
+                  onChange={(e) => setAdjAmount(e.target.value)}
+                  className="pl-8 h-8 text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="text-xs h-8 gap-1 border-green-200 bg-green-50/50 text-green-700 hover:bg-green-100 dark:bg-green-950/30 dark:text-green-400"
+                disabled={isSaving || !adjDescription || !adjAmount}
+                onClick={() => handleAddAdjustment("addition")}
+              >
+                <PlusCircleIcon className="h-3.5 w-3.5" /> Charge
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="text-xs h-8 gap-1 border-red-200 bg-red-50/50 text-red-700 hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400"
+                disabled={isSaving || !adjDescription || !adjAmount}
+                onClick={() => handleAddAdjustment("deduction")}
+              >
+                <MinusCircleIcon className="h-3.5 w-3.5" /> Deduct
+              </Button>
+            </div>
+
+            <div className="pt-2 border-t border-border">
+              <p className="text-[11px] font-medium text-muted-foreground mb-1.5">
+                Applied Items ({adjustments.length})
+              </p>
+              {adjustments.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-2 italic border border-dashed rounded-md">
+                  No extra charges added.
+                </p>
+              ) : (
+                <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1">
+                  {adjustments.map((adj) => (
+                    <div
+                      key={adj.id}
+                      className="flex justify-between items-center text-xs p-2 rounded-md bg-muted/40 border border-border"
+                    >
+                      <div className="truncate max-w-[130px]">
+                        <p className="font-medium truncate">{adj.description}</p>
+                        <p className="text-[10px] text-muted-foreground capitalize">{adj.type}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={cn(
+                            "font-semibold text-xs",
+                            adj.type === "addition"
+                              ? "text-green-600 dark:text-green-400"
+                              : "text-red-600 dark:text-red-400"
+                          )}
+                        >
+                          {adj.type === "addition" ? "+" : "-"}
+                          {formatCentsToUSD(adj.amountCents)}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleRemoveAdjustment(adj.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* RIGHT COLUMN: LIVE PREVIEW */}
-      <div className="lg:col-span-2 flex flex-col space-y-2 h-[calc(100vh-140px)]">
-        <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-            <Eye className="w-4 h-4 text-muted-foreground" /> Invoice Preview
-            {/* Seamless, micro-copy state indicator */}
-            {(isPreviewLoading || isSaving) && (
-              <span className="text-xs font-normal text-muted-foreground flex items-center gap-1 ml-2 bg-muted px-2 py-0.5 rounded-full">
-                <Loader2 className="w-3 h-3 animate-spin text-primary" /> Updating...
+      {/* RIGHT COLUMN: LIVE PDF PREVIEW */}
+      <Card className="border-border shadow-sm lg:col-span-7 flex flex-col h-[calc(100vh-55px)]">
+        <CardHeader className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Eye className="w-4 h-4 text-muted-foreground" /> PDF Preview
+            {isSaving && (
+              <span className="text-xs text-muted-foreground flex items-center gap-1 bg-muted px-2 py-0.5 rounded-full">
+                <Loader2 className="w-3 h-3 animate-spin text-primary" /> Saving...
+              </span>
+            )}
+            {!isSaving && isPreviewLoading && (
+              <span className="text-xs text-muted-foreground flex items-center gap-1 bg-muted px-2 py-0.5 rounded-full">
+                <Loader2 className="w-3 h-3 animate-spin text-primary" /> Rendering...
+              </span>
+            )}
+            {!isSaving && !isPreviewLoading && previewUrl && (
+              <span className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1 bg-green-50 dark:bg-green-950/30 px-2 py-0.5 rounded-full">
+                <CheckCircle2Icon className="w-3 h-3" /> Synced
               </span>
             )}
           </div>
           <Button
             size="sm"
-            className="text-xs h-8 gap-1.5 font-medium shadow-sm"
+            className="text-xs h-8 gap-1.5 shadow-sm"
             disabled={!previewUrl}
             onClick={handleDownloadInvoice}
           >
             <Download className="h-3.5 w-3.5" /> Download PDF
           </Button>
-        </div>
+        </CardHeader>
 
-        <Card className="flex-1 w-full overflow-hidden bg-neutral-100 dark:bg-neutral-900 border border-border shadow-inner relative rounded-xl flex items-center justify-center">
+        <CardContent className="flex-1 w-full overflow-hidden relative flex items-center justify-center">
           {previewUrl ? (
             <iframe
               src={`${previewUrl}#toolbar=0&navpanes=0&view=FitH`}
@@ -545,14 +881,17 @@ const InvoiceTabContent = React.memo(({ loadData, carrierData }) => {
           ) : (
             <div className="text-center space-y-3 p-6 max-w-sm">
               <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
-              <p className="text-xs text-muted-foreground font-medium">Generating your invoice document...</p>
+              <p className="text-xs text-muted-foreground font-medium">
+                Generating live invoice PDF...
+              </p>
             </div>
           )}
-        </Card>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 });
+
 InvoiceTabContent.displayName = "InvoiceTabContent";
 
 // ---------------------- MAIN PAGE CONTAINER ----------------------

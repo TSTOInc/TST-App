@@ -53,6 +53,59 @@ async function getStops(ctx: QueryCtx, loadId: Id<"loads"> | null) {
   return stops;
 }
 
+export const updateInvoiceDetails = mutation({
+  args: {
+    id: v.id("loads"),
+    invoice_number: v.optional(v.string()),
+    invoiced_at: v.optional(v.string()),
+    payment_terms_id: v.optional(v.id("payment_terms")),
+    rate: v.optional(v.number()),
+    adjustments: v.optional(
+      v.array(
+        v.object({
+          id: v.string(),
+          description: v.string(),
+          type: v.union(v.literal("addition"), v.literal("deduction")),
+          amountCents: v.number(),
+        })
+      )
+    ),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.subject) throw new Error("Not authenticated");
+
+    const { user, org } = await requireUserWithOrg(ctx);
+
+    const existingLoad = await ctx.db.get(args.id);
+    if (!existingLoad) throw new Error("Load record not found");
+    if (existingLoad.org_id !== org._id) throw new Error("Unauthorized access");
+
+    const { id, ...updateFields } = args;
+
+    // Filter out undefined values
+    const fieldsToUpdate: Record<string, any> = {};
+    for (const [key, val] of Object.entries(updateFields)) {
+      if (val !== undefined) {
+        fieldsToUpdate[key] = val;
+      }
+    }
+
+    await ctx.db.patch(id, fieldsToUpdate);
+
+    await logAudit(ctx, {
+      table: "loads",
+      recordId: id,
+      action: "update",
+      userId: user._id,
+      org_id: org._id,
+      before: existingLoad,
+      after: { ...existingLoad, ...fieldsToUpdate },
+    });
+
+    return { success: true };
+  },
+});
 
 export const updateProgress = mutation({
   args: {

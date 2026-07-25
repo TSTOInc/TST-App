@@ -170,7 +170,7 @@ export default defineSchema({
     fee_percent: v.number(),
     is_quickpay: v.boolean(),
     name: v.string(),
-  }).index("by_orgId", ["org_id"]).index("by_brokerId", ["broker_id"]),
+  }).index("by_orgId", ["org_id"]).index("by_brokerId_orgId", ["broker_id", "org_id"]),
 
   stops: defineTable({
     created_by: v.id("users"),

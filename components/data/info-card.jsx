@@ -65,7 +65,7 @@ const FieldRenderer = ({
       displayValue = formatPhoneNumber(value);
     } else if (type === "reference" || type === "select") {
       const matchedOption = searchableOptions.find(opt => String(opt.value) === String(value));
-      displayValue = matchedOption ? matchedOption.label : String(value);
+      displayValue = matchedOption ? matchedOption.label : "";
     } else {
       displayValue = String(value);
     }

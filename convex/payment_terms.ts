@@ -3,8 +3,27 @@ import { v } from "convex/values";
 import { requireUserWithOrg } from "./lib/auth";
 import { logAudit } from "./lib/audit";
 
+// Fetch payment terms specifically for the assigned broker
+export const getByBroker = query({
+  args: {
+    broker_id: v.optional(v.id("brokers")),
+  },
+  handler: async (ctx, args) => {
+    const { org } = await requireUserWithOrg(ctx);
 
+    if (!args.broker_id) {
+      return [];
+    }
 
+    // Query using the by_brokerId index, then ensure org ownership security
+    const terms = await ctx.db
+      .query("payment_terms")
+      .withIndex("by_brokerId_orgId", (q) => q.eq("broker_id", args.broker_id!).eq("org_id", org._id))
+      .collect();
+
+    return terms;
+  },
+});
 
 export const create = mutation({
     args: {
