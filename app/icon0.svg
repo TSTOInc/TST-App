@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1440" viewBox="0 0 1440 1440" fill="none"><metadata><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/"><rdf:Description><dc:creator>RealFaviconGenerator</dc:creator><dc:source>https://realfavicongenerator.net</dc:source></rdf:Description></rdf:RDF></metadata><g transform="translate(720 720) scale(1.25) translate(-720 -720)">
+    <rect x="351.5625" y="393.75" width="253.125" height="885.9375" rx="126.5625" transform="rotate(-25 309.375 675)" fill="black"></rect>
+    <rect x="871.875" y="225" width="253.125" height="590.625" rx="126.5625" transform="rotate(25 787.5 450)" fill="black"></rect>
+  </g><style>@media (prefers-color-scheme: light) { :root { filter: none; } }
+@media (prefers-color-scheme: dark) { :root { filter: invert(100%); } }
+</style></svg>

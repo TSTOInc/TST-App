@@ -21,15 +21,18 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning className={cn("font-sans", inter.variable)}>
+      <head>
+        <meta name="apple-mobile-web-app-title" content="Velt" />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ClerkProvider appearance={{ baseTheme: shadcn }}>
           <ConvexClientProvider>
             <ThemeProvider attribute="class" enableSystem disableTransitionOnChange>
               <TooltipProvider>
-                
+
                 {/* Main Content Appears Here */}
                 {children}
-                
+
                 {/* Single global toaster */}
                 <Toaster richColors position="top-center" />
               </TooltipProvider>

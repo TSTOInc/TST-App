@@ -6,6 +6,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --shadow-custom-s: var(--custom-shadow-s);
+  --shadow-inverted-custom-s: var(--custom-shadow-inverted-s);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
@@ -50,6 +52,12 @@
 }
 
 :root {
+  --custom-shadow-s:
+  inset 0 1px 1px hsla(0, 0%, 90%, 0.188),
+  0 1px 2px #00000030,
+  0 2px 4px #00000015;
+  --custom-shadow-inverted-s:
+  inset 1px 1px 1px #00000030;
   --radius: 0.875rem;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -85,6 +93,12 @@
 }
 
 .dark {
+  --custom-shadow-s:
+  inset 0 1px 2px #ffffff30,
+  0 1px 2px #00000030,
+  0 2px 4px #00000015;
+  --custom-shadow-inverted-s:
+  inset 2px 2px 1px #00000060;
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.175 0 0);

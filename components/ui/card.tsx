@@ -12,7 +12,15 @@ function Card({
       data-slot="card"
       data-size={size}
       className={cn(
-        "group/card flex flex-col gap-6 overflow-hidden rounded-2xl bg-card py-6 text-sm text-card-foreground ring-1 ring-foreground/10 has-[>img:first-child]:pt-0 data-[size=sm]:gap-4 data-[size=sm]:py-4 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
+        "relative group/card flex flex-col gap-6 overflow-hidden rounded-2xl bg-card py-6 text-sm text-card-foreground shadow-custom-s",
+        // 1. YouTube Rim Highlight (Crisp top-edge light reflection)
+        "before:pointer-events-none before:absolute before:inset-0 before:rounded-[inherit] before:p-[1px]",
+        "before:bg-gradient-to-b before:from-neutral-500/4 before:via-neutral-800/2 before:to-transparent",
+        "before:[mask:linear-gradient(#fff_0_0)_content-box,linear-gradient(#fff_0_0)] before:[mask-composite:exclude]",
+        // 2. Ambient Wash Light (Soft ambient glow at the top)
+        "after:pointer-events-none after:absolute after:-top-12 after:left-1/2 after:-translate-x-1/2 after:h-28 after:w-3/4",
+        "after:bg-white/4 after:blur-xl after:rounded-full dark:after:bg-white/1",
+        "has-[>img:first-child]:pt-0 data-[size=sm]:gap-4 data-[size=sm]:py-4 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
         className
       )}
       {...props}

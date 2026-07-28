@@ -170,19 +170,23 @@ export default defineSchema({
     fee_percent: v.number(),
     is_quickpay: v.boolean(),
     name: v.string(),
-  }).index("by_orgId", ["org_id"]).index("by_brokerId_orgId", ["broker_id", "org_id"]),
+  }).index("by_orgId", ["org_id"]).index("by_brokerId", ["broker_id"]).index("by_brokerId_orgId", ["broker_id", "org_id"]),
 
   stops: defineTable({
     created_by: v.id("users"),
     org_id: v.id("organizations"),
-    appointment_time: v.optional(v.string()),
     load_id: v.id("loads"),
+    stop_number: v.optional(v.number()), // Explicit sequence: 1, 2, 3...
+    appointment_time: v.optional(v.string()),
     location: v.string(),
-    time_type: v.string(),
-    type: v.string(),
+    time_type: v.string(), // e.g., "APPOINTMENT", "FCFS", "WINDOW"
+    type: v.string(),      // e.g., "PICKUP", "DELIVERY"
     window_end: v.optional(v.string()),
     window_start: v.optional(v.string()),
-  }).index("by_orgId", ["org_id"]).index("by_loadId", ["load_id"]),
+  })
+    .index("by_orgId", ["org_id"])
+    .index("by_loadId", ["load_id"])
+    .index("by_loadId_and_stopNumber", ["load_id", "stop_number"]), // Optimizes ordered queries
 
   truck_inspections: defineTable({
     created_by: v.id("users"),

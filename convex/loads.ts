@@ -321,8 +321,9 @@ export const create = mutation({
 
     const { user, org } = await requireUserWithOrg(ctx);
 
-    const { data } = args
+    const { data } = args;
     const invoice_number = await getNextInvoiceNumber(ctx, org._id);
+    
     // Prepare load data (exclude stops)
     const payload = {
       org_id: org._id,
@@ -344,19 +345,41 @@ export const create = mutation({
       progress: 0,
       paid_at: undefined,
       agent_id: data.parties?.agent || undefined,
-    }
+    };
 
     // ✅ Insert the load (no stops here)
-    const loadId = await ctx.db.insert("loads", payload)
+    const loadId = await ctx.db.insert("loads", payload);
 
     if (!loadId) throw new Error("Failed to create load");
 
-    // ✅ Now insert stops separately
-    for (const stop of data.stops || []) {
+    // Helper: Determine effective start timestamp for chronological sorting fallback
+    const getEffectiveTime = (stop: any) => {
+      const timeStr = stop.appointmentTime || stop.windowStart || stop.windowEnd;
+      return timeStr ? new Date(timeStr).getTime() : Infinity;
+    };
+
+    // Sort incoming stops if explicit ordering isn't guaranteed
+    const sortedStops = [...(data.stops || [])].sort((a, b) => {
+      const timeA = getEffectiveTime(a);
+      const timeB = getEffectiveTime(b);
+
+      if (timeA !== timeB) return timeA - timeB;
+
+      // Tie-breaker: Pickups before Deliveries
+      if (a.type?.toUpperCase() === "PICKUP" && b.type?.toUpperCase() !== "PICKUP") return -1;
+      if (b.type?.toUpperCase() === "PICKUP" && a.type?.toUpperCase() !== "PICKUP") return 1;
+
+      return 0;
+    });
+
+    // ✅ Insert stops with sequential `stop_number`
+    for (let i = 0; i < sortedStops.length; i++) {
+      const stop = sortedStops[i];
       const stopId = await ctx.db.insert("stops", {
-        created_by: user._id, 
+        created_by: user._id,
         org_id: org._id,
         load_id: loadId,
+        stop_number: i + 1, // 1-indexed explicit sequence
         type: stop.type,
         location: stop.location,
         time_type: stop.timeType,
@@ -369,7 +392,7 @@ export const create = mutation({
         window_end: stop.windowEnd
           ? new Date(stop.windowEnd).toISOString()
           : undefined,
-      })
+      });
 
       if (!stopId) throw new Error("Failed to create stop");
     }
@@ -381,10 +404,10 @@ export const create = mutation({
       userId: user._id,
       org_id: org._id,
       after: payload,
-    })
+    });
 
-    return loadId
+    return loadId;
   },
-})
+});
 
 

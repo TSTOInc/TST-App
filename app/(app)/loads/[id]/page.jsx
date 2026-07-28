@@ -535,7 +535,7 @@ export const InvoiceTabContent = React.memo(({ loadData, carrierData }) => {
       <div className="lg:col-span-5 space-y-4 pr-1">
         
         {/* 1. GENERAL & TERMS */}
-        <Card className="shadow-sm border-border">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -661,7 +661,7 @@ export const InvoiceTabContent = React.memo(({ loadData, carrierData }) => {
         </Card>
 
         {/* 2. BASE RATE & CALCULATION SUMMARY */}
-        <Card className="shadow-sm border-border">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <CalculatorIcon className="h-4 w-4" /> Rate Summary
@@ -740,7 +740,7 @@ export const InvoiceTabContent = React.memo(({ loadData, carrierData }) => {
         </Card>
 
         {/* 3. ACCESSORIALS & ADJUSTMENTS */}
-        <Card className="shadow-sm border-border">
+        <Card>
           <CardHeader>
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <Plus className="h-4 w-4" /> Charges & Discounts
@@ -839,7 +839,7 @@ export const InvoiceTabContent = React.memo(({ loadData, carrierData }) => {
       </div>
 
       {/* RIGHT COLUMN: LIVE PDF PREVIEW */}
-      <Card className="border-border shadow-sm lg:col-span-7 flex flex-col h-[calc(100vh-55px)]">
+      <Card className="lg:col-span-7 flex flex-col h-[calc(100vh-55px)]">
         <CardHeader className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Eye className="w-4 h-4 text-muted-foreground" /> PDF Preview
@@ -992,11 +992,11 @@ export default function HomePage({ params }) {
 
       <Tabs defaultValue="details" className="w-full">
         <TabsList className="w-full h-10 grid grid-cols-5 bg-muted/60">
-          <TabsTrigger value="details" className="flex items-center gap-1.5"><FileSearch className="h-4 w-4" />Details</TabsTrigger>
-          <TabsTrigger value="parties" className="flex items-center gap-1.5"><Unplug className="h-4 w-4" />Parties</TabsTrigger>
-          <TabsTrigger value="documents" className="flex items-center gap-1.5"><FileTextIcon className="h-4 w-4" />Documents</TabsTrigger>
-          <TabsTrigger value="invoice" className="flex items-center gap-1.5"><IconFileDollar className="h-4 w-4" />Invoice</TabsTrigger>
-          <TabsTrigger value="logs" className="flex items-center gap-1.5"><ActivityIcon className="h-4 w-4" />Logs</TabsTrigger>
+          <TabsTrigger value="details" className="flex items-center gap-1.5"><FileSearch className="h-4 w-4" /><span className="hidden sm:block">Details</span></TabsTrigger>
+          <TabsTrigger value="parties" className="flex items-center gap-1.5"><Unplug className="h-4 w-4" /><span className="hidden sm:block">Parties</span></TabsTrigger>
+          <TabsTrigger value="documents" className="flex items-center gap-1.5"><FileTextIcon className="h-4 w-4" /><span className="hidden sm:block">Documents</span></TabsTrigger>
+          <TabsTrigger value="invoice" className="flex items-center gap-1.5"><IconFileDollar className="h-4 w-4" /><span className="hidden sm:block">Invoice</span></TabsTrigger>
+          <TabsTrigger value="logs" className="flex items-center gap-1.5"><ActivityIcon className="h-4 w-4" /><span className="hidden sm:block">Logs</span></TabsTrigger>
         </TabsList>
 
         <TabsContent value="details" className="space-y-4 mt-4">
